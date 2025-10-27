@@ -113,8 +113,12 @@ def db():
     # Render Postgres-ը պահանջում է SSL
     return psycopg2.connect(DATABASE_URL, sslmode="require")
 
-def init_db():
-    conn = db(); c = conn.cursor()
+def main():
+    init_db()  # ✅ ավելացրու սա հենց այստեղ
+    print("✅ Database initialized.")
+
+    app = Application.builder().token(BOT_TOKEN).build()
+
 
     c.execute("""
 CREATE TABLE IF NOT EXISTS users (
