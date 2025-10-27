@@ -114,8 +114,10 @@ def db():
     return psycopg2.connect(DATABASE_URL, sslmode="require")
 
 def init_db():
+    print("🛠️ Running init_db() ...")
     conn = db()
     c = conn.cursor()
+
 
     c.execute("""
 CREATE TABLE IF NOT EXISTS users (
@@ -175,7 +177,10 @@ CREATE TABLE IF NOT EXISTS user_tasks (
         try: c.execute(sql)
         except Exception: pass
 
-    conn.commit(); conn.close()
+        conn.commit()
+    conn.close()
+    print("✅ Tables created successfully in PostgreSQL.")
+
 
     
 
@@ -855,8 +860,12 @@ def run_flask():
 
 def main():
     print("✅ Starting bot...")
-    init_db()
-    print("✅ Database initialized.")
+
+    try:
+        init_db()
+        print("✅ Database initialized (tables ready).")
+    except Exception as e:
+        print("⚠️ init_db() failed:", e)
 
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start_cmd))
@@ -878,3 +887,5 @@ def main():
 if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     main()
+    print("🟢 VORN BOT fully initialized. Ready to serve.")
+
