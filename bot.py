@@ -110,8 +110,11 @@ if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is missing!")
 
 def db():
-    # Render Postgres-ը պահանջում է SSL
-    return psycopg2.connect(DATABASE_URL, sslmode="require")
+    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+    # Հստակ նշում ենք public schema, որպեսզի Render-ում չխառնվի
+    with conn.cursor() as c:
+        c.execute("SET search_path TO public;")
+    return conn
 
 def init_db():
     print("🛠️ Running init_db() ...")
