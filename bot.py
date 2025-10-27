@@ -887,9 +887,14 @@ def run_flask():
     port = int(getenv("PORT", "10000"))
     app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
 
+    from telegram import Bot
+    
 
 def main():
     print("✅ Starting bot...")
+    bot = Bot(BOT_TOKEN)
+    bot.delete_webhook(drop_pending_updates=True)
+    application.run_polling()
 
     try:
         init_db()
