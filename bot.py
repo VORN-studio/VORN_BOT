@@ -855,6 +855,7 @@ def run_flask():
 
 
 def main():
+    print("✅ Starting bot...")
     init_db()
     print("✅ Database initialized.")
 
