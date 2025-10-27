@@ -2,7 +2,7 @@
 # Python 3.10+  |  pip install flask flask-cors python-telegram-bot==20.3
 
 import os
-import sqlite3
+import psycopg2
 import time
 import threading
 from typing import Optional
@@ -105,49 +105,58 @@ MINE_REWARD = 500
 # =========================
 # Database
 # =========================
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is missing!")
+
 def db():
-    return sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10)
+    # Render Postgres-ը պահանջում է SSL
+    return psycopg2.connect(DATABASE_URL, sslmode="require")
 
 def init_db():
     conn = db(); c = conn.cursor()
 
     c.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        user_id INTEGER PRIMARY KEY,
-        username TEXT,
-        balance INTEGER DEFAULT 0,
-        last_mine INTEGER DEFAULT 0,
-        language TEXT DEFAULT 'en',
-        intro_seen INTEGER DEFAULT 0,
-        last_reminder_sent INTEGER DEFAULT 0,
-        inviter_id INTEGER DEFAULT NULL
-    )
-    """)
+CREATE TABLE IF NOT EXISTS users (
+    user_id BIGINT PRIMARY KEY,
+    username TEXT,
+    balance INTEGER DEFAULT 0,
+    last_mine BIGINT DEFAULT 0,
+    language TEXT DEFAULT 'en',
+    intro_seen BOOLEAN DEFAULT FALSE,
+    last_reminder_sent BIGINT DEFAULT 0,
+    inviter_id BIGINT,
+    vorn_balance REAL DEFAULT 0
+)
+""")
+
 
     c.execute("""
-    CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT,
-        title TEXT,
-        reward INTEGER,
-        link TEXT,
-        description TEXT,
-        verifier TEXT,
-        required INTEGER DEFAULT 0,
-        active INTEGER DEFAULT 1,
-        created_at INTEGER
-    )
-    """)
+CREATE TABLE IF NOT EXISTS tasks (
+    id SERIAL PRIMARY KEY,
+    type TEXT,
+    title TEXT,
+    reward INTEGER,
+    link TEXT,
+    description TEXT,
+    verifier TEXT,
+    required BOOLEAN DEFAULT FALSE,
+    active BOOLEAN DEFAULT TRUE,
+    created_at BIGINT
+)
+""")
+
 
     c.execute("""
-    CREATE TABLE IF NOT EXISTS user_tasks (
-        user_id INTEGER,
-        task_id INTEGER,
-        date_key TEXT,
-        completed_at INTEGER,
-        PRIMARY KEY (user_id, task_id, date_key)
-    )
-    """)
+CREATE TABLE IF NOT EXISTS user_tasks (
+    user_id BIGINT,
+    task_id BIGINT,
+    date_key TEXT,
+    completed_at BIGINT,
+    PRIMARY KEY (user_id, task_id, date_key)
+)
+""")
+
 
     # safe alters (ignore if exist)
     alters = [
@@ -169,41 +178,41 @@ def init_db():
 
 def ensure_user(user_id: int, username: Optional[str], inviter_id: Optional[int] = None):
     conn = db(); c = conn.cursor()
-    c.execute("SELECT user_id, inviter_id FROM users WHERE user_id=?", (user_id,))
+    c.execute("SELECT user_id, inviter_id FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     if row is None:
         c.execute("""INSERT INTO users
             (user_id, username, balance, last_mine, language, intro_seen, last_reminder_sent, inviter_id)
-            VALUES (?, ?, 0, 0, 'en', 0, 0, ?)""",
-            (user_id, username, inviter_id))
+            VALUES (%s, %s, 0, 0, 'en', FALSE, 0, %s)""",
+    (user_id, username, inviter_id))
     else:
         old_inviter = row[1]
         if old_inviter is None and inviter_id:
-            c.execute("UPDATE users SET inviter_id=? WHERE user_id=?", (inviter_id, user_id))
-        c.execute("UPDATE users SET username=? WHERE user_id=?", (username, user_id))
+            c.execute("UPDATE users SET inviter_id=%s WHERE user_id=%s", (inviter_id, user_id))
+        c.execute("UPDATE users SET username=%s WHERE user_id=%s", (username, user_id))
     conn.commit(); conn.close()
 
 def get_balance(user_id: int) -> int:
     conn = db(); c = conn.cursor()
-    c.execute("SELECT balance FROM users WHERE user_id=?", (user_id,))
+    c.execute("SELECT balance FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     conn.close()
     return row[0] if row else 0
 
 def update_balance(user_id: int, delta: int) -> int:
     conn = db(); c = conn.cursor()
-    c.execute("SELECT balance FROM users WHERE user_id=?", (user_id,))
+    c.execute("SELECT balance FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     bal = (row[0] if row else 0) + int(delta)
-    c.execute("INSERT INTO users(user_id, balance) VALUES(?, ?) ON CONFLICT(user_id) DO UPDATE SET balance=?",
-              (user_id, bal, bal))
+    c.execute("INSERT INTO users(user_id, balance) VALUES(%s, %s) ON CONFLICT(user_id) DO UPDATE SET balance=EXCLUDED.balance",
+              (user_id, bal,))
     conn.commit(); conn.close()
     return bal
 
 def can_mine(user_id: int):
     now = int(time.time())
     conn = db(); c = conn.cursor()
-    c.execute("SELECT last_mine FROM users WHERE user_id=?", (user_id,))
+    c.execute("SELECT last_mine FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone(); conn.close()
     last = row[0] if row and row[0] else 0
     if now - last >= MINE_COOLDOWN:
@@ -213,7 +222,7 @@ def can_mine(user_id: int):
 def set_last_mine(user_id: int):
     now = int(time.time())
     conn = db(); c = conn.cursor()
-    c.execute("UPDATE users SET last_mine=?, last_reminder_sent=0 WHERE user_id=?", (now, user_id))
+    c.execute("UPDATE users SET last_mine=%s, last_reminder_sent=0 WHERE user_id=%s", (now, user_id))
     conn.commit(); conn.close()
 
 # =========================
@@ -222,7 +231,7 @@ def set_last_mine(user_id: int):
 @app_web.route("/api/user/<int:user_id>")
 def api_get_user(user_id):
     conn = db(); c = conn.cursor()
-    c.execute("SELECT username, balance, last_mine, language, vorn_balance FROM users WHERE user_id=?", (user_id,))
+    c.execute("SELECT username, balance, last_mine, language, vorn_balance FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone(); conn.close()
 
     if not row:
@@ -248,7 +257,7 @@ def api_set_language():
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
     conn = db(); c = conn.cursor()
-    c.execute("UPDATE users SET language=? WHERE user_id=?", (lang, user_id))
+    c.execute("UPDATE users SET language=%s WHERE user_id=%s", (lang, user_id))
     conn.commit(); conn.close()
     return jsonify({"ok": True})
 
@@ -303,12 +312,12 @@ def api_vorn_reward():
         pass
 
     # ✅ read current vorn balance
-    c.execute("SELECT vorn_balance FROM users WHERE user_id=?", (user_id,))
+    c.execute("SELECT vorn_balance FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     vbal = (row[0] if row and row[0] else 0.0) + amount
 
     # ✅ update vorn balance
-    c.execute("UPDATE users SET vorn_balance=? WHERE user_id=?", (vbal, user_id))
+    c.execute("UPDATE users SET vorn_balance=%s WHERE user_id=%s", (vbal, user_id))
     conn.commit()
     conn.close()
 
@@ -339,7 +348,7 @@ def api_vorn_exchange():
         pass
 
     # read current balances
-    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=?", (user_id,))
+    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     if not row:
         conn.close()
@@ -355,7 +364,7 @@ def api_vorn_exchange():
     new_vorn = vorn + REWARD
 
     c.execute(
-        "UPDATE users SET balance=?, vorn_balance=? WHERE user_id=?",
+        "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
         (new_feathers, new_vorn, user_id)
     )
     conn.commit()
@@ -395,7 +404,7 @@ def api_tasks():
     user_done = set()
     if uid:
         date_key = time.strftime("%Y-%m-%d")
-        c.execute("SELECT task_id FROM user_tasks WHERE user_id=? AND date_key=?", (uid, date_key))
+        c.execute("SELECT task_id FROM user_tasks WHERE user_id=%s AND date_key=%s", (uid, date_key))
         for r in c.fetchall():
             user_done.add(r[0])
 
@@ -431,7 +440,7 @@ def add_task_db(task_type, title, reward, link=None, description=None, verifier=
     conn = db(); c = conn.cursor()
     c.execute("""
         INSERT INTO tasks (type, title, reward, link, description, verifier, required, created_at, active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1)
     """, (task_type, title, int(reward), link, description, verifier, int(required), int(time.time())))
     conn.commit(); conn.close()
 
@@ -440,7 +449,7 @@ def list_tasks(task_type: str):
     c.execute("""
         SELECT id, title, reward, link, description
         FROM tasks
-        WHERE type=? AND active=1
+        WHERE type=%s AND active=1
         ORDER BY id DESC
     """, (task_type,))
     rows = c.fetchall(); conn.close()
@@ -535,7 +544,7 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
 
     c.execute("""
         INSERT INTO tasks (type, title, reward_feather, reward_vorn, link, created_at, active)
-        VALUES (?, ?, ?, ?, ?, ?, 1)
+        VALUES (%s, %s, %s, %s, %s, %s, 1)
     """, (task_type, title, int(reward_feather), float(reward_vorn), link, int(time.time())))
     conn.commit(); conn.close()
 
@@ -560,7 +569,7 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
     user_done = set()
     if uid:
         date_key = time.strftime("%Y-%m-%d")
-        c.execute("SELECT task_id FROM user_tasks WHERE user_id=? AND date_key=?", (uid, date_key))
+        c.execute("SELECT task_id FROM user_tasks WHERE user_id=%s AND date_key=%s", (uid, date_key))
         for r in c.fetchall():
             user_done.add(r[0])
 
@@ -637,7 +646,7 @@ async def deltask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("Usage: /deltask <id>")
     tid = int(context.args[0])
     conn = db(); c = conn.cursor()
-    c.execute("DELETE FROM tasks WHERE id=?", (tid,))
+    c.execute("DELETE FROM tasks WHERE id=%s", (tid,))
     conn.commit(); conn.close()
     await update.message.reply_text(f"🗑️ Task {tid} deleted.")
 
@@ -685,7 +694,7 @@ def api_task_attempt_create():
     )
     """)
     token = f"T{user_id}_{task_id}_{int(time.time())}"
-    c.execute("INSERT INTO task_attempts (user_id, task_id, token, status, created_at) VALUES (?, ?, ?, 'pending', ?)",
+    c.execute("INSERT INTO task_attempts (user_id, task_id, token, status, created_at) VALUES (%s, %s, %s, 'pending', %s)",
               (user_id, task_id, token, int(time.time())))
     conn.commit(); conn.close()
 
@@ -709,7 +718,7 @@ def api_task_attempt_verify():
     conn = db(); c = conn.cursor()
 
     # Check token validity
-    c.execute("SELECT id, status FROM task_attempts WHERE user_id=? AND task_id=? AND token=?", (user_id, task_id, token))
+    c.execute("SELECT id, status FROM task_attempts WHERE user_id=%s AND task_id=%s AND token=%s", (user_id, task_id, token))
     row = c.fetchone()
     if not row:
         conn.close()
@@ -720,20 +729,20 @@ def api_task_attempt_verify():
 
         # ✅ Prevent multiple rewards for the same task
     date_key = time.strftime("%Y-%m-%d")
-    c.execute("SELECT 1 FROM user_tasks WHERE user_id=? AND task_id=? AND date_key=?", (user_id, task_id, date_key))
+    c.execute("SELECT 1 FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s", (user_id, task_id, date_key))
     if c.fetchone():
         conn.close()
         return jsonify({"ok": False, "error": "already_completed"}), 400
 
     # ✅ Mark as verified
-    c.execute("UPDATE task_attempts SET status='verified', verified_at=? WHERE id=?", (int(time.time()), row[0]))
+    c.execute("UPDATE task_attempts SET status='verified', verified_at=%s WHERE id=%s", (int(time.time()), row[0]))
 
     # ✅ Save to user_tasks table (for progress memory)
-    c.execute("INSERT INTO user_tasks (user_id, task_id, date_key, completed_at) VALUES (?, ?, ?, ?)",
+    c.execute("INSERT INTO user_tasks (user_id, task_id, date_key, completed_at) VALUES (%s, %s, %s, %s)",
               (user_id, task_id, date_key, int(time.time())))
 
     # ✅ Fetch reward data
-    c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=?", (task_id,))
+    c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=%s", (task_id,))
     task = c.fetchone()
     if not task:
         conn.close()
@@ -747,11 +756,11 @@ def api_task_attempt_verify():
     except Exception:
         pass
 
-    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=?", (user_id,))
+    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (user_id,))
     row_user = c.fetchone()
     balance = (row_user[0] if row_user else 0) + reward_feather
     vorn = (row_user[1] if row_user else 0) + reward_vorn
-    c.execute("UPDATE users SET balance=?, vorn_balance=? WHERE user_id=?", (balance, vorn, user_id))
+    c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (balance, vorn, user_id))
 
     conn.commit()
     conn.close()
@@ -791,7 +800,7 @@ def api_verify_task():
         pass
 
     # read task info
-    c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=? AND active=1", (task_id,))
+    c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=%s AND active=1", (task_id,))
     task = c.fetchone()
     if not task:
         conn.close()
@@ -801,23 +810,23 @@ def api_verify_task():
 
     # check if already done
     date_key = time.strftime("%Y-%m-%d")
-    c.execute("SELECT completed_at FROM user_tasks WHERE user_id=? AND task_id=? AND date_key=?", (user_id, task_id, date_key))
+    c.execute("SELECT completed_at FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s", (user_id, task_id, date_key))
     if c.fetchone():
         conn.close()
         return jsonify({"ok": False, "reason": "already_done"})
 
     # mark as done
     c.execute(
-        "INSERT OR REPLACE INTO user_tasks (user_id, task_id, date_key, completed_at) VALUES (?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO user_tasks (user_id, task_id, date_key, completed_at) VALUES (%s, %s, %s, %s)",
         (user_id, task_id, date_key, int(time.time()))
     )
 
     # update balances
-    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=?", (user_id,))
+    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     balance = (row[0] if row else 0) + reward_feather
     vorn = (row[1] if row else 0) + reward_vorn
-    c.execute("UPDATE users SET balance=?, vorn_balance=? WHERE user_id=?", (balance, vorn, user_id))
+    c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (balance, vorn, user_id))
     conn.commit(); conn.close()
 
     return jsonify({
