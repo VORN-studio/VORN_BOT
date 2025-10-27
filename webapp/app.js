@@ -1,0 +1,1006 @@
+/* =========================================================
+   VORN WebApp — Unified Core
+   ========================================================= */
+
+console.log("✅ app.js loaded (VORN unified)");
+
+/* ------------ GLOBAL FLAGS ------------ */
+const DEBUG_UI = false; // ⬅️ turn off the green debug box
+
+/* ------------ API CONFIG ------------ */
+const COOLDOWN_SEC = 6 * 60 * 60; // 6 ժամ
+const REWARD = 500;
+
+const API_BASE = "https://theodora-coexistent-evelyne.ngrok-free.dev";
+const API = {
+  user: (uid) => `${API_BASE}/api/user/${uid}`,
+  mine: `${API_BASE}/api/mine`,
+  tasks: (uid) => `${API_BASE}/api/tasks?uid=${uid}` // placeholder
+};
+
+/* ------------ HELPERS ------------ */
+function uidFromURL() {
+  try {
+    const s = new URLSearchParams(window.location.search);
+    return parseInt(s.get("uid") || "0", 10) || 0;
+  } catch { return 0; }
+}
+function nowSec() { return Math.floor(Date.now() / 1000); }
+
+/* ------------ I18N CORE ------------ */
+const texts = {
+  en: { confirmText: "You have chosen English for the entire experience.\nYou cannot change it later.", confirmBtn: "Confirm", changeBtn: "Change", eggTip: "🥚 Tap the egg to hatch it!" },
+  ru: { confirmText: "Вы выбрали русский язык для всей игры.\nВы не сможете изменить его позже.", confirmBtn: "Подтвердить", changeBtn: "Изменить", eggTip: "🥚 Коснитесь яйца, чтобы разбить его!" },
+  hy: { confirmText: "Դուք ընտրել եք հայերենը ամբողջ խաղի համար։\nԴուք չեք կարող այն փոխել։", confirmBtn: "Հաստատել", changeBtn: "Փոխել", eggTip: "🥚 Սեղմիր ձվի վրա՝ բացելու համար։" },
+  fr: { confirmText: "Vous avez choisi le français pour toute l'expérience.\nVous ne pouvez pas le changer plus tard.", confirmBtn: "Confirmer", changeBtn: "Changer", eggTip: "🥚 Touchez l'œuf pour l'éclore !" },
+  es: { confirmText: "Has elegido español para toda la experiencia.\nNo podrás cambiarlo después.", confirmBtn: "Confirmar", changeBtn: "Cambiar", eggTip: "🥚 ¡Toca el huevo para abrirlo!" },
+  de: { confirmText: "Du hast Deutsch für das gesamte Spiel gewählt.\nDu kannst es später nicht ändern.", confirmBtn: "Bestätigen", changeBtn: "Ändern", eggTip: "🥚 Tippe auf das Ei, um es zu öffnen!" },
+  it: { confirmText: "Hai scelto l'italiano per l'intera esperienza.\nNon puoi cambiarlo in seguito.", confirmBtn: "Conferma", changeBtn: "Cambia", eggTip: "🥚 Tocca l'uovo per aprirlo!" },
+  tr: { confirmText: "Tüm deneyim için Türkçe'yi seçtiniz.\nDaha sonra değiştiremezsiniz.", confirmBtn: "Onayla", changeBtn: "Değiş", eggTip: "🥚 Yumurtaya dokun, kır!" },
+  fa: { confirmText: "شما فارسی را برای کل بازی انتخاب کرده‌اید.\nبعداً نمی‌توانید آن را تغییر دهید.", confirmBtn: "تأیید", changeBtn: "تغییر", eggTip: "🥚 روی تخم مرغ بزنید!" },
+  ar: { confirmText: "لقد اخترت العربية للتجربة بأكملها.\nلا يمكنك تغييره لاحقاً.", confirmBtn: "تأكيد", changeBtn: "تغيير", eggTip: "🥚 اضغط على البيضة لتفقس!" },
+  zh: { confirmText: "您选择了中文。\n以后无法更改。", confirmBtn: "确认", changeBtn: "更改", eggTip: "🥚 点击蛋孵化！" },
+  ja: { confirmText: "日本語を選択しました。\n後で変更できません。", confirmBtn: "確認", changeBtn: "変更", eggTip: "🥚 卵をタップして孵化！" },
+  ko: { confirmText: "한국어를 선택했습니다.\n나중에 변경할 수 없습니다.", confirmBtn: "확인", changeBtn: "변경", eggTip: "🥚 알을 눌러 부화시키세요!" },
+  hi: { confirmText: "आपने पूरी गेम के लिए हिंदी चुनी है।\nआप बाद में इसे नहीं बदल सकते।", confirmBtn: "पुष्टि करें", changeBtn: "बदलें", eggTip: "🥚 अंडे को टैप करें!" },
+  pt: { confirmText: "Você escolheu o português.\nNão poderá mudar depois.", confirmBtn: "Confirmar", changeBtn: "Mudar", eggTip: "🥚 Toque no ovo para chocar!" },
+  el: { confirmText: "Επέλεξες τα ελληνικά.\nΔεν μπορείς να το αλλάξεις μετά.", confirmBtn: "Επιβεβαίωση", changeBtn: "Αλλαγή", eggTip: "🥚 Πάτα το αυγό!" },
+  pl: { confirmText: "Wybrałeś język polski.\nNie możesz tego zmienić później.", confirmBtn: "Potwierdź", changeBtn: "Zmień", eggTip: "🥚 Dotknij jajka!" },
+  nl: { confirmText: "Je hebt Nederlands gekozen.\nJe kunt dit later niet wijzigen.", confirmBtn: "Bevestigen", changeBtn: "Wijzigen", eggTip: "🥚 Tik op het ei!" },
+  sv: { confirmText: "Du valde svenska.\nDu kan inte ändra det senare.", confirmBtn: "Bekräfta", changeBtn: "Byt", eggTip: "🥚 Tryck på ägget!" },
+  ro: { confirmText: "Ai ales româna.\nNu o poți schimba mai târziu.", confirmBtn: "Confirmă", changeBtn: "Schimbă", eggTip: "🥚 Atinge oul!" },
+  hu: { confirmText: "Magyar nyelvet választottál.\nKésőbb nem módosíthatod.", confirmBtn: "Megerősít", changeBtn: "Módosít", eggTip: "🥚 Érintsd meg a tojást!" },
+  cs: { confirmText: "Vybral jsi češtinu.\nNelze to později změnit.", confirmBtn: "Potvrdit", changeBtn: "Změnit", eggTip: "🥚 Klepni na vejce!" },
+  uk: { confirmText: "Ви обрали українську.\nНе можна буде змінити.", confirmBtn: "Підтвердити", changeBtn: "Змінити", eggTip: "🥚 Торкніться яйця!" },
+  az: { confirmText: "Siz Azərbaycan dilini seçdiniz.\nSonradan dəyişmək mümkün deyil.", confirmBtn: "Təsdiq et", changeBtn: "Dəyiş", eggTip: "🥚 Yumurtaya toxun!" },
+  ka: { confirmText: "შენ აირჩიე ქართული.\nშემდგომ ვერ შეცვლი.", confirmBtn: "დადასტურება", changeBtn: "შეცვლა", eggTip: "🥚 დააჭირე კვერცხს!" }
+};
+
+const langButtonsDict = {
+  continue: { en: "Continue", ru: "Продолжить", hy: "Շարունակել", tr: "Devam et", fa: "ادامه", es: "Continuar", fr: "Continuer", de: "Weiter", it: "Continua", zh: "继续", ja: "続行", ko: "계속", ar: "متابعة" },
+  start:    { en: "Start",    ru: "Начать",      hy: "Սկսել",      tr: "Başlat",  fa: "شروع", es: "Empezar",  fr: "Commencer", de: "Starten", it: "Avvia", zh: "开始", ja: "開始", ko: "시작", ar: "ابدأ" },
+  tasksTitles: {
+    main:  { en: "⭐ Main Tasks", ru: "⭐ Основные задания", hy: "⭐ Հիմնական առաջադրանքներ", tr: "⭐ Ana Görevler", fa: "⭐ ماموریت‌های اصلی", es: "⭐ Tareas principales", fr: "⭐ Tâches principales" },
+    daily: { en: "🌅 Daily Tasks", ru: "🌅 Ежедневные задания", hy: "🌅 Օրվա առաջադրանքներ", tr: "🌅 Günlük Görevler", fa: "🌅 ماموریت‌های روزانه", es: "🌅 Tareas diarias", fr: "🌅 Tâches quotidiennes" }
+  }
+};
+function getSavedLang() {
+  try { return localStorage.getItem("vorn_lang") || "en"; } catch { return "en"; }
+}
+function translated(key, lang) {
+  const dict = langButtonsDict[key];
+  return (dict && (dict[lang] || dict.en)) || key;
+}
+
+/* ------------ VORN STATE ------------ */
+const VORN = {
+  uid: 0,
+  lang: "en",
+  balance: 0,
+  vornBalance: 0,
+  lastMine: 0,
+  timer: null,
+  els: {
+    feather: null, mineBtn: null, btnTasks: null, tasksModal: null, tasksList: null, closeTasksBtn: null,
+    introVideo: null, introSlides: null, slideImage: null, slideNextBtn: null,
+    startBtn: null, introText: null, startContainer: null, modalLang: null,
+    confirmLangModal: null, confirmLangTitle: null, confirmLangText: null,
+    confirmLangBtn: null, changeLangBtn: null, langGrid: null
+  },
+  energy: { max: 100, regenPerSec: 2, value: 100, hideTimer: null, regenTimer: null, mClicks: [] },
+  tasks: { main: [], daily: [] },
+
+  /* -------- INIT -------- */
+  async init() {
+    console.log("⚙️ VORN.init()");
+    console.log("🧠 UID from URL:", uidFromURL());
+    this.uid = uidFromURL();
+    this.lang = getSavedLang();
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    this.bindEls();
+    this.buildLanguageGrid();
+
+    // Start button (one-time open language)
+    if (this.els.startBtn) {
+      this.els.startBtn.addEventListener("click", () => {
+        this.els.introText && (this.els.introText.style.display = "none");
+        this.els.startContainer && (this.els.startContainer.style.display = "none");
+        this.els.modalLang && this.els.modalLang.classList.remove("hidden");
+      }, { once: true });
+    }
+
+    this.bindTasksModal();
+    await this.ensureVideoPlays();
+
+    // Fallback: hard-wire start if overlays delayed
+    this.wireStartButton();
+
+    if (this.uid) {
+  // 🧠 Preload user & tasks asynchronously
+  this.loadUser(); // no await — runs in background
+  this.preloadTasks();
+  this.startMineTicker();
+}
+  
+ else {
+      console.warn("⚠️ No uid in URL");
+    }
+
+    this.mountDebugOverlay();
+    this.mountCanvasBackground();
+  },
+
+  bindEls() {
+    this.els.mineBtn = document.getElementById("btnMine");
+    // ✅ Exchange button safe rebind
+this.els.exchangeBtn = document.getElementById("btnExchange");
+if (this.els.exchangeBtn) {
+  this.els.exchangeBtn.onclick = null; // remove old listeners
+  this.els.exchangeBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.onExchange();
+  });
+}
+
+    this.els.feather = document.getElementById("featherCount");
+    this.els.btnTasks = document.getElementById("btnTasks");
+    this.els.tasksModal = document.getElementById("tasksModal");
+    this.els.tasksList = document.getElementById("tasksList");
+    this.els.closeTasksBtn = document.getElementById("closeTasksBtn");
+    this.els.introVideo = document.getElementById("introVideo");
+    this.els.introSlides = document.getElementById("introSlides");
+    this.els.slideImage = document.getElementById("slideImage");
+    this.els.slideNextBtn = document.getElementById("slideNextBtn");
+    this.els.startBtn = document.getElementById("startBtn");
+    this.els.introText = document.querySelector(".intro-text");
+    this.els.startContainer = document.querySelector(".button-container");
+    this.els.modalLang = document.getElementById("languageModal");
+    this.els.confirmLangModal = document.getElementById("confirmLangModal");
+    this.els.confirmLangTitle = document.getElementById("confirmLangTitle");
+    this.els.confirmLangText = document.getElementById("confirmLangText");
+    this.els.confirmLangBtn = document.getElementById("confirmLangBtn");
+    this.els.changeLangBtn = document.getElementById("changeLangBtn");
+    this.els.langGrid = document.getElementById("lang-grid");
+
+    // Mine button
+    if (this.els.mineBtn) {
+      this.els.mineBtn.addEventListener("click", () => this.onMineClick());
+    }
+  },
+
+  /* -------- USER / SERVER -------- */
+  async loadUser() {
+    try {
+      console.log("🌐 Loading user:", API.user(this.uid));
+      const r = await fetch(API.user(this.uid));
+      const data = await r.json();
+      console.log("✅ User data:", data);
+
+      if (data && data.user_id) {
+        this.balance = data.balance ?? 0;
+        this.lastMine = data.last_mine ?? 0;
+        this.vornBalance = data.vorn_balance ?? 0;
+const vornEl = document.getElementById("foodCount");
+if (vornEl) vornEl.textContent = (this.vornBalance).toFixed(2);
+        this.vornBalance = data.vorn_balance ?? 0;
+const foodEl = document.getElementById("foodCount");
+if (foodEl) foodEl.textContent = this.vornBalance.toFixed(2);
+
+        const serverLang = (data.language || "").toLowerCase();
+        if (serverLang && texts[serverLang]) {
+          this.lang = serverLang;
+          localStorage.setItem("vorn_lang", this.lang);
+        }
+
+        this.els.feather && (this.els.feather.textContent = String(this.balance));
+        setTimeout(() => this.paintMineButton(), 200);
+      } else {
+        console.warn("⚠️ Invalid user data:", data);
+      }
+    } catch (e) {
+      console.error("🔥 loadUser failed:", e);
+    }
+
+    const nameEl = document.getElementById("username");
+if (nameEl) nameEl.textContent = `Player ${this.uid}`;
+
+  },
+
+  async preloadTasks() {
+  try {
+    const res = await fetch(`${API_BASE}/api/tasks?uid=${this.uid}`);
+    this.tasks = await res.json();
+    console.log("⚡ Prefetched tasks:", this.tasks);
+  } catch (e) {
+    console.warn("⚠️ Preload tasks failed", e);
+  }
+},
+
+
+async onMineClick() {
+  if (this.secsUntilReady() > 0) {
+    this.showMessage("wait_mine", "warning");
+    return;
+  }
+
+  this.els.mineBtn.disabled = true;
+  // 🔥 UI update first — instant feedback
+  this.flashMine();
+  this.balance += REWARD;
+  this.els.feather.textContent = this.balance;
+
+  // Backend call async in background
+  setTimeout(async () => {
+    try {
+      await fetch(API.mine, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: this.uid })
+      });
+    } catch(e) { console.warn("⚠️ Background mining failed", e); }
+    finally { this.els.mineBtn.disabled = false; }
+  }, 100);
+},
+
+
+  /* -------- MINE UI -------- */
+  secsUntilReady() {
+    if (!this.lastMine) return 0;
+    const left = COOLDOWN_SEC - (nowSec() - this.lastMine);
+    return Math.max(0, left);
+  },
+  pctReady() {
+    const left = this.secsUntilReady();
+    const done = COOLDOWN_SEC - left;
+    return Math.max(0, Math.min(100, (done / COOLDOWN_SEC) * 100));
+  },
+  paintMineButton() {
+    const btn = this.els.mineBtn;
+    if (!btn) return;
+    const left = this.secsUntilReady();
+    const pct = this.pctReady();
+    btn.style.setProperty("--pct", pct.toFixed(2));
+    if (left <= 0) btn.classList.add("ready"); else btn.classList.remove("ready");
+  },
+  startMineTicker() {
+    if (this.timer) clearInterval(this.timer);
+    this.paintMineButton();
+    this.timer = setInterval(() => this.paintMineButton(), 1000);
+  },
+  flashMine() {
+    if (!this.els.mineBtn) return;
+    this.els.mineBtn.classList.add("ready");
+    setTimeout(()=> this.els.mineBtn.classList.remove("ready"), 350);
+  },
+
+  /* -------- INTRO / LANGUAGE FLOW -------- */
+  buildLanguageGrid() {
+    const grid = this.els.langGrid;
+    if (!grid) return;
+    grid.innerHTML = "";
+    const languages = Object.keys(texts).map(code => {
+      const name = new Intl.DisplayNames([code], { type: "language" }).of(code) || code;
+      return { code, name };
+    });
+    languages.forEach(lang => {
+      const btn = document.createElement("button");
+      btn.textContent = lang.name;
+      btn.classList.add("lang-btn");
+      btn.onclick = () => this.showConfirmLang(lang.code);
+      grid.appendChild(btn);
+    });
+  },
+
+  showConfirmLang(code) {
+    const t = texts[code] || texts.en;
+    if (!this.els.confirmLangModal) return;
+
+    this.els.modalLang && this.els.modalLang.classList.add("hidden");
+
+    this.els.confirmLangTitle && (this.els.confirmLangTitle.textContent = "✅");
+    this.els.confirmLangText && (this.els.confirmLangText.textContent = t.confirmText);
+    this.els.confirmLangBtn && (this.els.confirmLangBtn.textContent = t.confirmBtn);
+    this.els.changeLangBtn && (this.els.changeLangBtn.textContent = t.changeBtn);
+    this.els.confirmLangModal.classList.remove("hidden");
+
+    if (this._confirmHandlersBound) return;
+    this._confirmHandlersBound = true;
+
+    this.els.confirmLangBtn && this.els.confirmLangBtn.addEventListener("click", () => {
+      this.els.confirmLangModal.classList.add("hidden");
+      this.lang = code;
+      localStorage.setItem("vorn_lang", this.lang);
+      this.startSlidesFlow(this.lang);
+    });
+
+    this.els.changeLangBtn && this.els.changeLangBtn.addEventListener("click", () => {
+      this.els.confirmLangModal.classList.add("hidden");
+      this.els.modalLang && this.els.modalLang.classList.remove("hidden");
+    });
+
+    const closeLangBtn = document.getElementById("closeLangBtn");
+    closeLangBtn && closeLangBtn.addEventListener("click", () => {
+      this.els.modalLang && this.els.modalLang.classList.add("hidden");
+    }, { once: true });
+  },
+
+  startSlidesFlow(selectedLangCode) {
+    console.log("🚀 startSlidesFlow:", selectedLangCode);
+    const slides = [
+      "/webapp/assets/slide1.png",
+      "/webapp/assets/slide2.png",
+      "/webapp/assets/slide3.png"
+    ];
+
+    const introSlides = this.els.introSlides;
+    const slideImage  = this.els.slideImage;
+    const slideNextBtn = this.els.slideNextBtn;
+    if (!introSlides || !slideImage || !slideNextBtn) {
+      console.error("❌ Slide DOM elements not found");
+      return;
+    }
+
+    this.els.introVideo && this.els.introVideo.classList.add("hidden");
+    document.querySelectorAll(".modal").forEach(m => m.classList.add("hidden"));
+
+    introSlides.classList.remove("hidden");
+
+    let slideIndex = 0;
+    slideImage.src = slides[slideIndex];
+    slideNextBtn.textContent = translated("continue", selectedLangCode);
+
+    slideNextBtn.onclick = () => {
+      slideIndex++;
+      if (slideIndex < slides.length) {
+        slideImage.classList.add("fade-out");
+        setTimeout(() => {
+          slideImage.src = slides[slideIndex];
+          slideImage.classList.remove("fade-out");
+          slideImage.classList.add("fade-in");
+          if (slideIndex === slides.length - 1) {
+            slideNextBtn.textContent = translated("start", selectedLangCode);
+          }
+        }, 300);
+      } else {
+        introSlides.classList.add("hidden");
+        this.openMainInterface();
+      }
+    };
+  },
+
+  openMainInterface() {
+    console.log("🎮 Opening main interface...");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    window.scrollTo(0, 0);
+
+      // 🩹 Hide Start button & intro elements when main UI opens
+  const startBtn = document.getElementById("startBtn");
+  const startContainer = document.querySelector(".button-container");
+  const introText = document.querySelector(".intro-text");
+  startBtn && (startBtn.style.display = "none");
+  startContainer && (startContainer.style.display = "none");
+  introText && (introText.style.display = "none");
+
+
+    const introVideo = document.getElementById("introVideo");
+    const introSlides = document.getElementById("introSlides");
+    const modals = document.querySelectorAll(".modal");
+    introVideo && introVideo.classList.add("hidden");
+    introSlides && introSlides.classList.add("hidden");
+    modals.forEach(m => m.classList.add("hidden"));
+
+    const bg = document.getElementById("mainBgVideo");
+    const bgSource = bg?.querySelector("source");
+    if (bg && bgSource) {
+      bg.load();
+      bg.classList.remove("hidden");
+      bg.play?.().catch(()=> console.log("⚠️ Autoplay blocked"));
+    }
+
+    const mainUI = document.getElementById("mainUI");
+    if (mainUI) {
+      mainUI.classList.remove("hidden");
+      setTimeout(()=> mainUI.classList.add("visible"), 50);
+    }
+
+    this.initMiningDOM();
+    // ✅ Rebind UI elements after DOM is visible
+    this.bindEls();
+
+  },
+
+  async ensureVideoPlays() {
+    const introVideo = this.els.introVideo;
+    if (!introVideo) return;
+    // never intercept clicks
+    introVideo.style.pointerEvents = "none";
+    try { await introVideo.play(); }
+    catch (err) {
+      console.log("⚠️ Autoplay blocked. Hiding intro video.");
+      introVideo.classList.add("hidden");
+      const startBtn = this.els.startBtn;
+      if (startBtn) {
+        startBtn.classList.remove("hidden");
+        startBtn.style.opacity = "1";
+        startBtn.style.pointerEvents = "auto";
+      }
+    }
+  },
+
+  // hard-wire start in case any overlay blocks
+  wireStartButton() {
+    const bind = () => {
+      const startBtn = document.getElementById("startBtn");
+      const langModal = document.getElementById("languageModal");
+      const introText = document.querySelector(".intro-text");
+      const startCtr = document.querySelector(".button-container");
+      if (startBtn && langModal) {
+        startBtn.replaceWith(startBtn.cloneNode(true));
+        const btn = document.getElementById("startBtn");
+        btn.style.zIndex = "1000";
+        btn.addEventListener("click", () => {
+          introText && (introText.style.display = "none");
+          startCtr && (startCtr.style.display = "none");
+          langModal.classList.remove("hidden");
+          console.log("✅ START → languageModal opened");
+        });
+        return true;
+      }
+      return false;
+    };
+    if (bind()) return;
+    let tries = 0;
+    const t = setInterval(() => { tries++; if (bind() || tries > 10) clearInterval(t); }, 200);
+  },
+
+  /* -------- TASKS MODAL (Multilingual) -------- */
+bindTasksModal() {
+  const { btnTasks, tasksModal, tasksList, closeTasksBtn } = this.els;
+  if (!btnTasks || !tasksModal || !tasksList || !closeTasksBtn) return;
+
+  // --- render only ---
+  const renderTasks = (data) => {
+    const lang = this.lang || getSavedLang();
+    const titleMain  = langButtonsDict.tasksTitles.main[lang]  || langButtonsDict.tasksTitles.main.en;
+    const titleDaily = langButtonsDict.tasksTitles.daily[lang] || langButtonsDict.tasksTitles.daily.en;
+
+    tasksList.innerHTML = "";
+    const addSection = (headerText, list) => {
+  if (!list || !list.length) return;
+
+  const h = document.createElement("h3");
+  h.className = "task-section-title";
+  h.textContent = headerText;
+  tasksList.appendChild(h);
+
+  list.forEach(t => {
+    const div = document.createElement("div");
+    div.className = "task-item";
+    const title = t.link
+      ? `<a href="${t.link}" target="_blank">${t.title}</a>`
+      : t.title;
+    const btn = t.completed
+      ? `<button class="task-btn done" disabled>✅ Done</button>`
+      : `<button class="task-perform-btn" data-task-id="${t.id}" data-link="${t.link || ""}">🚀 Perform</button>`;
+
+    div.innerHTML = `
+      <div class="task-left">
+        <span>${title}</span>
+        <span class="task-reward">
+          +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} 🜂` : ""}
+        </span>
+      </div>
+      ${btn}
+    `;
+    tasksList.appendChild(div);
+  });
+};
+
+
+    addSection(titleMain, data.main);
+    const divider = document.createElement("div");
+    divider.className = "task-divider"; divider.innerHTML = "<hr>";
+    tasksList.appendChild(divider);
+    addSection(titleDaily, data.daily);
+  };
+
+  btnTasks.addEventListener("click", async () => {
+    tasksModal.classList.remove("hidden");
+    if (this.tasks && (this.tasks.main?.length || this.tasks.daily?.length)) {
+      renderTasks(this.tasks);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks?uid=${this.uid}`);
+      const data = await res.json();
+      this.tasks = data;
+      renderTasks(data);
+    } catch (err) {
+      console.error("🔥 Failed to load tasks", err);
+    }
+  });
+
+  // ✅ Perform flow (always attached)
+  tasksList.addEventListener("click", async (ev) => {
+    const btn = ev.target.closest(".task-perform-btn");
+    if (!btn) return;
+
+    const taskId = +btn.dataset.taskId;
+    const link   = btn.dataset.link || "";
+    btn.disabled = true;
+
+    try {
+      const r1 = await fetch(`${API_BASE}/api/task_attempt_create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: this.uid, task_id: taskId })
+      });
+      const d1 = await r1.json();
+      if (!d1.ok) { btn.disabled = false; return alert("⚠️ Failed to start task"); }
+
+      const token = d1.token;
+      if (link) window.open(link, "_blank");
+
+      setTimeout(async () => {
+        const r2 = await fetch(`${API_BASE}/api/task_attempt_verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: this.uid, task_id: taskId, token })
+        });
+        const d2 = await r2.json();
+        if (d2.ok) {
+          this.balance = d2.new_balance;
+          this.vornBalance = d2.new_vorn;
+          document.getElementById("featherCount").textContent = d2.new_balance;
+          document.getElementById("foodCount").textContent = d2.new_vorn.toFixed(2);
+          btn.textContent = "✅ Claimed";
+          btn.classList.add("done");
+        } else {
+          btn.textContent = "⚠️ Try again";
+          btn.disabled = false;
+        }
+      }, 4000);
+    } catch (e) {
+      console.error("🔥 perform flow failed:", e);
+      btn.disabled = false;
+    }
+  });
+
+  closeTasksBtn.addEventListener("click", () => {
+    this.els.tasksModal.classList.add("hidden");
+  });
+},
+
+
+
+  /* -------- CLICK-MINING (energy HUD) -------- */
+  initMiningDOM() {
+    console.log("⚙️ initMiningDOM called");
+    window._clickZone = document.getElementById('clickZone');
+    window._featherEl = document.getElementById('featherCount');
+    window._foodEl    = document.getElementById('foodCount');
+    window._eBar      = document.getElementById('energyBar');
+    window._eFill     = document.getElementById('energyFill');
+
+    this.updateHUD();
+    this.paintEnergy();
+
+    if (window._clickZone) {
+      console.log("✅ clickZone found, adding listener...");
+      window._clickZone.addEventListener('click', () => this.onNestClick(), { passive: true });
+    } else {
+      console.warn('❌ clickZone not found at initMiningDOM');
+    }
+
+    if (this.energy.regenTimer) clearInterval(this.energy.regenTimer);
+    this.energy.regenTimer = setInterval(() => this.regenEnergyTick(), 1000);
+  },
+  updateHUD() {
+    if (window._featherEl) window._featherEl.textContent = String(this.balance);
+    if (window._foodEl) window._foodEl.textContent = "0"; // placeholder
+  },
+  paintEnergy() {
+    if (!window._eFill) return;
+    const pct = Math.max(0, Math.min(100, (this.energy.value / this.energy.max) * 100));
+    _eFill.style.width = pct + '%';
+    let grad;
+    if (pct >= 70) grad = 'linear-gradient(90deg, #00ff88, #00ccff)';
+    else if (pct >= 35) grad = 'linear-gradient(90deg, #ffd54a, #ffae00)';
+    else grad = 'linear-gradient(90deg, #ff6a6a, #ff2a2a)';
+    _eFill.style.background = grad;
+  },
+  revealEnergyOnTripleClick() {
+    const now = Date.now();
+    this.energy.mClicks.push(now);
+    this.energy.mClicks = this.energy.mClicks.filter(t => now - t <= 800);
+    if (this.energy.mClicks.length >= 3) this.showEnergyBar();
+  },
+  showEnergyBar() {
+    if (!window._eBar) return;
+    _eBar.classList.remove('hidden');
+    _eBar.classList.add('show');
+    if (this.energy.hideTimer) clearTimeout(this.energy.hideTimer);
+    this.energy.hideTimer = setTimeout(()=> this.hideEnergyBar(), 2500);
+  },
+  hideEnergyBar() {
+    if (!window._eBar) return;
+    _eBar.classList.remove('show');
+  },
+  bumpEnergyBarVisibility() {
+    this.showEnergyBar();
+    if (this.energy.hideTimer) clearTimeout(this.energy.hideTimer);
+    this.energy.hideTimer = setTimeout(()=> this.hideEnergyBar(), 2500);
+  },
+  async onNestClick() {
+    console.log("🪶 Crow clicked! Energy:", this.energy.value);
+    if (this._lastClick && Date.now() - this._lastClick < 200) return;
+this._lastClick = Date.now();
+
+    this.revealEnergyOnTripleClick();
+    if (this.energy.value <= 0) { this.bumpEnergyBarVisibility(); return; }
+
+    this.energy.value -= 1;
+    this.balance += 1;
+    this.updateHUD();
+    this.paintEnergy();
+    this.bumpEnergyBarVisibility();
+
+    try {
+      if (!this.uid) return console.warn("⚠️ No UID found in URL");
+
+// 🪶 lightweight crow-click mining — always adds +1 and saves to DB
+const r = await fetch(`${API_BASE}/api/mine_click`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ user_id: this.uid })
+});
+const data = await r.json();
+if (data.ok) {
+  this.balance = data.balance ?? this.balance;
+  document.getElementById("featherCount") &&
+    (document.getElementById("featherCount").textContent = this.balance);
+} else {
+  console.warn("⚠️ Crow mine_click error:", data);
+}
+
+    } catch (err) {
+      console.error("🔥 Failed to call /api/mine:", err);
+    }
+
+    const pf = document.getElementById('progressFill');
+if (pf) {
+  let cur = parseFloat(pf.style.width || '0');
+  cur += 0.2;
+
+  if (cur >= 100) {
+    // 🌕 When full bar reached, reset to 0 and add VORN
+    pf.style.width = '0%';
+    try {
+      const r = await fetch(`${API_BASE}/api/vorn_reward`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: this.uid, amount: 0.02 })
+      });
+      const data = await r.json();
+      if (data.ok) {
+        console.log(`🜂 +${data.vorn_added} VORN added! Total: ${data.vorn_balance}`);
+        const el = document.getElementById("foodCount");
+        if (el) el.textContent = (Number(data.vorn_balance)).toFixed(2);
+      }
+    } catch (err) {
+      console.error("🔥 Failed to add VORN reward:", err);
+    }
+  } else {
+    pf.style.width = cur + '%';
+  }
+}
+
+  },
+  regenEnergyTick() {
+    this.energy.value = Math.min(this.energy.max, this.energy.value + this.energy.regenPerSec);
+    this.paintEnergy();
+  },
+
+  async onExchange() {
+  if (!this.uid) return alert("⚠️ User not found!");
+  try {
+    const r = await fetch(`${API_BASE}/api/vorn_exchange`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: this.uid })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      // թարմացնենք local state-ը և UI-ն
+      this.balance = data.new_balance;
+      this.vornBalance = data.new_vorn ?? 0;
+
+      const featherEl = document.getElementById("featherCount");
+      const vornEl = document.getElementById("foodCount");
+      if (featherEl) featherEl.textContent = String(this.balance);
+      if (vornEl) vornEl.textContent = (this.vornBalance).toFixed(2);
+
+      this.showMessage("success_exchange", "success");
+    } else {
+      this.showMessage("not_enough", "error");
+    }
+  } catch (e) {
+    console.error("🔥 Exchange failed:", e);
+    this.showMessage("error", "error");
+  }
+},
+
+/* -------- BEAUTIFUL MULTILINGUAL TOAST -------- */
+showMessage(key, type = "info", duration = 2600) {
+  // Թարգմանությունների հավաքածու
+  const messages = {
+    not_enough: {
+      en: "⚠️ Not enough feathers to exchange!",
+      ru: "⚠️ Недостаточно перьев для обмена!",
+      hy: "⚠️ Փետուրները բավարար չեն փոխանակման համար։"
+    },
+    success_exchange: {
+      en: "✅ Exchanged 50000 🪶 → +1 🜂",
+      ru: "✅ Обменено 50000 🪶 → +1 🜂",
+      hy: "✅ Փոխանակվեց 50000 🪶 → +1 🜂"
+    },
+    wait_mine: {
+      en: "⏳ Please wait before next mining.",
+      ru: "⏳ Подожди перед следующим майнингом.",
+      hy: "⏳ Սպասիր մինչև հաջորդ մայնինգը։"
+    },
+    error: {
+      en: "🔥 Something went wrong!",
+      ru: "🔥 Произошла ошибка!",
+      hy: "🔥 Ինչ-որ բան սխալ է տեղի ունեցել։"
+    }
+  };
+
+  // ընտրում ենք օգտատիրոջ լեզուն
+  const lang = this.lang || getSavedLang() || "en";
+  const text = (messages[key] && (messages[key][lang] || messages[key].en)) || key;
+
+  // հին toast-ը ջնջում ենք
+  const old = document.querySelector(".vorn-toast");
+  if (old) old.remove();
+
+  // ստեղծում ենք նոր toast
+  const toast = document.createElement("div");
+  toast.className = `vorn-toast ${type}`;
+  toast.innerHTML = text;
+  document.body.appendChild(toast);
+
+  // Fade-in
+  setTimeout(() => toast.classList.add("visible"), 50);
+
+  // Fade-out
+  setTimeout(() => {
+    toast.classList.remove("visible");
+    setTimeout(() => toast.remove(), 600);
+  }, duration);
+},
+
+
+  /* -------- CANVAS / PARALLAX -------- */
+  mountCanvasBackground() {
+    (function(){
+      const cnv = document.getElementById('vornCanvas');
+      if(!cnv) return;
+      const ctx = cnv.getContext('2d');
+
+      let DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      let W = 0, H = 0;
+
+      let parX = 0, parY = 0, targetParX = 0, targetParY = 0;
+
+      const STARS = [], DUST = [], FOG = [], RIPPLES = [];
+      const FOCUS = { x: 0.5, y: 0.62 };
+
+      function resize(){
+        W = cnv.width  = Math.floor(window.innerWidth * DPR);
+        H = cnv.height = Math.floor(window.innerHeight * DPR);
+        cnv.style.width = window.innerWidth + 'px';
+        cnv.style.height= window.innerHeight + 'px';
+        initStars(); initFog(); initDust();
+      }
+      function rand(a,b){ return a + Math.random()*(b-a); }
+      function initStars(){
+        STARS.length = 0;
+        const count = Math.floor((W*H) / (7000 * DPR));
+        for(let i=0;i<count;i++){
+          STARS.push({ x: Math.random()*W, y: Math.random()*H, r: rand(0.6, 1.8)*DPR, a: rand(0.4, 0.9), spx: rand(-0.03, 0.03)*DPR, spy: rand(0.02, 0.06)*DPR });
+        }
+      }
+      function initFog(){
+        FOG.length = 3;
+        for(let i=0;i<3;i++){
+          FOG[i] = { x: rand(0.2*W, 0.8*W), y: rand(0.4*H, 0.8*H), r: rand(220, 380)*DPR, a: rand(0.08, 0.16), dx: rand(-0.12,0.12)*DPR, dy: rand(-0.08,0.08)*DPR, hue: rand(270, 300) };
+        }
+      }
+      function initDust(){
+        DUST.length = 0;
+        const count = Math.floor((W*H) / (45000 * DPR));
+        for(let i=0;i<count;i++){
+          const base = Math.random();
+          DUST.push({ x: rand(0.35*W, 0.65*W), y: rand(0.45*H, 0.8*H), r: rand(1.2, 2.4)*DPR, a: rand(0.2, 0.5), vy: rand(-0.12, -0.04)*DPR, life: rand(3, 8)*1000, born: performance.now() - base*4000, hue: Math.random()<0.5 ? 48 : 280 });
+        }
+      }
+      function ease(a,b,t){ return a + (b-a)*t; }
+
+      window.addEventListener('mousemove', (e)=>{
+        const nx = (e.clientX / window.innerWidth )*2 - 1;
+        const ny = (e.clientY / window.innerHeight)*2 - 1;
+        targetParX = nx * 0.6; targetParY = ny * 0.6;
+        document.body.style.transform = `translate(${(nx*5).toFixed(2)}px, ${(ny*5).toFixed(2)}px)`;
+      }, {passive:true});
+
+      window.addEventListener('deviceorientation', (e)=>{
+        const nx = Math.max(-1, Math.min(1, (e.gamma||0)/30));
+        const ny = Math.max(-1, Math.min(1, (e.beta ||0)/30));
+        targetParX = nx * 0.6; targetParY = ny * 0.6;
+      }, {passive:true});
+
+      const mineBtn = document.getElementById('btnMine');
+      if(mineBtn){
+        mineBtn.addEventListener('click', ()=>{
+          const cx = FOCUS.x * W;
+          const cy = FOCUS.y * H;
+          RIPPLES.push({ x: cx, y: cy, r: 10*DPR, max: Math.hypot(W,H)*0.35, a: 0.35 });
+        }, {passive:true});
+      }
+
+      function draw(){
+        requestAnimationFrame(draw);
+        parX = ease(parX, targetParX, 0.08);
+        parY = ease(parY, targetParY, 0.08);
+
+        ctx.clearRect(0,0,W,H);
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for(const s of STARS){
+          s.x += s.spx + parX*0.2; s.y += s.spy + parY*0.1;
+          if(s.x < -10) s.x = W+10; if(s.x > W+10) s.x = -10; if(s.y > H+10) s.y = -10;
+          ctx.globalAlpha = s.a; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(255,255,255,1)'; ctx.fill();
+        }
+        ctx.restore();
+
+        ctx.save();
+        for(const f of FOG){
+          f.x += f.dx + parX*0.5; f.y += f.dy + parY*0.3;
+          if(f.x < -200) f.x = W+200; if(f.x > W+200) f.x = -200;
+          if(f.y < -200) f.y = H+200; if(f.y > H+200) f.y = -200;
+          const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+          const col = `hsla(${f.hue}, 70%, 60%, ${f.a})`;
+          g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.restore();
+
+        const gx = 0.5 * W + parX*8*DPR;
+        const gy = 0.62 * H + parY*6*DPR;
+        const t = (performance.now()/1000);
+        const baseR = Math.min(W,H) * 0.18;
+        const pulse = (Math.sin(t*0.8)*0.08 + 0.12);
+        const rGlow = baseR * (1.0 + pulse);
+
+        ctx.save();
+        let g1 = ctx.createRadialGradient(gx, gy, 0, gx, gy, rGlow);
+        g1.addColorStop(0, 'rgba(168, 119, 255, 0.28)');
+        g1.addColorStop(0.6, 'rgba(255, 215, 0, 0.10)');
+        g1.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = g1; ctx.beginPath(); ctx.arc(gx, gy, rGlow, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for(const d of DUST){
+          const age = performance.now() - d.born;
+          if(age > d.life){
+            d.x = gx + ((Math.random()*120)-60)*DPR;
+            d.y = gy + (20 + Math.random()*60)*DPR;
+            d.born = performance.now(); d.life = (3000 + Math.random()*5000);
+          }else{
+            d.y += d.vy + parY*0.03;
+          }
+          const alpha = d.a * (1.0 - age/d.life);
+          ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+          ctx.fillStyle = `hsla(${d.hue}, 80%, 60%, ${alpha})`; ctx.fill();
+        }
+        ctx.restore();
+
+        for(let i=RIPPLES.length-1; i>=0; i--){
+          const rp = RIPPLES[i];
+          rp.r += 6*DPR; rp.a *= 0.97;
+          ctx.beginPath(); ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI*2);
+          ctx.strokeStyle = `rgba(168,119,255,${rp.a})`;
+          ctx.lineWidth = 2*DPR; ctx.stroke();
+          if(rp.r > rp.max || rp.a < 0.02) RIPPLES.splice(i,1);
+        }
+      }
+      window.addEventListener('resize', resize);
+      resize(); requestAnimationFrame(draw);
+    })();
+
+    // dynamic light particles on click
+    (function(){
+      document.addEventListener('mousemove', (e)=>{
+        const x = (e.clientX / window.innerWidth)*100;
+        const y = (e.clientY / window.innerHeight)*100;
+        document.body.style.setProperty('--lx', x + '%');
+        document.body.style.setProperty('--ly', y + '%');
+      }, {passive:true});
+
+      const mineBtn = document.getElementById('btnMine');
+      if(mineBtn){
+        mineBtn.addEventListener('click', ()=>{
+          const container = document.createElement('div');
+          container.classList.add('mine-particles');
+          document.body.appendChild(container);
+          for(let i=0; i<12; i++){
+            const p = document.createElement('div');
+            p.classList.add('mine-spark');
+            p.style.left = '50%'; p.style.bottom = '28%';
+            p.style.setProperty('--dx', (Math.random()*2-1)*120 + 'px');
+            p.style.setProperty('--dy', (-Math.random()*120-40) + 'px');
+            p.style.setProperty('--dur', (2 + Math.random()*2)+'s');
+            container.appendChild(p);
+          }
+          setTimeout(()=>container.remove(), 4000);
+        });
+      }
+    })();
+  },
+
+  /* -------- DEBUG OVERLAY -------- */
+  mountDebugOverlay() {
+    if (!DEBUG_UI) return;
+    (function(){
+      const box = document.createElement('div');
+      box.style.position = 'fixed';
+      box.style.bottom = '10px';
+      box.style.left = '10px';
+      box.style.padding = '6px 10px';
+      box.style.border = '1px solid rgba(255,255,255,0.2)';
+      box.style.background = 'rgba(0,0,0,0.5)';
+      box.style.color = '#0f0';
+      box.style.fontFamily = 'monospace';
+      box.style.fontSize = '12px';
+      box.style.borderRadius = '6px';
+      box.style.zIndex = '9999';
+      document.body.appendChild(box);
+
+      setInterval(()=>{
+        const bal = VORN?.balance ?? 0;
+        const left = VORN?.secsUntilReady?.() ?? 0;
+        const pct = VORN?.pctReady?.() ?? 0;
+        box.innerHTML = `🪶 ${bal} | cooldown: ${left}s | pct: ${pct.toFixed(1)}% | lang: ${VORN.lang}`;
+      }, 1000);
+    })();
+  }
+};
+
+/* ------------ BOOTSTRAP ------------ */
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("🌐 Connecting to API_BASE:", API_BASE);
+  VORN.init();
+});
+
+
+
+// Telegram WebApp scroll-lock helper
+document.addEventListener("DOMContentLoaded", () => {
+  window.scrollTo(0, 0);
+  setTimeout(() => { window.scrollTo(0, 0); }, 800);
+  console.log("🩹 Scroll-lock fix applied (Telegram)");
+});
+
+
+

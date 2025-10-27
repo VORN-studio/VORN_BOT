@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VORN — Future World</title>
+  <meta name="theme-color" content="#0a0014"/>
+  <link rel="stylesheet" href="/webapp/style.css?v=2"/>
+
+  <!-- Hard lock to prevent scroll/white flash in Telegram WebView -->
+  <style>
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      top: 0; left: 0;
+      margin: 0; padding: 0;
+      background-color: #000;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Canvas background (stars/fog/ripples) -->
+  <canvas id="vornCanvas"></canvas>
+
+  <!-- Optional layered decorations -->
+  <div id="sacredGlow"></div>
+  <div id="movingFog"></div>
+  <div id="crowShadow"></div>
+
+  <!-- Static layered background (kept for your styles) -->
+  <div id="vorn-bg">
+    <div class="stars-layer"></div>
+    <div class="fog-layer"></div>
+    <div class="branches-layer"></div>
+    <div class="glow-layer"></div>
+    <img src="/webapp/assets/interface_male.png" alt="VORN background" id="static-bg">
+  </div>
+
+  <!-- Extra effect layers -->
+  <div id="starLayer"></div>
+  <div id="glowLayer"></div>
+  <div id="fogLayer"></div>
+
+  <!-- INTRO VIDEO -->
+  <video id="introVideo" autoplay muted playsinline preload="auto" loop>
+    <source src="/webapp/crow_fly.mp4" type="video/mp4">
+  </video>
+
+  <!-- INTRO TEXT -->
+  <div class="intro-text">
+    <h1>🜂 Welcome to the World of the Future</h1>
+  </div>
+
+  <!-- START BUTTON (fixed position centered lower on screen) -->
+<div id="startContainer">
+  <button id="startBtn" onclick="(function(){
+    var it=document.querySelector('.intro-text');
+    var lm=document.getElementById('languageModal');
+    if(it) it.style.display='none';
+    if(lm) lm.classList.remove('hidden');
+    console.log('✅ START → languageModal opened (inline)');
+  })();">START</button>
+</div>
+
+<style>
+#startContainer {
+  position: fixed;
+  bottom: 12%;             /* 👈 սա իջեցնում է կոճակը ներքև՝ էկրանի 12%-ին մոտ */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  text-align: center;
+  z-index: 1000;
+}
+
+#startBtn {
+  background: linear-gradient(135deg, #ffae00, #ffcc33);
+  color: #26004d;
+  border: none;
+  padding: 16px 40px;
+  font-size: 1.2rem;
+  border-radius: 30px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(255, 191, 0, 0.6);
+}
+
+#startBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(255, 200, 0, 0.8);
+}
+</style>
+
+
+
+  <!-- LANGUAGE PICKER -->
+  <div id="languageModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>🌐 Select Your Language</h2>
+      <p class="muted">You can’t change it later.</p>
+      <div id="lang-grid" class="lang-grid"></div>
+      <button id="closeLangBtn" class="close-btn">✖ Close</button>
+    </div>
+  </div>
+
+  <!-- CONFIRM LANGUAGE -->
+  <div id="confirmLangModal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="confirmLangTitle">✅</h2>
+      <p id="confirmLangText"></p>
+      <div class="row gap">
+        <button id="changeLangBtn" class="secondary-btn">🔁 Change</button>
+        <button id="confirmLangBtn" class="primary-btn">✔ Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDES -->
+  <section id="introSlides" class="hidden">
+    <img id="slideImage" src="/webapp/assets/slide1.png" alt="Slide 1">
+    <div class="slide-cta">
+      <button id="slideNextBtn">Continue</button>
+    </div>
+  </section>
+
+  <!-- BG (you use IMG; JS supports video too) -->
+  <img id="mainBgVideo" src="/webapp/assets/interface_male.png" class="hidden" alt="VORN background">
+
+  <!-- === MAIN INTERFACE UI === -->
+  <div id="mainUI" class="hidden">
+
+    <!-- TOP BAR -->
+    <div class="ui-top">
+      <div class="ui-left">👤 <span id="username">Player059</span></div>
+
+      <div class="ui-right">
+  <div class="coins-block">
+    <div class="coins-line">
+      🪶 <span id="featherCount">0</span>
+      &nbsp;&nbsp;🜂 <span id="foodCount">0</span>
+    </div>
+  </div>
+</div>
+
+<!-- Exchange button OUTSIDE coins block -->
+<div id="exchangeContainer">
+  <button id="btnExchange" class="exchange-btn" title="Exchange">🔁</button>
+</div>
+
+    </div>
+
+    <!-- CROW AREA + ENERGY + CLICK ZONE -->
+    <div id="crowArea">
+      <div id="crowGlow"></div>
+
+      <!-- ENERGY BAR -->
+      <div id="energyBar" class="hidden">
+        <div id="energyFill"></div>
+      </div>
+
+      <!-- CLICK ZONE -->
+      <div id="clickZone" title="Tap to mine"></div>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- BOTTOM MENU -->
+    <div class="ui-bottom icon-bar">
+      <button class="menu-btn" id="btnTasks">📜</button>
+      <button class="menu-btn" id="btnReferral">🤝</button>
+
+      <button class="mine-btn" id="btnMine" aria-label="Mine" title="Mine">
+        <span class="mine-progress"></span>
+        <span class="mine-icon">🪶</span>
+      </button>
+
+      <button class="menu-btn" id="btnWallet">💰</button>
+      <button class="menu-btn" id="btnInfo">ℹ️</button>
+    </div>
+  </div>
+
+  <!-- === TASKS MODAL (single instance) === -->
+  <div id="tasksModal" class="modal hidden">
+    <div class="modal-content tasks-box">
+      <h2>📜 Tasks</h2>
+      <p class="muted">Complete missions to earn 🪶 Feathers!</p>
+      <div id="tasksList" class="tasks-list"></div>
+      <button id="closeTasksBtn" class="close-btn">✖ Close</button>
+    </div>
+  </div>
+
+  <!-- Safe loader to always fetch latest app.js (cache-bust) -->
+  <script>
+    (function() {
+      try {
+        var s = document.createElement("script");
+        s.src = window.location.origin + "/webapp/app.js?v=" + Date.now();
+        s.async = false;
+        document.body.appendChild(s);
+        console.log("✅ app.js forced load triggered");
+      } catch (e) {
+        alert("❌ app.js not loaded: " + e.message);
+      }
+    })();
+  </script>
+  <script src="/webapp/app.js?v=999001" defer></script>
+</body>
+</html>
