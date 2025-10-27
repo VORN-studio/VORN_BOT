@@ -911,7 +911,11 @@ def main():
     print("✅ Bot is running (polling mode)...")
     app.run_polling()
 
+
 if __name__ == "__main__":
+    print("🛠️ Running init_db() ...")
+    init_db()
+    print("✅ Database initialized.")
     # Always start Flask in background
     threading.Thread(target=run_flask, daemon=True).start()
 
