@@ -13,6 +13,15 @@ from flask_cors import CORS
 from flask import Flask
 app = Flask(__name__)
 
+from flask import Flask, send_from_directory
+
+app = Flask(__name__, static_folder="webapp", static_url_path="")
+
+@app.route('/')
+def serve_index():
+    return send_from_directory('webapp', 'index.html')
+
+
 @app.route('/')
 def home():
     return "✅ Bot is running on Render 24/7!"
