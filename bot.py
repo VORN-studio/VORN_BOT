@@ -182,6 +182,33 @@ CREATE TABLE IF NOT EXISTS user_tasks (
     print("✅ Tables created successfully in PostgreSQL.")
 
 
+def acquire_bot_lock() -> bool:
+    """
+    Ensures only ONE poller runs worldwide.
+    Returns True if we got the lock (safe to start polling),
+    False if another instance is already polling.
+    """
+    try:
+        conn = db(); c = conn.cursor()
+        # Use a constant app-wide key. Any BIGINT OK; choose a stable “random” number.
+        c.execute("SELECT pg_try_advisory_lock(905905905905)")
+        got = c.fetchone()[0]
+        conn.commit(); conn.close()
+        return bool(got)
+    except Exception as e:
+        print(f"⚠️ advisory_lock error: {e}")
+        # If DB is unreachable, better avoid starting multiple pollers
+        return False
+
+def release_bot_lock():
+    """Optional: release on clean exit (not strictly needed on Render restarts)."""
+    try:
+        conn = db(); c = conn.cursor()
+        c.execute("SELECT pg_advisory_unlock(905905905905)")
+        conn.commit(); conn.close()
+    except Exception:
+        pass
+
     
 
 def ensure_user(user_id: int, username: Optional[str], inviter_id: Optional[int] = None):
@@ -885,7 +912,41 @@ def main():
     app.run_polling()
 
 if __name__ == "__main__":
+    # Always start Flask in background
     threading.Thread(target=run_flask, daemon=True).start()
-    main()
+
+    print("🔒 Checking if another poller is active...")
+
+    def acquire_bot_lock() -> bool:
+        """Prevent multiple bot instances using a global Postgres lock"""
+        try:
+            conn = db(); c = conn.cursor()
+            c.execute("SELECT pg_try_advisory_lock(905905905905)")
+            got = c.fetchone()[0]
+            conn.commit(); conn.close()
+            return bool(got)
+        except Exception as e:
+            print(f"⚠️ DB lock error: {e}")
+            return False
+
+    def release_bot_lock():
+        try:
+            conn = db(); c = conn.cursor()
+            c.execute("SELECT pg_advisory_unlock(905905905905)")
+            conn.commit(); conn.close()
+        except Exception:
+            pass
+
+    # Try to get the lock
+    if acquire_bot_lock():
+        print("✅ No other instance running. Starting main() ...")
+        try:
+            main()
+        finally:
+            release_bot_lock()
+    else:
+        print("⚠️ Another bot poller is already active. Skipping main() — Flask only mode.")
+        while True:
+            time.sleep(3600)
     print("🟢 VORN BOT fully initialized. Ready to serve.")
 
