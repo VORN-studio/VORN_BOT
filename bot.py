@@ -881,18 +881,22 @@ def api_verify_task():
 # =========================
 # Render-safe runner (no event loop conflicts)
 # =========================
-import threading
+# =========================
+# Render-safe unified runner (Flask + Telegram Bot in same event loop)
+# =========================
 import asyncio
 import time
 
-def run_flask():
-    print("🚀 Turbo Flask Mode enabled")
-    app_web.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
-    app_web.config["JSON_AS_ASCII"] = False
-    port = int(os.environ.get("PORT", "10000"))
-    app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+async def run_all():
+    # ✅ Flask-ը՝ առանձին թելով, որ չխանգարի asyncio loop-ին
+    import threading
+    def start_flask():
+        print("🚀 Turbo Flask Mode enabled")
+        port = int(os.environ.get("PORT", "10000"))
+        app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+    threading.Thread(target=start_flask, daemon=True).start()
 
-async def run_bot_async():
+    # ✅ Telegram Bot-ը՝ asyncio task-ի մեջ
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Handlers
@@ -905,31 +909,10 @@ async def run_bot_async():
     application.add_handler(CallbackQueryHandler(btn_handler))
 
     await application.bot.delete_webhook(drop_pending_updates=True)
-    print("🤖 Bot polling started (Render, isolated thread)")
+    print("🤖 Bot polling started (Render unified mode)")
+
+    # ⚙️ Միացնում ենք բոտ polling-ը որպես asyncio Task
     await application.run_polling()
-
-def run_bot_thread():
-    asyncio.run(run_bot_async())
-
-def acquire_bot_lock() -> bool:
-    """Prevent multiple bot instances using a global Postgres lock"""
-    try:
-        conn = db(); c = conn.cursor()
-        c.execute("SELECT pg_try_advisory_lock(905905905905)")
-        got = c.fetchone()[0]
-        conn.commit(); conn.close()
-        return bool(got)
-    except Exception as e:
-        print(f"⚠️ DB lock error: {e}")
-        return False
-
-def release_bot_lock():
-    try:
-        conn = db(); c = conn.cursor()
-        c.execute("SELECT pg_advisory_unlock(905905905905)")
-        conn.commit(); conn.close()
-    except Exception:
-        pass
 
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
@@ -939,16 +922,5 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # ---- Flask always runs ----
-    threading.Thread(target=run_flask, daemon=True).start()
-
-    # ---- Telegram bot runs only if lock acquired ----
-    if acquire_bot_lock():
-        print("✅ No other instance running. Starting bot thread...")
-        threading.Thread(target=run_bot_thread, daemon=True).start()
-    else:
-        print("⚠️ Another bot instance holds the lock. Flask-only mode.")
-
-    # keep process alive so Render health checks don't kill it
-    while True:
-        time.sleep(3600)
+    # 🚀 Մեկ ընդհանուր asyncio loop, որը կառավարում է Flask + Bot-ը միասին
+    asyncio.run(run_all())
