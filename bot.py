@@ -10,21 +10,7 @@ from typing import Optional
 from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 
-from flask import Flask
-app = Flask(__name__)
 
-from flask import Flask, send_from_directory
-
-app = Flask(__name__, static_folder="webapp", static_url_path="")
-
-@app.route('/')
-def serve_index():
-    return send_from_directory('webapp', 'index.html')
-
-
-@app.route('/')
-def home():
-    return "✅ Bot is running on Render 24/7!"
 
 
 # =========================
@@ -81,8 +67,8 @@ def favicon():
 # =========================
 # Telegram Bot
 # =========================
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, Bot
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram import Bot
 
 print("✅ Bot script loaded successfully.")
@@ -727,14 +713,15 @@ def api_task_attempt_create():
     # ensure table exists
     c.execute("""
     CREATE TABLE IF NOT EXISTS task_attempts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        task_id INTEGER,
-        token TEXT,
-        status TEXT DEFAULT 'pending',
-        created_at INTEGER,
-        verified_at INTEGER
-    )
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT,
+    task_id BIGINT,
+    token TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at BIGINT,
+    verified_at BIGINT
+    );
+
     """)
     token = f"T{user_id}_{task_id}_{int(time.time())}"
     c.execute("INSERT INTO task_attempts (user_id, task_id, token, status, created_at) VALUES (%s, %s, %s, 'pending', %s)",
@@ -859,10 +846,14 @@ def api_verify_task():
         return jsonify({"ok": False, "reason": "already_done"})
 
     # mark as done
-    c.execute(
-        "INSERT OR REPLACE INTO user_tasks (user_id, task_id, date_key, completed_at) VALUES (%s, %s, %s, %s)",
-        (user_id, task_id, date_key, int(time.time()))
-    )
+    # ✅ PostgreSQL-compatible UPSERT (instead of SQLite INSERT OR REPLACE)
+    c.execute("""
+    INSERT INTO user_tasks (user_id, task_id, date_key, completed_at)
+    VALUES (%s, %s, %s, %s)
+    ON CONFLICT (user_id, task_id, date_key)
+    DO UPDATE SET completed_at = EXCLUDED.completed_at;
+    """, (user_id, task_id, date_key, int(time.time())))
+
 
     # update balances
     c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (user_id,))
@@ -884,88 +875,56 @@ def api_verify_task():
 # =========================
 # Runner
 # =========================
+# =========================
+# Runner (Render-friendly)
+# =========================
+import threading
+import asyncio
+
 def run_flask():
     print("🚀 Turbo Flask Mode enabled")
     app_web.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
     app_web.config["JSON_AS_ASCII"] = False
-    from os import getenv
-    port = int(getenv("PORT", "10000"))
+    port = int(os.environ.get("PORT", "10000"))
     app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
 
-from telegram import Bot
-def main():
-    print("✅ Starting bot...")
-   
+def acquire_bot_lock() -> bool:
+    """Prevent multiple bot instances using a global Postgres lock"""
     try:
-        init_db()
-        print("✅ Database initialized (tables ready).")
+        conn = db(); c = conn.cursor()
+        c.execute("SELECT pg_try_advisory_lock(905905905905)")
+        got = c.fetchone()[0]
+        conn.commit(); conn.close()
+        return bool(got)
     except Exception as e:
-        print("⚠️ init_db() failed:", e)
+        print(f"⚠️ DB lock error: {e}")
+        # safer to not start multiple pollers if db is shaky
+        return False
 
-    app = Application.builder().token(BOT_TOKEN).build()
-
-    import asyncio
-
-def main():
-    print("✅ Starting bot...")
-
+def release_bot_lock():
     try:
-        init_db()
-        print("✅ Database initialized (tables ready).")
-    except Exception as e:
-        print("⚠️ init_db() failed:", e)
-
-    # --- Build Telegram app ---
-    app = Application.builder().token(BOT_TOKEN).build()
-
-    # --- REMOVE old webhook (to enable polling mode) ---
-    import asyncio
-    async def remove_webhook():
-        bot = Bot(BOT_TOKEN)
-        await bot.delete_webhook(drop_pending_updates=True)
-        print("🧹 Webhook removed successfully.")
-
-    asyncio.run(remove_webhook())
-
-
-    app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CallbackQueryHandler(btn_handler))
-    # app.add_handler(CommandHandler("addcore", addcore_cmd))
-    # app.add_handler(CommandHandler("adddaily", adddaily_cmd))
-    # app.add_handler(CommandHandler("cleardaily", cleardaily_cmd))
-    app.add_handler(CommandHandler("clearcore", clearcore_cmd))
-    app.add_handler(CommandHandler("addmain", addmain_cmd))
-    app.add_handler(CommandHandler("adddaily", adddaily_cmd))
-    app.add_handler(CommandHandler("deltask", deltask_cmd))
-    app.add_handler(CommandHandler("listtasks", listtasks_cmd))
-
-
-
-
-
-import os
-import threading
-import asyncio
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler  # եթե չկա՝ թող լինի
-
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    app_web.run(host="0.0.0.0", port=port)
+        conn = db(); c = conn.cursor()
+        c.execute("SELECT pg_advisory_unlock(905905905905)")
+        conn.commit(); conn.close()
+    except Exception:
+        pass
 
 async def run_bot():
+    # Build app
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # 👉 Handlers — Քո արդեն գոյություն ունեցող handler-ները տեղափոխիր/կրկնիր այստեղ,
-    # կամ պահիր, որտեղ ունես, բայց ՍՐԱՑՆԵՐԻՑ ԱՌԱՋԱ՝ համոզվիր, որ ավելացված են
+    # Commands
     application.add_handler(CommandHandler("start", start_cmd))
-    application.add_handler(CommandHandler("addcore", addcore_cmd))
+    application.add_handler(CommandHandler("addmain", addmain_cmd))
     application.add_handler(CommandHandler("adddaily", adddaily_cmd))
-    application.add_handler(CommandHandler("cleardaily", cleardaily_cmd))
+    application.add_handler(CommandHandler("deltask", deltask_cmd))
+    application.add_handler(CommandHandler("listtasks", listtasks_cmd))
     application.add_handler(CommandHandler("clearcore", clearcore_cmd))
-    application.add_handler(CallbackQueryHandler(button_click))
-    application.add_handler(CallbackQueryHandler(button_click, pattern="^task_claim:"))
 
-    # 🧹 Հիմնականը՝ անջատում ենք webhook-ը, որ polling-ը աշխատի
+    # Callback queries (optional placeholder, keeps things tidy)
+    application.add_handler(CallbackQueryHandler(btn_handler))
+
+    # Ensure polling (no webhook)
     await application.bot.delete_webhook(drop_pending_updates=True)
 
     print("🤖 Bot polling started (Render)")
@@ -973,48 +932,23 @@ async def run_bot():
 
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
+    try:
+        init_db()
+        print("✅ Database initialized (tables ready).")
+    except Exception as e:
+        print("⚠️ init_db() failed:", e)
 
-    # Flask-ը տանում ենք առանձին թելի մեջ՝ որ չխանգարի bot-ին
+    # Start Flask in background thread
     threading.Thread(target=run_flask, daemon=True).start()
 
-    # Bot-ը՝ event loop-ի մեջ
-    asyncio.run(run_bot())
-
-
-
-
-
-
-    def acquire_bot_lock() -> bool:
-        """Prevent multiple bot instances using a global Postgres lock"""
-        try:
-            conn = db(); c = conn.cursor()
-            c.execute("SELECT pg_try_advisory_lock(905905905905)")
-            got = c.fetchone()[0]
-            conn.commit(); conn.close()
-            return bool(got)
-        except Exception as e:
-            print(f"⚠️ DB lock error: {e}")
-            return False
-
-    def release_bot_lock():
-        try:
-            conn = db(); c = conn.cursor()
-            c.execute("SELECT pg_advisory_unlock(905905905905)")
-            conn.commit(); conn.close()
-        except Exception:
-            pass
-
-    # Try to get the lock
+    # Start bot if we got the DB advisory lock
     if acquire_bot_lock():
-        print("✅ No other instance running. Starting main() ...")
         try:
-            main()
+            asyncio.run(run_bot())
         finally:
             release_bot_lock()
     else:
-        print("⚠️ Another bot poller is already active. Skipping main() — Flask only mode.")
+        print("⚠️ Another bot instance holds the lock. Running Flask only.")
+        # keep process alive so Render health checks stay green
         while True:
             time.sleep(3600)
-    print("🟢 VORN BOT fully initialized. Ready to serve.")
-
