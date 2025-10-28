@@ -113,11 +113,12 @@ if not DATABASE_URL:
 def db():
     conn = psycopg2.connect(DATABASE_URL, sslmode="require")
     c = conn.cursor()
-    # Ստիպում ենք, որ միշտ լինի PUBLIC schema-ում
+    # Force schema to public, always
     c.execute("CREATE SCHEMA IF NOT EXISTS public;")
     c.execute("SET search_path TO public;")
     conn.commit()
     return conn
+
 
 
 def init_db():
@@ -903,8 +904,13 @@ def main():
 
     app = Application.builder().token(BOT_TOKEN).build()
 
-    bot = app.bot
-    bot.delete_webhook(drop_pending_updates=True)
+    import asyncio
+
+async def remove_webhook(bot):
+    await bot.delete_webhook(drop_pending_updates=True)
+
+    asyncio.run(remove_webhook(app.bot))
+
 
 
     app.add_handler(CommandHandler("start", start_cmd))
