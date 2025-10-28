@@ -906,11 +906,26 @@ def main():
 
     import asyncio
 
-async def remove_webhook(bot):
-    await bot.delete_webhook(drop_pending_updates=True)
+def main():
+    print("✅ Starting bot...")
 
-    asyncio.run(remove_webhook(app.bot))
+    try:
+        init_db()
+        print("✅ Database initialized (tables ready).")
+    except Exception as e:
+        print("⚠️ init_db() failed:", e)
 
+    # --- Build Telegram app ---
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    # --- REMOVE old webhook (to enable polling mode) ---
+    import asyncio
+    async def remove_webhook():
+        bot = Bot(BOT_TOKEN)
+        await bot.delete_webhook(drop_pending_updates=True)
+        print("🧹 Webhook removed successfully.")
+
+    asyncio.run(remove_webhook())
 
 
     app.add_handler(CommandHandler("start", start_cmd))
