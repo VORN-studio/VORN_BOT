@@ -112,10 +112,13 @@ if not DATABASE_URL:
 
 def db():
     conn = psycopg2.connect(DATABASE_URL, sslmode="require")
-    # Հստակ նշում ենք public schema, որպեսզի Render-ում չխառնվի
-    with conn.cursor() as c:
-        c.execute("SET search_path TO public;")
+    c = conn.cursor()
+    # Ստիպում ենք, որ միշտ լինի PUBLIC schema-ում
+    c.execute("CREATE SCHEMA IF NOT EXISTS public;")
+    c.execute("SET search_path TO public;")
+    conn.commit()
     return conn
+
 
 def init_db():
     print("🛠️ Running init_db() ...")
@@ -925,6 +928,7 @@ if __name__ == "__main__":
     print("🛠️ Running init_db() ...")
     init_db()
     print("✅ Database initialized.")
+    time.sleep(3)
     # Always start Flask in background
     threading.Thread(target=run_flask, daemon=True).start()
 
