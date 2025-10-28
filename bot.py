@@ -878,8 +878,12 @@ def api_verify_task():
 # =========================
 # Runner (Render-friendly)
 # =========================
+# =========================
+# Render-safe runner (no event loop conflicts)
+# =========================
 import threading
 import asyncio
+import time
 
 def run_flask():
     print("🚀 Turbo Flask Mode enabled")
@@ -887,6 +891,25 @@ def run_flask():
     app_web.config["JSON_AS_ASCII"] = False
     port = int(os.environ.get("PORT", "10000"))
     app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+
+async def run_bot_async():
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Handlers
+    application.add_handler(CommandHandler("start", start_cmd))
+    application.add_handler(CommandHandler("addmain", addmain_cmd))
+    application.add_handler(CommandHandler("adddaily", adddaily_cmd))
+    application.add_handler(CommandHandler("deltask", deltask_cmd))
+    application.add_handler(CommandHandler("listtasks", listtasks_cmd))
+    application.add_handler(CommandHandler("clearcore", clearcore_cmd))
+    application.add_handler(CallbackQueryHandler(btn_handler))
+
+    await application.bot.delete_webhook(drop_pending_updates=True)
+    print("🤖 Bot polling started (Render, isolated thread)")
+    await application.run_polling()
+
+def run_bot_thread():
+    asyncio.run(run_bot_async())
 
 def acquire_bot_lock() -> bool:
     """Prevent multiple bot instances using a global Postgres lock"""
@@ -898,7 +921,6 @@ def acquire_bot_lock() -> bool:
         return bool(got)
     except Exception as e:
         print(f"⚠️ DB lock error: {e}")
-        # safer to not start multiple pollers if db is shaky
         return False
 
 def release_bot_lock():
@@ -909,27 +931,6 @@ def release_bot_lock():
     except Exception:
         pass
 
-async def run_bot():
-    # Build app
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    # Commands
-    application.add_handler(CommandHandler("start", start_cmd))
-    application.add_handler(CommandHandler("addmain", addmain_cmd))
-    application.add_handler(CommandHandler("adddaily", adddaily_cmd))
-    application.add_handler(CommandHandler("deltask", deltask_cmd))
-    application.add_handler(CommandHandler("listtasks", listtasks_cmd))
-    application.add_handler(CommandHandler("clearcore", clearcore_cmd))
-
-    # Callback queries (optional placeholder, keeps things tidy)
-    application.add_handler(CallbackQueryHandler(btn_handler))
-
-    # Ensure polling (no webhook)
-    await application.bot.delete_webhook(drop_pending_updates=True)
-
-    print("🤖 Bot polling started (Render)")
-    await application.run_polling()
-
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
     try:
@@ -938,28 +939,16 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # Start Flask in background thread
+    # ---- Flask always runs ----
     threading.Thread(target=run_flask, daemon=True).start()
 
-    # Start bot if we got the DB advisory lock
-    import asyncio
+    # ---- Telegram bot runs only if lock acquired ----
+    if acquire_bot_lock():
+        print("✅ No other instance running. Starting bot thread...")
+        threading.Thread(target=run_bot_thread, daemon=True).start()
+    else:
+        print("⚠️ Another bot instance holds the lock. Flask-only mode.")
 
-if acquire_bot_lock():
-    print("✅ No other instance running. Launching bot...")
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # already running (Render async env or Flask thread)
-            loop.create_task(run_bot())
-        else:
-            loop.run_until_complete(run_bot())
-    except RuntimeError:
-        # fallback in case no loop exists
-        asyncio.run(run_bot())
-    finally:
-        release_bot_lock()
-else:
-    print("⚠️ Another bot instance holds the lock. Running Flask only.")
+    # keep process alive so Render health checks don't kill it
     while True:
         time.sleep(3600)
-
