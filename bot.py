@@ -317,15 +317,20 @@ def api_mine():
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
-    # cooldown check
     ok, remaining = can_mine(user_id)
     if not ok:
         return jsonify({"ok": False, "cooldown": remaining}), 200
 
     new_bal = update_balance(user_id, MINE_REWARD)
     set_last_mine(user_id)
+    now_ts = int(time.time())
 
-    return jsonify({"ok": True, "reward": MINE_REWARD, "balance": new_bal}), 200
+    return jsonify({
+        "ok": True,
+        "reward": MINE_REWARD,
+        "balance": new_bal,
+        "last_mine": now_ts
+    }), 200
 
 
 
@@ -338,11 +343,6 @@ def api_mine_click():
 
     new_bal = update_balance(user_id, 1)
     return jsonify({"ok": True, "reward": 1, "balance": new_bal}), 200
-
-
-    # Add +1 to balance
-    new_bal = update_balance(user_id, 1)
-    return jsonify({"ok": True, "reward": 1, "balance": new_bal})
 
 @app_web.route("/api/vorn_reward", methods=["POST"])
 def api_vorn_reward():

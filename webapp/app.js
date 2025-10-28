@@ -11,12 +11,19 @@ const DEBUG_UI = false; // ⬅️ turn off the green debug box
 const COOLDOWN_SEC = 6 * 60 * 60; // 6 ժամ
 const REWARD = 500;
 
-const API_BASE = "https://theodora-coexistent-evelyne.ngrok-free.dev";
+// always call the same origin where the WebApp is served (Render)
+const API_BASE = window.location.origin;
 const API = {
   user: (uid) => `${API_BASE}/api/user/${uid}`,
   mine: `${API_BASE}/api/mine`,
-  tasks: (uid) => `${API_BASE}/api/tasks?uid=${uid}` // placeholder
+  mineClick: `${API_BASE}/api/mine_click`,
+  vornReward: `${API_BASE}/api/vorn_reward`,
+  vornExchange: `${API_BASE}/api/vorn_exchange`,
+  tasks: (uid) => `${API_BASE}/api/tasks?uid=${uid}`,
+  attemptCreate: `${API_BASE}/api/task_attempt_create`,
+  attemptVerify: `${API_BASE}/api/task_attempt_verify`
 };
+
 
 /* ------------ HELPERS ------------ */
 function uidFromURL() {
@@ -228,23 +235,43 @@ async onMineClick() {
   }
 
   this.els.mineBtn.disabled = true;
-  // 🔥 UI update first — instant feedback
-  this.flashMine();
-  this.balance += REWARD;
-  this.els.feather.textContent = this.balance;
+  try {
+    const r = await fetch(API.mine, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: this.uid })
+    });
+    const data = await r.json();
 
-  // Backend call async in background
-  setTimeout(async () => {
-    try {
-      await fetch(API.mine, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: this.uid })
-      });
-    } catch(e) { console.warn("⚠️ Background mining failed", e); }
-    finally { this.els.mineBtn.disabled = false; }
-  }, 100);
+    if (data.ok) {
+      // ✅ update from server
+      this.balance = data.balance ?? this.balance;
+      if (this.els.feather) this.els.feather.textContent = String(this.balance);
+
+      // ✅ set cooldown timestamp
+      this.lastMine = typeof data.last_mine === "number"
+        ? data.last_mine
+        : Math.floor(Date.now() / 1000);
+
+      this.flashMine();
+      this.paintMineButton();
+      this.showMessage("success_exchange", "success", 1200);
+    } else {
+      if (typeof data.cooldown === "number") {
+        this.showMessage("wait_mine", "warning");
+      } else {
+        this.showMessage("error", "error");
+      }
+    }
+  } catch (e) {
+    console.error("🔥 /api/mine failed:", e);
+    this.showMessage("error", "error");
+  } finally {
+    this.els.mineBtn.disabled = false;
+  }
 },
+
+
 
 
   /* -------- MINE UI -------- */
@@ -654,19 +681,20 @@ this._lastClick = Date.now();
       if (!this.uid) return console.warn("⚠️ No UID found in URL");
 
 // 🪶 lightweight crow-click mining — always adds +1 and saves to DB
-const r = await fetch(`${API_BASE}/api/mine_click`, {
+const r = await fetch(API.mineClick, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ user_id: this.uid })
 });
 const data = await r.json();
 if (data.ok) {
-  this.balance = data.balance ?? this.balance;
-  document.getElementById("featherCount") &&
-    (document.getElementById("featherCount").textContent = this.balance);
-} else {
-  console.warn("⚠️ Crow mine_click error:", data);
+  // սերվերի balance-ը authoritative է
+  this.balance = (typeof data.balance === "number") ? data.balance : this.balance;
+  const fEl = document.getElementById("featherCount");
+  if (fEl) fEl.textContent = String(this.balance);
 }
+
+
 
     } catch (err) {
       console.error("🔥 Failed to call /api/mine:", err);
