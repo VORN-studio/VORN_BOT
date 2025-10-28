@@ -943,23 +943,42 @@ def main():
 
 
 
-if __name__ == "__main__":
-    import os
-    from threading import Thread
+import os
+import threading
+import asyncio
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler  # եթե չկա՝ թող լինի
 
-    def run_flask():
-        port = int(os.environ.get("PORT", 10000))
-        app_web.run(host="0.0.0.0", port=port)
+def run_flask():
+    port = int(os.environ.get("PORT", 10000))
+    app_web.run(host="0.0.0.0", port=port)
 
-    Thread(target=run_flask).start()
-
-    from telegram.ext import ApplicationBuilder  # ← Ավելացրու այս տողը
-
+async def run_bot():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    print("✅ Bot is running (Render mode)...")
-    application.run_polling()
+    # 👉 Handlers — Քո արդեն գոյություն ունեցող handler-ները տեղափոխիր/կրկնիր այստեղ,
+    # կամ պահիր, որտեղ ունես, բայց ՍՐԱՑՆԵՐԻՑ ԱՌԱՋԱ՝ համոզվիր, որ ավելացված են
+    application.add_handler(CommandHandler("start", start_cmd))
+    application.add_handler(CommandHandler("addcore", addcore_cmd))
+    application.add_handler(CommandHandler("adddaily", adddaily_cmd))
+    application.add_handler(CommandHandler("cleardaily", cleardaily_cmd))
+    application.add_handler(CommandHandler("clearcore", clearcore_cmd))
+    application.add_handler(CallbackQueryHandler(button_click))
+    application.add_handler(CallbackQueryHandler(button_click, pattern="^task_claim:"))
 
+    # 🧹 Հիմնականը՝ անջատում ենք webhook-ը, որ polling-ը աշխատի
+    await application.bot.delete_webhook(drop_pending_updates=True)
+
+    print("🤖 Bot polling started (Render)")
+    await application.run_polling()
+
+if __name__ == "__main__":
+    print("✅ Bot script loaded successfully.")
+
+    # Flask-ը տանում ենք առանձին թելի մեջ՝ որ չխանգարի bot-ին
+    threading.Thread(target=run_flask, daemon=True).start()
+
+    # Bot-ը՝ event loop-ի մեջ
+    asyncio.run(run_bot())
 
 
 
