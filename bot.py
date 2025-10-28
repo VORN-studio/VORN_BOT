@@ -949,16 +949,20 @@ if __name__ == "__main__":
     import os
     from threading import Thread
 
-    # --- Run Flask in separate thread ---
+    # --- Run Flask ---
     def run_flask():
         port = int(os.environ.get("PORT", 8080))
         app_web.run(host="0.0.0.0", port=port)
 
     Thread(target=run_flask).start()
 
-    # --- Run Telegram bot ---
+    # --- Initialize Telegram Bot ---
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
     print("✅ Bot is running (Render mode)...")
     application.run_polling()
+
+
 
 
 
