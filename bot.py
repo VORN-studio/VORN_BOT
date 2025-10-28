@@ -912,7 +912,7 @@ async def run_all():
     print("🤖 Bot polling started (Render unified mode)")
 
     # ⚙️ Միացնում ենք բոտ polling-ը որպես asyncio Task
-    await application.run_polling()
+    await application.run_polling(stop_signals=None)
 
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
