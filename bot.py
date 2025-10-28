@@ -357,26 +357,29 @@ def api_vorn_reward():
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
-    conn = db()
-    c = conn.cursor()
-
-    # ✅ ensure vorn_balance column exists (if not, create it once)
     try:
-        c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
-    except Exception:
-        pass
+        conn = db()
+        c = conn.cursor()
 
-    # ✅ read current vorn balance
-    c.execute("SELECT vorn_balance FROM users WHERE user_id=%s", (user_id,))
-    row = c.fetchone()
-    vbal = (row[0] if row and row[0] else 0.0) + amount
+        # ensure user row exists
+        c.execute("SELECT vorn_balance FROM users WHERE user_id=%s", (user_id,))
+        row = c.fetchone()
+        if not row:
+            c.execute("INSERT INTO users (user_id, vorn_balance) VALUES (%s, %s)", (user_id, amount))
+            vbal = amount
+        else:
+            vbal = (row[0] if row[0] else 0.0) + amount
+            c.execute("UPDATE users SET vorn_balance=%s WHERE user_id=%s", (vbal, user_id))
 
-    # ✅ update vorn balance
-    c.execute("UPDATE users SET vorn_balance=%s WHERE user_id=%s", (vbal, user_id))
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
+        print(f"🜂 Added {amount} VORN to {user_id}, new total = {vbal}")
+        return jsonify({"ok": True, "vorn_added": amount, "vorn_balance": vbal})
 
-    return jsonify({"ok": True, "vorn_added": amount, "vorn_balance": vbal})
+    except Exception as e:
+        print("🔥 /api/vorn_reward failed:", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 @app_web.route("/api/vorn_exchange", methods=["POST"])

@@ -229,13 +229,18 @@ if (nameEl) nameEl.textContent = `Player ${this.uid}`;
 
 
 async onMineClick() {
+  if (this._mineInProgress) return; // ⛔ prevent double click
+  this._mineInProgress = true;
+
   if (this.secsUntilReady() > 0) {
     this.showMessage("wait_mine", "warning");
+    this._mineInProgress = false;
     return;
   }
 
   this.els.mineBtn.disabled = true;
   try {
+    console.log("🪶 Mine button clicked — sending /api/mine");
     const r = await fetch(API.mine, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -244,32 +249,27 @@ async onMineClick() {
     const data = await r.json();
 
     if (data.ok) {
-      // ✅ update from server
+      // ✅ Server confirmed reward
       this.balance = data.balance ?? this.balance;
       if (this.els.feather) this.els.feather.textContent = String(this.balance);
-
-      // ✅ set cooldown timestamp
-      this.lastMine = typeof data.last_mine === "number"
-        ? data.last_mine
-        : Math.floor(Date.now() / 1000);
-
+      this.lastMine = data.last_mine ?? Math.floor(Date.now() / 1000);
       this.flashMine();
       this.paintMineButton();
       this.showMessage("success_exchange", "success", 1200);
+    } else if (data.cooldown) {
+      this.showMessage("wait_mine", "warning");
     } else {
-      if (typeof data.cooldown === "number") {
-        this.showMessage("wait_mine", "warning");
-      } else {
-        this.showMessage("error", "error");
-      }
+      this.showMessage("error", "error");
     }
   } catch (e) {
     console.error("🔥 /api/mine failed:", e);
     this.showMessage("error", "error");
   } finally {
+    this._mineInProgress = false;
     this.els.mineBtn.disabled = false;
   }
 },
+
 
 
 
@@ -706,26 +706,29 @@ if (pf) {
   cur += 0.2;
 
   if (cur >= 100) {
-    // 🌕 When full bar reached, reset to 0 and add VORN
-    pf.style.width = '0%';
-    try {
-      const r = await fetch(`${API_BASE}/api/vorn_reward`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: this.uid, amount: 0.02 })
-      });
-      const data = await r.json();
-      if (data.ok) {
-        console.log(`🜂 +${data.vorn_added} VORN added! Total: ${data.vorn_balance}`);
-        const el = document.getElementById("foodCount");
-        if (el) el.textContent = (Number(data.vorn_balance)).toFixed(2);
-      }
-    } catch (err) {
-      console.error("🔥 Failed to add VORN reward:", err);
+  pf.style.width = '0%';
+  try {
+    console.log("🜂 Sending /api/vorn_reward …");
+    const r = await fetch(API.vornReward, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: this.uid, amount: 0.02 })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      console.log(`✅ +${data.vorn_added} VORN, new total ${data.vorn_balance}`);
+      const el = document.getElementById("foodCount");
+      if (el) el.textContent = (Number(data.vorn_balance)).toFixed(2);
+    } else {
+      console.warn("⚠️ /api/vorn_reward responded with error:", data);
     }
-  } else {
-    pf.style.width = cur + '%';
+  } catch (err) {
+    console.error("🔥 Failed to add VORN reward:", err);
   }
+} else {
+  pf.style.width = cur + '%';
+}
+
 }
 
   },
