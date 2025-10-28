@@ -83,6 +83,7 @@ def favicon():
 # =========================
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Bot
 
 print("✅ Bot script loaded successfully.")
 
@@ -887,15 +888,10 @@ def run_flask():
     port = int(getenv("PORT", "10000"))
     app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
 
-    from telegram import Bot
-    
-
+from telegram import Bot
 def main():
     print("✅ Starting bot...")
-    bot = Bot(BOT_TOKEN)
-    bot.delete_webhook(drop_pending_updates=True)
-    application.run_polling()
-
+   
     try:
         init_db()
         print("✅ Database initialized (tables ready).")
@@ -903,6 +899,11 @@ def main():
         print("⚠️ init_db() failed:", e)
 
     app = Application.builder().token(BOT_TOKEN).build()
+
+    bot = app.bot
+    bot.delete_webhook(drop_pending_updates=True)
+
+
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CallbackQueryHandler(btn_handler))
     # app.add_handler(CommandHandler("addcore", addcore_cmd))
