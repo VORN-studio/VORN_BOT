@@ -872,55 +872,58 @@ def api_verify_task():
     })
 
 
-# =========================
-# Runner
-# =========================
-# =========================
-# Runner (Render-friendly)
-# =========================
-# =========================
-# Render-safe runner (no event loop conflicts)
-# =========================
-# =========================
-# Render-safe unified runner (Flask + Telegram Bot in same event loop)
-# =========================
+# =====================================================
+# 🚀 Render FINAL SAFE LAUNCH (Flask + Telegram Bot)
+# =====================================================
 import asyncio
-import time
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 
-async def run_all():
-    # ✅ Flask-ը՝ առանձին թելով, որ չխանգարի asyncio loop-ին
-    import threading
-    def start_flask():
-        print("🚀 Turbo Flask Mode enabled")
+def start_flask_background():
+    """Run Flask server in background forever"""
+    from threading import Thread
+    def run_flask():
+        print("🚀 Turbo Flask Mode enabled (Render production)")
         port = int(os.environ.get("PORT", "10000"))
         app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
-    threading.Thread(target=start_flask, daemon=True).start()
+    Thread(target=run_flask, daemon=True).start()
 
-    # ✅ Telegram Bot-ը՝ asyncio task-ի մեջ
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
+async def start_bot():
+    """Start Telegram bot safely (Render async version)"""
+    print("🤖 Initializing Telegram bot...")
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Handlers
-    application.add_handler(CommandHandler("start", start_cmd))
-    application.add_handler(CommandHandler("addmain", addmain_cmd))
-    application.add_handler(CommandHandler("adddaily", adddaily_cmd))
-    application.add_handler(CommandHandler("deltask", deltask_cmd))
-    application.add_handler(CommandHandler("listtasks", listtasks_cmd))
-    application.add_handler(CommandHandler("clearcore", clearcore_cmd))
-    application.add_handler(CallbackQueryHandler(btn_handler))
+    # --- Handlers ---
+    app.add_handler(CommandHandler("start", start_cmd))
+    app.add_handler(CommandHandler("addmain", addmain_cmd))
+    app.add_handler(CommandHandler("adddaily", adddaily_cmd))
+    app.add_handler(CommandHandler("deltask", deltask_cmd))
+    app.add_handler(CommandHandler("listtasks", listtasks_cmd))
+    app.add_handler(CommandHandler("clearcore", clearcore_cmd))
+    app.add_handler(CallbackQueryHandler(btn_handler))
 
-    await application.bot.delete_webhook(drop_pending_updates=True)
-    print("🤖 Bot polling started (Render unified mode)")
+    # --- Disable webhooks & drop old updates ---
+    await app.bot.delete_webhook(drop_pending_updates=True)
 
-    # ⚙️ Միացնում ենք բոտ polling-ը որպես asyncio Task
-    await application.run_polling(close_loop=False, stop_signals=None)
+    # --- Run the bot (Render-compatible mode) ---
+    print("✅ Bot polling started successfully on Render")
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+
+    # Keep alive forever
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
     try:
         init_db()
-        print("✅ Database initialized (tables ready).")
+        print("✅ Database initialized (PostgreSQL ready).")
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # 🚀 Մեկ ընդհանուր asyncio loop, որը կառավարում է Flask + Bot-ը միասին
-    asyncio.run(run_all())
+    # --- Start Flask ---
+    start_flask_background()
+
+    # --- Start Telegram Bot ---
+    asyncio.run(start_bot())
+
