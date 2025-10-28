@@ -210,17 +210,18 @@ def ensure_user(user_id: int, username: Optional[str], inviter_id: Optional[int]
     c.execute("SELECT user_id, inviter_id FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     if row is None:
-        c.execute("""INSERT INTO users
-            (user_id, username, balance, last_mine, language, intro_seen, last_reminder_sent, inviter_id)
-            VALUES (%s, %s, 0, 0, 'en', 0, 0, %s)""",
-                  (user_id, username, inviter_id))
-
+        c.execute("""
+            INSERT INTO users (user_id, username, balance, last_mine, language, intro_seen, last_reminder_sent, inviter_id)
+            VALUES (%s, %s, 0, 0, 'en', 0, 0, %s)
+        """, (user_id, username, inviter_id))
     else:
         old_inviter = row[1]
         if old_inviter is None and inviter_id:
             c.execute("UPDATE users SET inviter_id=%s WHERE user_id=%s", (inviter_id, user_id))
         c.execute("UPDATE users SET username=%s WHERE user_id=%s", (username, user_id))
-    conn.commit(); conn.close()
+    conn.commit()
+    conn.close()
+
 
 def get_balance(user_id: int) -> int:
     conn = db(); c = conn.cursor()
@@ -233,27 +234,45 @@ def update_balance(user_id: int, delta: int) -> int:
     conn = db(); c = conn.cursor()
     c.execute("SELECT balance FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
-    bal = (row[0] if row else 0) + int(delta)
-    c.execute("INSERT INTO users(user_id, balance) VALUES(%s, %s) ON CONFLICT(user_id) DO UPDATE SET balance=EXCLUDED.balance",
-              (user_id, bal,))
-    conn.commit(); conn.close()
-    return bal
+    if not row:
+        new_balance = int(delta)
+        c.execute("INSERT INTO users (user_id, balance) VALUES (%s, %s)", (user_id, new_balance))
+    else:
+        new_balance = int(row[0]) + int(delta)
+        c.execute("UPDATE users SET balance=%s WHERE user_id=%s", (new_balance, user_id))
+    conn.commit()
+    conn.close()
+    return new_balance
+
+
 
 def can_mine(user_id: int):
+    """
+    Returns (True, 0) if user can mine now,
+    else (False, remaining_seconds)
+    """
     now = int(time.time())
     conn = db(); c = conn.cursor()
     c.execute("SELECT last_mine FROM users WHERE user_id=%s", (user_id,))
-    row = c.fetchone(); conn.close()
-    last = row[0] if row and row[0] else 0
-    if now - last >= MINE_COOLDOWN:
+    row = c.fetchone()
+    last_mine = row[0] if row and row[0] else 0
+    conn.close()
+
+    # 6 ժամ = 21600 վայրկյան
+    diff = now - last_mine
+    if diff >= MINE_COOLDOWN:
         return True, 0
-    return False, MINE_COOLDOWN - (now - last)
+    else:
+        return False, MINE_COOLDOWN - diff
+
 
 def set_last_mine(user_id: int):
     now = int(time.time())
     conn = db(); c = conn.cursor()
     c.execute("UPDATE users SET last_mine=%s, last_reminder_sent=0 WHERE user_id=%s", (now, user_id))
-    conn.commit(); conn.close()
+    conn.commit()
+    conn.close()
+
 
 # =========================
 # Minimal JSON API (webapp uses it)
@@ -297,23 +316,29 @@ def api_mine():
     user_id = int(data.get("user_id", 0))
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
+
+    # cooldown check
     ok, remaining = can_mine(user_id)
     if not ok:
-        return jsonify({"ok": False, "cooldown": remaining})
+        return jsonify({"ok": False, "cooldown": remaining}), 200
+
     new_bal = update_balance(user_id, MINE_REWARD)
     set_last_mine(user_id)
-    return jsonify({"ok": True, "reward": MINE_REWARD, "balance": new_bal})
+
+    return jsonify({"ok": True, "reward": MINE_REWARD, "balance": new_bal}), 200
+
+
 
 @app_web.route("/api/mine_click", methods=["POST"])
 def api_mine_click():
-    """
-    Lightweight mining endpoint for click-mining (crow tap).
-    Adds +1 feather instantly, without cooldown.
-    """
     data = request.get_json(force=True, silent=True) or {}
     user_id = int(data.get("user_id", 0))
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
+
+    new_bal = update_balance(user_id, 1)
+    return jsonify({"ok": True, "reward": 1, "balance": new_bal}), 200
+
 
     # Add +1 to balance
     new_bal = update_balance(user_id, 1)
