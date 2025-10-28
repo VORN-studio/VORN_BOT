@@ -931,14 +931,25 @@ async def remove_webhook(bot):
 
 
 if __name__ == "__main__":
-    print("🛠️ Running init_db() ...")
-    init_db()
-    print("✅ Database initialized.")
-    time.sleep(3)
-    # Always start Flask in background
-    threading.Thread(target=run_flask, daemon=True).start()
+    print("🛠️ Initializing VORN Bot ...")
 
-    print("🔒 Checking if another poller is active...")
+    try:
+        init_db()
+        print("✅ Database initialized successfully.")
+    except Exception as e:
+        print("⚠️ init_db() failed:", e)
+
+    # --- Start Telegram Bot in background ---
+    def run_bot():
+        import asyncio
+        asyncio.run(main())
+
+    threading.Thread(target=run_bot, daemon=True).start()
+
+    # --- Start Flask as main blocking process ---
+    print("🚀 Running Flask (main process for Render)...")
+    run_flask()
+
 
     def acquire_bot_lock() -> bool:
         """Prevent multiple bot instances using a global Postgres lock"""
