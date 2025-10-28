@@ -942,13 +942,24 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
 
     # Start bot if we got the DB advisory lock
-    if acquire_bot_lock():
-        try:
-            asyncio.run(run_bot())
-        finally:
-            release_bot_lock()
-    else:
-        print("⚠️ Another bot instance holds the lock. Running Flask only.")
-        # keep process alive so Render health checks stay green
-        while True:
-            time.sleep(3600)
+    import asyncio
+
+if acquire_bot_lock():
+    print("✅ No other instance running. Launching bot...")
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # already running (Render async env or Flask thread)
+            loop.create_task(run_bot())
+        else:
+            loop.run_until_complete(run_bot())
+    except RuntimeError:
+        # fallback in case no loop exists
+        asyncio.run(run_bot())
+    finally:
+        release_bot_lock()
+else:
+    print("⚠️ Another bot instance holds the lock. Running Flask only.")
+    while True:
+        time.sleep(3600)
+
