@@ -941,26 +941,25 @@ def main():
 
 
 
-    print("✅ Bot is running (polling mode)...")
-    app.run_polling()
 
 
 if __name__ == "__main__":
     import os
     from threading import Thread
 
-    # --- Run Flask ---
     def run_flask():
-        port = int(os.environ.get("PORT", 8080))
+        port = int(os.environ.get("PORT", 10000))
         app_web.run(host="0.0.0.0", port=port)
 
     Thread(target=run_flask).start()
 
-    # --- Initialize Telegram Bot ---
+    from telegram.ext import ApplicationBuilder  # ← Ավելացրու այս տողը
+
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     print("✅ Bot is running (Render mode)...")
     application.run_polling()
+
 
 
 
