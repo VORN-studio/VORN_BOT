@@ -939,16 +939,17 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # --- Start Telegram Bot in background ---
+    # --- Run Telegram bot in background ---
     def run_bot():
-        import asyncio
-        asyncio.run(main())
+        print("🤖 Starting Telegram bot polling...")
+        main()   # ⚠️ main() պարզապես կանչում ենք՝ առանց asyncio.run()
 
     threading.Thread(target=run_bot, daemon=True).start()
 
-    # --- Start Flask as main blocking process ---
-    print("🚀 Running Flask (main process for Render)...")
+    # --- Run Flask as main process ---
+    print("🚀 Running Flask (main Render process)...")
     run_flask()
+
 
 
     def acquire_bot_lock() -> bool:
