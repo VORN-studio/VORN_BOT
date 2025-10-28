@@ -212,8 +212,9 @@ def ensure_user(user_id: int, username: Optional[str], inviter_id: Optional[int]
     if row is None:
         c.execute("""INSERT INTO users
             (user_id, username, balance, last_mine, language, intro_seen, last_reminder_sent, inviter_id)
-            VALUES (%s, %s, 0, 0, 'en', FALSE, 0, %s)""",
-    (user_id, username, inviter_id))
+            VALUES (%s, %s, 0, 0, 'en', 0, 0, %s)""",
+                  (user_id, username, inviter_id))
+
     else:
         old_inviter = row[1]
         if old_inviter is None and inviter_id:
