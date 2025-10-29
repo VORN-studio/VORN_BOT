@@ -787,6 +787,15 @@ def serve_tiktok_verification():
 def serve_privacy():
     return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'privacy.html')
 
+# --- TikTok URL prefix verification (serve as plain text at site root) ---
+@app_web.route("/tiktok-developers-site-verification.txt")
+def tiktok_verification_file():
+    return (
+        "tiktok-developers-site-verification=xIdyn8EdBKD9JpuXubuRGoh4vXfVZF18",
+        200,
+        {"Content-Type": "text/plain; charset=utf-8"}
+    )
+
 
 
 @app_web.route("/api/task_attempt_verify", methods=["POST"])
