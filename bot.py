@@ -981,6 +981,7 @@ async def start_bot_webhook():
 
 
 from flask import request
+import asyncio
 
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
@@ -997,18 +998,16 @@ def telegram_webhook():
         from telegram import Update
         update = Update.de_json(update_data, application.bot)
 
-        # ✅ directly queue the update for the running bot
-        application.create_task(application.process_update(update))
+        # ✅ Run process_update safely inside event loop
+        loop = asyncio.get_event_loop()
+        loop.create_task(application.process_update(update))
+
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook processing error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
 
-
-    except Exception as e:
-        print("🔥 Webhook error:", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 
