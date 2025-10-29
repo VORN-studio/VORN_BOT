@@ -964,13 +964,16 @@ async def start_bot_webhook():
         app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
     Thread(target=run_flask, daemon=True).start()
 
+    # --- Proper Telegram app lifecycle ---
+    await app.initialize()
     await app.start()
     await app.updater.start_webhook(listen="0.0.0.0", port=port, url_path="", webhook_url=webhook_url)
-    await asyncio.Event().wait()
 
+    print("✅ Telegram bot started successfully (Webhook mode active).")
 
     # Keep alive forever
     await asyncio.Event().wait()
+
 
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
