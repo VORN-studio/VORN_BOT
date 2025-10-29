@@ -760,6 +760,21 @@ def api_task_attempt_create():
     return jsonify({"ok": True, "token": token})
 
 
+# =========================
+# Static legal pages (Terms + Privacy)
+# =========================
+from flask import send_from_directory
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+@app_web.route('/terms.html')
+def serve_terms():
+    return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'terms.html')
+
+@app_web.route('/privacy.html')
+def serve_privacy():
+    return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'privacy.html')
 
 
 
@@ -919,9 +934,10 @@ def start_flask_background():
         app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
     Thread(target=run_flask, daemon=True).start()
 
-async def start_bot():
-    """Start Telegram bot safely (Render async version)"""
-    print("🤖 Initializing Telegram bot...")
+async def start_bot_webhook():
+    """Start Telegram bot in webhook mode for Render (always online)."""
+    print("🤖 Initializing Telegram bot (Webhook Mode)...")
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # --- Handlers ---
@@ -933,14 +949,25 @@ async def start_bot():
     app.add_handler(CommandHandler("clearcore", clearcore_cmd))
     app.add_handler(CallbackQueryHandler(btn_handler))
 
-    # --- Disable webhooks & drop old updates ---
+    # --- Set webhook ---
+    port = int(os.environ.get("PORT", "10000"))
+    webhook_url = f"{PUBLIC_BASE_URL}/webhook"
     await app.bot.delete_webhook(drop_pending_updates=True)
+    await app.bot.set_webhook(url=webhook_url)
 
-    # --- Run the bot (Render-compatible mode) ---
-    print("✅ Bot polling started successfully on Render")
-    await app.initialize()
+    print(f"✅ Webhook set to {webhook_url}")
+
+    # --- Run Flask concurrently ---
+    from threading import Thread
+    def run_flask():
+        print("🚀 Flask running in parallel with Telegram webhook.")
+        app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+    Thread(target=run_flask, daemon=True).start()
+
     await app.start()
-    await app.updater.start_polling()
+    await app.updater.start_webhook(listen="0.0.0.0", port=port, url_path="", webhook_url=webhook_url)
+    await asyncio.Event().wait()
+
 
     # Keep alive forever
     await asyncio.Event().wait()
@@ -957,5 +984,5 @@ if __name__ == "__main__":
     start_flask_background()
 
     # --- Start Telegram Bot ---
-    asyncio.run(start_bot())
+    asyncio.run(start_bot_webhook())
 
