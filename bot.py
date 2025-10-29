@@ -760,21 +760,6 @@ def api_task_attempt_create():
     return jsonify({"ok": True, "token": token})
 
 
-# =========================
-# Static legal pages (Terms + Privacy)
-# =========================
-from flask import send_from_directory
-import os
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-@app_web.route('/terms.html')
-def serve_terms():
-    return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'terms.html')
-
-@app_web.route('/privacy.html')
-def serve_privacy():
-    return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'privacy.html')
 
 
 
