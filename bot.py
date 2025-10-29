@@ -98,11 +98,13 @@ if not DATABASE_URL:
 
 def db():
     conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+    conn.autocommit = True  # ✅ prevents "InFailedSqlTransaction"
     c = conn.cursor()
-    # Force schema to public, always
-    c.execute("CREATE SCHEMA IF NOT EXISTS public;")
-    c.execute("SET search_path TO public;")
-    conn.commit()
+    try:
+        c.execute("CREATE SCHEMA IF NOT EXISTS public;")
+        c.execute("SET search_path TO public;")
+    except Exception as e:
+        print("⚠️ DB schema check error:", e)
     return conn
 
 
@@ -973,6 +975,33 @@ async def start_bot_webhook():
 
     # Keep alive forever
     await asyncio.Event().wait()
+
+
+from flask import request
+
+@app_web.route("/webhook", methods=["POST"])
+def telegram_webhook():
+    """Receive incoming updates from Telegram (Render Webhook)"""
+    try:
+        update = request.get_json(force=True)
+        if not update:
+            return jsonify({"ok": False, "error": "no update"}), 400
+
+        # Forward the update manually to Telegram bot
+        from telegram import Update
+        from telegram.ext import ApplicationBuilder
+
+        application = ApplicationBuilder().token(BOT_TOKEN).build()
+        tg_update = Update.de_json(update, application.bot)
+
+        # Process the update (non-blocking)
+        application.update_queue.put_nowait(tg_update)
+        return jsonify({"ok": True}), 200
+
+    except Exception as e:
+        print("🔥 Webhook error:", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 if __name__ == "__main__":
