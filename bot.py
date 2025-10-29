@@ -1055,15 +1055,28 @@ def telegram_webhook():
         from telegram import Update
         update = Update.de_json(update_data, application.bot)
 
-        # ✅ Safe async processing for Render (no running loop crash)
+        # ✅ Run safely without blocking Flask / Render
         import asyncio
-        asyncio.run(application.process_update(update))
+        asyncio.get_event_loop().create_task(application.process_update(update))
 
         return jsonify({"ok": True}), 200
+
+    except RuntimeError:
+        # If no loop exists (Render case), create a new one manually
+        try:
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(application.process_update(update))
+            return jsonify({"ok": True}), 200
+        except Exception as e:
+            print("🔥 Webhook secondary error:", e)
+            return jsonify({"ok": False, "error": str(e)}), 500
 
     except Exception as e:
         print("🔥 Webhook processing error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 

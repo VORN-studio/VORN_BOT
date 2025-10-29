@@ -2,28 +2,7 @@
    VORN WebApp — Unified Core
    ========================================================= */
 
-   // app.js — early initialization
-let uid = new URLSearchParams(window.location.search).get("uid");
-
-// Try to get uid from Telegram WebApp context if available
-if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe?.user) {
-    uid = window.Telegram.WebApp.initDataUnsafe.user.id;
-}
-
-// Fallback: try localStorage
-if (!uid) {
-    uid = localStorage.getItem("vorn_uid");
-}
-
-// If still not found — show login / connect page
-if (!uid) {
-    document.body.innerHTML = "<h2>⚠️ Please open via /start in Telegram to connect your account.</h2>";
-} else {
-    // Save uid for future openings
-    localStorage.setItem("vorn_uid", uid);
-    console.log("✅ User ID recognized:", uid);
-}
-
+   
 
 console.log("✅ app.js loaded (VORN unified)");
 
