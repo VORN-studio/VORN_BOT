@@ -950,6 +950,40 @@ async def start_bot_webhook():
     global application
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
+from telegram.ext import MessageHandler, filters
+
+# ✅ Handler to block user text messages
+async def block_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        await update.message.delete()  # ջնջում ենք ուղարկած տեքստը
+    except:
+        pass
+    # optionally send warning once
+    # await update.message.reply_text("✋ You can’t type messages here. Use the buttons below.", quote=False)
+
+# ✅ Start command — send fixed WebApp message
+async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    ensure_user(user.id, user.username)
+    base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
+    wa_url = f"{base}/app?uid={user.id}"
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
+    ])
+
+    msg = await context.bot.send_message(
+        chat_id=user.id,
+        text="🌕 Welcome to the world of the future.\n\nPress below to enter the VORN App 👇",
+        reply_markup=keyboard
+    )
+
+    # ✅ Pin message so it stays on top
+    try:
+        await context.bot.pin_chat_message(chat_id=user.id, message_id=msg.message_id)
+    except Exception as e:
+        print("⚠️ Pin failed:", e)
+
 
     # --- Handlers ---
     application.add_handler(CommandHandler("start", start_cmd))
@@ -959,6 +993,8 @@ async def start_bot_webhook():
     application.add_handler(CommandHandler("listtasks", listtasks_cmd))
     application.add_handler(CommandHandler("clearcore", clearcore_cmd))
     application.add_handler(CallbackQueryHandler(btn_handler))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, block_text))
+
 
     # --- Set webhook ---
     port = int(os.environ.get("PORT", "10000"))
