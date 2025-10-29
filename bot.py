@@ -966,6 +966,20 @@ async def start_bot_webhook():
     await application.bot.delete_webhook(drop_pending_updates=True)
     await application.bot.set_webhook(url=webhook_url)
 
+    # --- Set Telegram menu button to open the WebApp directly ---
+    try:
+        await application.bot.set_chat_menu_button(
+            menu_button={
+                "type": "web_app",
+                "text": "🌀 Open VORN App",
+                "web_app": {"url": f"{PUBLIC_BASE_URL}/app"}
+            }
+        )
+        print("✅ Telegram menu button linked to WebApp.")
+    except Exception as e:
+        print("⚠️ Failed to set menu button:", e)
+
+
     print(f"✅ Webhook set to {webhook_url}")
 
     # --- Run Flask concurrently ---
