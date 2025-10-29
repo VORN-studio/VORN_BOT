@@ -456,8 +456,11 @@ def api_tasks():
     # get all tasks
     c.execute("""
         SELECT id, type, title, reward_feather, reward_vorn, link
-        FROM tasks FROM tasks WHERE active = TRUE ORDER BY id DESC ORDER BY id DESC
+        FROM tasks
+        WHERE active = TRUE
+        ORDER BY id DESC
     """)
+
     rows = c.fetchall()
 
     # user's completed tasks
@@ -621,8 +624,11 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
 
     c.execute("""
         SELECT id, type, title, reward_feather, reward_vorn, link
-        FROM tasks FROM tasks WHERE active = TRUE ORDER BY id DESC ORDER BY id DESC
+        FROM tasks
+        WHERE active = TRUE
+        ORDER BY id DESC
     """)
+
     rows = c.fetchall()
 
     # 🧠 վերցնենք user-ի արդեն ավարտած տասկերը
@@ -998,17 +1004,16 @@ def telegram_webhook():
         from telegram import Update
         update = Update.de_json(update_data, application.bot)
 
-        # ✅ Safe way to schedule async update inside Flask
-        asyncio.run_coroutine_threadsafe(
-            application.process_update(update),
-            asyncio.get_running_loop()
-        )
+        # ✅ Correct async processing for Render (no warning)
+        loop = asyncio.get_event_loop()
+        asyncio.run_coroutine_threadsafe(application.process_update(update), loop)
 
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook processing error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
