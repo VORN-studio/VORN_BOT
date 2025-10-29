@@ -34,9 +34,6 @@ def catch_all(anypath):
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEBAPP_DIR = os.path.join(BASE_DIR, "webapp")  # contains index.html, app.js, style.css, assets/
 
-@app_web.route("/")
-def home():
-    return "✅ Flask is running. Try /app"
 
 @app_web.route("/app")
 def app_page():
@@ -721,12 +718,13 @@ async def listtasks_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return await update.message.reply_text("⛔ Not authorized.")
     conn = db(); c = conn.cursor()
-    c.execute("SELECT id, type, title, reward_feather, reward_vorn FROM tasks FROM tasks WHERE active = TRUE ORDER BY id DESC ORDER BY id DESC")
+    c.execute("SELECT id, type, title, reward_feather, reward_vorn FROM tasks WHERE active = TRUE ORDER BY id DESC")
     rows = c.fetchall(); conn.close()
     if not rows:
         return await update.message.reply_text("📭 No tasks.")
     msg = "\n".join([f"{tid}. [{t.upper()}] {title} 🪶{rf} 🜂{rv}" for tid, t, title, rf, rv in rows])
     await update.message.reply_text(f"📋 Active Tasks:\n{msg}")
+
 
 
 
@@ -928,64 +926,52 @@ def api_verify_task():
 
 
 # =====================================================
-# 🚀 Render FINAL SAFE LAUNCH (Flask + Telegram Bot)
+# 🚀 Telegram Application (Webhook mode, PTB v20)
 # =====================================================
 import asyncio
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+from telegram import MenuButtonWebApp
 
-def start_flask_background():
-    """Run Flask server in background forever"""
-    from threading import Thread
-    def run_flask():
-        print("🚀 Turbo Flask Mode enabled (Render production)")
-        port = int(os.environ.get("PORT", "10000"))
-        app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
-    Thread(target=run_flask, daemon=True).start()
+application = None  # Global
 
-application = None  # Global Telegram app instance
-async def start_bot_webhook():
-    """Start Telegram bot in webhook mode for Render (always online)."""
-    print("🤖 Initializing Telegram bot (Webhook Mode)...")
-
-    global application
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
-
-from telegram.ext import MessageHandler, filters
-
-# ✅ Handler to block user text messages
-async def block_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        await update.message.delete()  # ջնջում ենք ուղարկած տեքստը
-    except:
-        pass
-    # optionally send warning once
-    # await update.message.reply_text("✋ You can’t type messages here. Use the buttons below.", quote=False)
-
-# ✅ Start command — send fixed WebApp message
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     ensure_user(user.id, user.username)
+
     base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
     wa_url = f"{base}/app?uid={user.id}"
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
     ])
-
+    # Ոչ մի խոսակցություն՝ ուղարկում ենք միայն WebApp-ը
     msg = await context.bot.send_message(
         chat_id=user.id,
-        text="🌕 Welcome to the world of the future.\n\nPress below to enter the VORN App 👇",
+        text="🌕 Press the button to enter VORN App 👇",
         reply_markup=keyboard
     )
 
-    # ✅ Pin message so it stays on top
+    # Փին ենք անում, որ սա մնա վերևում
     try:
         await context.bot.pin_chat_message(chat_id=user.id, message_id=msg.message_id)
     except Exception as e:
         print("⚠️ Pin failed:", e)
 
+# User-ի ուղարկած ցանկացած տեքստ ջնջում ենք, որպեսզի չատը «փակ» լինի
+async def block_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        await update.message.delete()
+    except Exception:
+        pass
 
-    # --- Handlers ---
+async def start_bot_webhook():
+    """Build application, add handlers, set webhook and start the app."""
+    global application
+    print("🤖 Initializing Telegram bot (Webhook Mode)...")
+
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Handlers
     application.add_handler(CommandHandler("start", start_cmd))
     application.add_handler(CommandHandler("addmain", addmain_cmd))
     application.add_handler(CommandHandler("adddaily", adddaily_cmd))
@@ -995,29 +981,30 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     application.add_handler(CallbackQueryHandler(btn_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, block_text))
 
-
-    # --- Set webhook ---
+    # Webhook URL
     port = int(os.environ.get("PORT", "10000"))
     webhook_url = f"{PUBLIC_BASE_URL}/webhook"
+
+    # մաքրում ենք հները և դնում նոր webhook
     await application.bot.delete_webhook(drop_pending_updates=True)
     await application.bot.set_webhook(url=webhook_url)
+    print(f"✅ Webhook set to {webhook_url}")
 
-        # --- Set Telegram menu button to open our WebApp directly ---
+    # Կցում ենք default chat menu-ը որպես WebApp կոճակ
     try:
         await application.bot.set_chat_menu_button(
-            menu_button={
-                "type": "web_app",
-                "text": "🌀 VORN App",
-                "web_app": {"url": f"{PUBLIC_BASE_URL}/app"}
-            }
+            menu_button=MenuButtonWebApp(text="🌀 VORN App", web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app"))
         )
-        print("✅ Custom menu button linked to WebApp (Render).")
+        print("✅ Global menu button → WebApp")
     except Exception as e:
         print("⚠️ Failed to set menu button:", e)
 
+    # Սկսում ենք application-ը (loop, jobs, handlers)
+    await application.initialize()
+    await application.start()
+    print("✅ Telegram application started (webhook mode).")
 
 
-    print(f"✅ Webhook set to {webhook_url}")
 
     # --- Run Flask concurrently ---
     from threading import Thread
@@ -1042,37 +1029,29 @@ import asyncio
 
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
-    """Receive updates from Telegram and pass to the running bot instance."""
+    global application
+    if application is None:
+        return jsonify({"ok": False, "error": "bot not ready"}), 503
+
+    update_data = request.get_json(force=True, silent=True)
+    if not update_data:
+        return jsonify({"ok": False, "error": "empty update"}), 400
+
     try:
-        global application
-        if application is None:
-            return jsonify({"ok": False, "error": "bot not ready"}), 503
-
-        update_data = request.get_json(force=True, silent=True)
-        if not update_data:
-            return jsonify({"ok": False, "error": "empty update"}), 400
-
-        from telegram import Update
-        update = Update.de_json(update_data, application.bot)
-
-        # ✅ Run safely without blocking Flask / Render
-        import asyncio
-        asyncio.get_event_loop().create_task(application.process_update(update))
-
+        upd = Update.de_json(update_data, application.bot)
+        loop = asyncio.get_event_loop()
+        loop.create_task(application.process_update(upd))
         return jsonify({"ok": True}), 200
-
     except RuntimeError:
-        # If no loop exists (Render case), create a new one manually
+        # if no loop in this thread (rare), run it quickly in a new loop
         try:
-            import asyncio
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(application.process_update(update))
+            loop.run_until_complete(application.process_update(upd))
             return jsonify({"ok": True}), 200
         except Exception as e:
             print("🔥 Webhook secondary error:", e)
             return jsonify({"ok": False, "error": str(e)}), 500
-
     except Exception as e:
         print("🔥 Webhook processing error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -1087,17 +1066,15 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    import threading, asyncio
-
+    # 🚀 Telegram bot in a background thread (async)
     def run_bot():
         asyncio.run(start_bot_webhook())
-
-    # 🚀 Launch Telegram bot in background thread
     threading.Thread(target=run_bot, daemon=True).start()
 
-    # 🚀 Run Flask (Render needs an open port)
+    # 🚀 Flask (Render needs an open port)
     print("🌍 Starting Flask web server (Render port)...")
     port = int(os.environ.get("PORT", "10000"))
     app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+
 
 
