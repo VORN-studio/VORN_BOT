@@ -980,9 +980,7 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # --- Start Flask ---
-    start_flask_background()
-
-    # --- Start Telegram Bot ---
+    # 🚀 Run bot in webhook mode (Flask included inside)
+    import asyncio
     asyncio.run(start_bot_webhook())
 
