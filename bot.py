@@ -760,6 +760,21 @@ def api_task_attempt_create():
     return jsonify({"ok": True, "token": token})
 
 
+from flask import send_from_directory
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+@app.route('/terms.html')
+def serve_terms():
+    return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'terms.html')
+
+@app.route('/privacy.html')
+def serve_privacy():
+    return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'privacy.html')
+
+
+
 @app_web.route("/api/task_attempt_verify", methods=["POST"])
 def api_task_attempt_verify():
     """
