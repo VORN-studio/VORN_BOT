@@ -1055,15 +1055,16 @@ def telegram_webhook():
         from telegram import Update
         update = Update.de_json(update_data, application.bot)
 
-        # ✅ Correct async processing for Render (no warning)
-        loop = asyncio.get_event_loop()
-        asyncio.run_coroutine_threadsafe(application.process_update(update), loop)
+        # ✅ Safe async processing for Render (no running loop crash)
+        import asyncio
+        asyncio.run(application.process_update(update))
 
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook processing error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
