@@ -936,26 +936,29 @@ def start_flask_background():
         app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
     Thread(target=run_flask, daemon=True).start()
 
+application = None  # Global Telegram app instance
 async def start_bot_webhook():
     """Start Telegram bot in webhook mode for Render (always online)."""
     print("🤖 Initializing Telegram bot (Webhook Mode)...")
 
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    global application
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
 
     # --- Handlers ---
-    app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CommandHandler("addmain", addmain_cmd))
-    app.add_handler(CommandHandler("adddaily", adddaily_cmd))
-    app.add_handler(CommandHandler("deltask", deltask_cmd))
-    app.add_handler(CommandHandler("listtasks", listtasks_cmd))
-    app.add_handler(CommandHandler("clearcore", clearcore_cmd))
-    app.add_handler(CallbackQueryHandler(btn_handler))
+    application.add_handler(CommandHandler("start", start_cmd))
+    application.add_handler(CommandHandler("addmain", addmain_cmd))
+    application.add_handler(CommandHandler("adddaily", adddaily_cmd))
+    application.add_handler(CommandHandler("deltask", deltask_cmd))
+    application.add_handler(CommandHandler("listtasks", listtasks_cmd))
+    application.add_handler(CommandHandler("clearcore", clearcore_cmd))
+    application.add_handler(CallbackQueryHandler(btn_handler))
 
     # --- Set webhook ---
     port = int(os.environ.get("PORT", "10000"))
     webhook_url = f"{PUBLIC_BASE_URL}/webhook"
-    await app.bot.delete_webhook(drop_pending_updates=True)
-    await app.bot.set_webhook(url=webhook_url)
+    await application.bot.delete_webhook(drop_pending_updates=True)
+    await application.bot.set_webhook(url=webhook_url)
 
     print(f"✅ Webhook set to {webhook_url}")
 
@@ -967,9 +970,9 @@ async def start_bot_webhook():
     Thread(target=run_flask, daemon=True).start()
 
     # --- Proper Telegram app lifecycle ---
-    await app.initialize()
-    await app.start()
-    await app.updater.start_webhook(listen="0.0.0.0", port=port, url_path="", webhook_url=webhook_url)
+    await application.initialize()
+    await application.start()
+    await application.updater.start_webhook(listen="0.0.0.0", port=port, url_path="", webhook_url=webhook_url)
 
     print("✅ Telegram bot started successfully (Webhook mode active).")
 
@@ -981,22 +984,27 @@ from flask import request
 
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
-    """Receive incoming updates from Telegram (Render Webhook)"""
+    """Receive updates from Telegram and pass to the running bot instance."""
     try:
-        update = request.get_json(force=True)
-        if not update:
-            return jsonify({"ok": False, "error": "no update"}), 400
+        global application
+        if application is None:
+            return jsonify({"ok": False, "error": "bot not ready"}), 503
 
-        # Forward the update manually to Telegram bot
+        update_data = request.get_json(force=True, silent=True)
+        if not update_data:
+            return jsonify({"ok": False, "error": "empty update"}), 400
+
         from telegram import Update
-        from telegram.ext import ApplicationBuilder
+        update = Update.de_json(update_data, application.bot)
 
-        application = ApplicationBuilder().token(BOT_TOKEN).build()
-        tg_update = Update.de_json(update, application.bot)
-
-        # Process the update (non-blocking)
-        application.update_queue.put_nowait(tg_update)
+        # ✅ directly queue the update for the running bot
+        application.create_task(application.process_update(update))
         return jsonify({"ok": True}), 200
+
+    except Exception as e:
+        print("🔥 Webhook processing error:", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
     except Exception as e:
         print("🔥 Webhook error:", e)
