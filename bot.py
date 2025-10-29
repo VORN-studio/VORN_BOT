@@ -1079,11 +1079,6 @@ def telegram_webhook():
 
 
 
-
-
-
-
-
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
     try:
@@ -1092,7 +1087,17 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # 🚀 Run bot in webhook mode (Flask included inside)
-    import asyncio
-    asyncio.run(start_bot_webhook())
+    import threading, asyncio
+
+    def run_bot():
+        asyncio.run(start_bot_webhook())
+
+    # 🚀 Launch Telegram bot in background thread
+    threading.Thread(target=run_bot, daemon=True).start()
+
+    # 🚀 Run Flask (Render needs an open port)
+    print("🌍 Starting Flask web server (Render port)...")
+    port = int(os.environ.get("PORT", "10000"))
+    app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+
 
