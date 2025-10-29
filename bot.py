@@ -778,6 +778,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 def serve_terms():
     return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'terms.html')
 
+@app_web.route('/tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.html')
+def serve_tiktok_verification():
+    return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.html')
+
+
 @app_web.route('/privacy.html')
 def serve_privacy():
     return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'privacy.html')
