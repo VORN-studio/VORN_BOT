@@ -790,11 +790,10 @@ def serve_privacy():
 # --- TikTok URL prefix verification (serve as plain text at site root) ---
 @app_web.route("/tiktok-developers-site-verification.txt")
 def tiktok_verification_file():
-    return (
-        "tiktok-developers-site-verification=xIdyn8EdBKD9JpuXubuRGoh4vXfVZF18",
-        200,
-        {"Content-Type": "text/plain; charset=utf-8"}
-    )
+    return "tiktok-developers-site-verification=xIdyn8EdBKD9JpuXubuRGoh4vXfVZF18", 200, {
+        "Content-Type": "text/plain; charset=utf-8"
+    }
+
 
 
 
