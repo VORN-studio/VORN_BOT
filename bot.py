@@ -787,6 +787,20 @@ def serve_tiktok_verification():
 def serve_privacy():
     return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'privacy.html')
 
+
+# --- TikTok site verification: serve token file from root ---
+@app_web.route("/tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt")
+def serve_tiktok_verif_standard():
+    return send_from_directory(BASE_DIR, "tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt")
+
+# Եթե TikTok-ը քեզ տվել է ԱՅԼ կոնկրետ անուն (երկար token-ով),
+# օրինակ 'tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt',
+# ավելացրու նաև այս երկրորդ route-ը՝ նույն անունով.
+@app_web.route("/tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt")
+def serve_tiktok_verif_tokened():
+    return send_from_directory(BASE_DIR, "tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt")
+
+
 # --- TikTok URL prefix verification (serve as plain text at site root) ---
 @app_web.route("/tiktok-developers-site-verification.txt")
 def tiktok_verification_file():
