@@ -456,7 +456,7 @@ def api_tasks():
     # get all tasks
     c.execute("""
         SELECT id, type, title, reward_feather, reward_vorn, link
-        FROM tasks WHERE active=1 ORDER BY id DESC
+        FROM tasks FROM tasks WHERE active = TRUE ORDER BY id DESC ORDER BY id DESC
     """)
     rows = c.fetchall()
 
@@ -621,7 +621,7 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
 
     c.execute("""
         SELECT id, type, title, reward_feather, reward_vorn, link
-        FROM tasks WHERE active=1 ORDER BY id DESC
+        FROM tasks FROM tasks WHERE active = TRUE ORDER BY id DESC ORDER BY id DESC
     """)
     rows = c.fetchall()
 
@@ -715,7 +715,7 @@ async def listtasks_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return await update.message.reply_text("⛔ Not authorized.")
     conn = db(); c = conn.cursor()
-    c.execute("SELECT id, type, title, reward_feather, reward_vorn FROM tasks WHERE active=1 ORDER BY id DESC")
+    c.execute("SELECT id, type, title, reward_feather, reward_vorn FROM tasks FROM tasks WHERE active = TRUE ORDER BY id DESC ORDER BY id DESC")
     rows = c.fetchall(); conn.close()
     if not rows:
         return await update.message.reply_text("📭 No tasks.")
@@ -879,7 +879,7 @@ def api_verify_task():
         pass
 
     # read task info
-    c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=%s AND active=1", (task_id,))
+    c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=%s AND active = TRUE", (task_id,))
     task = c.fetchone()
     if not task:
         conn.close()
@@ -998,15 +998,18 @@ def telegram_webhook():
         from telegram import Update
         update = Update.de_json(update_data, application.bot)
 
-        # ✅ Run process_update safely inside event loop
-        loop = asyncio.get_event_loop()
-        loop.create_task(application.process_update(update))
+        # ✅ Safe way to schedule async update inside Flask
+        asyncio.run_coroutine_threadsafe(
+            application.process_update(update),
+            asyncio.get_running_loop()
+        )
 
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook processing error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
