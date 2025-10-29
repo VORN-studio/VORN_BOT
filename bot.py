@@ -971,7 +971,7 @@ async def start_bot_webhook():
         await application.bot.set_chat_menu_button(
             menu_button={
                 "type": "web_app",
-                "text": "🌀 Open VORN App",
+                "text": "🌀 VORN App",
                 "web_app": {"url": f"{PUBLIC_BASE_URL}/app"}
             }
         )
