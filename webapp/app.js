@@ -1256,8 +1256,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ⛓️ Generate user's personal link
   const uid = uidFromURL();
-  const base = window.location.origin + "/app?uid=" + uid;
+  // ⛓️ Generate user's personal Telegram referral link
+  const botUsername = "VORN_bot";  // 👈 քո բոտի իրական @անունը այստեղ գրիր առանց @
+  const base = `https://t.me/${botUsername}?start=${uid}`;
   refLinkText.textContent = base;
+
 
   copyBtn.addEventListener("click", async () => {
     try {
