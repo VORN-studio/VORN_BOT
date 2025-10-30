@@ -176,6 +176,7 @@ const VORN = {
 
     this.mountDebugOverlay();
     this.mountCanvasBackground();
+    this.applyI18N && this.applyI18N();
   },
 
   bindEls() {
@@ -250,7 +251,7 @@ if (this.els.exchangeBtn) {
   async openReferrals() {
     if (!this.uid) return;
     try {
-      const r = await fetch(`${API_BASE}/api/referrals?uid=${this.uid}`);
+      const r = await fetch(`${API_BASE}/api/referrals/${this.uid}`);
       const d = await r.json();
       if (!d.ok) throw new Error(d.error || "referrals failed");
 
@@ -284,13 +285,23 @@ if (this.els.exchangeBtn) {
       console.error("referrals open failed:", e);
       this.showMessage("error", "error");
     }
+
+    // ✅ Թարգմանում ենք ռեֆերալի պատուհանը ըստ լեզվի
+const lang = this.lang || getSavedLang();
+const refDict = langButtonsDict.tasksTitles.referral;
+document.getElementById("referralTitle").textContent = refDict.title[lang] || refDict.title.en;
+document.getElementById("refPreviewBtn").textContent = refDict.calc[lang] || refDict.calc.en;
+document.getElementById("refClaimBtn").textContent = refDict.claim[lang] || refDict.claim.en;
+document.getElementById("closeRefBtn").textContent = refDict.close[lang] || refDict.close.en;
+
+
   },
 
 
 
   async refPreview() {
     try {
-      const r = await fetch(`${API_BASE}/api/referrals/preview?uid=${this.uid}`);
+      const r = await fetch(`${API_BASE}/api/referrals/${this.uid}`);
       const d = await r.json();
       if (!d.ok) throw new Error(d.error || "preview failed");
 
@@ -309,11 +320,12 @@ if (this.els.exchangeBtn) {
 
   async refClaim() {
     try {
-      const r = await fetch(`${API_BASE}/api/referrals/claim`, {
+      const r = await fetch(`${API_BASE}/api/referral_claim`, {
         method: "POST",
         headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ uid: this.uid })
-      });
+        body: JSON.stringify({ user_id: this.uid })
+    });
+
       const d = await r.json();
       if (!d.ok) {
         this.showMessage("error", "error");
@@ -375,7 +387,15 @@ if (foodEl) foodEl.textContent = this.vornBalance.toFixed(2);
     const nameEl = document.getElementById("username");
 if (nameEl) nameEl.textContent = `Player ${this.uid}`;
 
-  },
+// ✅ Դնում ենք նույն լեզուն նաև ինտերֆեյսի վրա
+if (this.lang) document.documentElement.setAttribute("lang", this.lang);
+
+
+// ✅ Պահպանում ենք լեզուն որպես active
+document.documentElement.setAttribute("lang", this.lang);
+console.log("🌐 Language set to:", this.lang);
+
+},
 
   async preloadTasks() {
   try {
@@ -497,12 +517,25 @@ async onMineClick() {
     if (this._confirmHandlersBound) return;
     this._confirmHandlersBound = true;
 
-    this.els.confirmLangBtn && this.els.confirmLangBtn.addEventListener("click", () => {
-      this.els.confirmLangModal.classList.add("hidden");
-      this.lang = code;
-      localStorage.setItem("vorn_lang", this.lang);
-      this.startSlidesFlow(this.lang);
-    });
+    this.els.confirmLangBtn && this.els.confirmLangBtn.addEventListener("click", async () => {
+  this.els.confirmLangModal.classList.add("hidden");
+  this.lang = code;
+  localStorage.setItem("vorn_lang", this.lang);
+
+  // ✅ ուղարկում ենք լեզուն սերվերին, որ միշտ հիշի
+  if (this.uid) {
+    try {
+      await fetch(`${API_BASE}/api/set_language`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ user_id: this.uid, language: this.lang })
+      });
+    } catch (e) { console.warn("set_language failed:", e); }
+  }
+
+  this.startSlidesFlow(this.lang);
+});
+
 
     this.els.changeLangBtn && this.els.changeLangBtn.addEventListener("click", () => {
       this.els.confirmLangModal.classList.add("hidden");
@@ -953,7 +986,7 @@ showMessage(key, type = "info", duration = 2600) {
   };
 
   // ընտրում ենք օգտատիրոջ լեզուն
-  const lang = this.lang || getSavedLang() || "en";
+  const lang = (this.lang && texts[this.lang]) ? this.lang : getSavedLang();
   const text = (messages[key] && (messages[key][lang] || messages[key].en)) || key;
 
   // հին toast-ը ջնջում ենք
