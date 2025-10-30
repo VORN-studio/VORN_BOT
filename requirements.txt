@@ -2,3 +2,4 @@ python-telegram-bot==20.4
 Flask
 flask-cors
 psycopg2-binary
+requests
