@@ -142,26 +142,43 @@ const VORN = {
     this.mountCanvasBackground();
   },
 
-  
-  // ... գոյություն ունեցող կոդ ...
-
   bindEls() {
     this.els.mineBtn = document.getElementById("btnMine");
-    this.els.exchangeBtn = document.getElementById("btnExchange");
-    if (this.els.exchangeBtn) {
-      this.els.exchangeBtn.onclick = null;
-      this.els.exchangeBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.onExchange();
-      });
-    }
+    // ✅ Exchange button safe rebind
+this.els.exchangeBtn = document.getElementById("btnExchange");
+if (this.els.exchangeBtn) {
+  this.els.exchangeBtn.onclick = null; // remove old listeners
+  this.els.exchangeBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.onExchange();
+  });
+}
 
     this.els.feather = document.getElementById("featherCount");
     this.els.btnTasks = document.getElementById("btnTasks");
     this.els.tasksModal = document.getElementById("tasksModal");
     this.els.tasksList = document.getElementById("tasksList");
     this.els.closeTasksBtn = document.getElementById("closeTasksBtn");
+    this.els.introVideo = document.getElementById("introVideo");
+    this.els.introSlides = document.getElementById("introSlides");
+    this.els.slideImage = document.getElementById("slideImage");
+    this.els.slideNextBtn = document.getElementById("slideNextBtn");
+    this.els.startBtn = document.getElementById("startBtn");
+    this.els.introText = document.querySelector(".intro-text");
+    this.els.startContainer = document.querySelector(".button-container");
+    this.els.modalLang = document.getElementById("languageModal");
+    this.els.confirmLangModal = document.getElementById("confirmLangModal");
+    this.els.confirmLangTitle = document.getElementById("confirmLangTitle");
+    this.els.confirmLangText = document.getElementById("confirmLangText");
+    this.els.confirmLangBtn = document.getElementById("confirmLangBtn");
+    this.els.changeLangBtn = document.getElementById("changeLangBtn");
+    this.els.langGrid = document.getElementById("lang-grid");
+
+    // Mine button
+    if (this.els.mineBtn) {
+      this.els.mineBtn.addEventListener("click", () => this.onMineClick());
+    }
 
     // 🔹 Referral elements
     this.els.btnReferral = document.getElementById("btnReferral");
@@ -173,28 +190,26 @@ const VORN = {
     this.els.refClaimBtn = document.getElementById("refClaimBtn");
     this.els.closeRefBtn = document.getElementById("closeRefBtn");
 
-    if (this.els.mineBtn) {
-      this.els.mineBtn.addEventListener("click", () => this.onMineClick());
-    }
-
-    // 🔸 Open referrals modal
     if (this.els.btnReferral && this.els.refModal) {
-      this.els.btnReferral.addEventListener("click", async () => {
-        this.openReferrals();
-      });
-    }
-    if (this.els.closeRefBtn) {
-      this.els.closeRefBtn.addEventListener("click", () => {
-        this.els.refModal.classList.add("hidden");
-      });
-    }
-    if (this.els.refPreviewBtn) {
-      this.els.refPreviewBtn.addEventListener("click", () => this.refPreview());
-    }
-    if (this.els.refClaimBtn) {
-      this.els.refClaimBtn.addEventListener("click", () => this.refClaim());
-    }
-  },
+    this.els.btnReferral.addEventListener("click", async () => {
+    this.openReferrals();
+  });
+  }
+  if (this.els.closeRefBtn) {
+  this.els.closeRefBtn.addEventListener("click", () => {
+    this.els.refModal.classList.add("hidden");
+  });
+  }
+  if (this.els.refPreviewBtn) {
+  this.els.refPreviewBtn.addEventListener("click", () => this.refPreview());
+  }
+  if (this.els.refClaimBtn) {
+  this.els.refClaimBtn.addEventListener("click", () => this.refClaim());
+  }
+
+},
+
+
 
   async openReferrals() {
     if (!this.uid) return;
