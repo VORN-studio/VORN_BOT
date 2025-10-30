@@ -682,6 +682,10 @@ async onMineClick() {
 bindTasksModal() {
   const { btnTasks, tasksModal, tasksList, closeTasksBtn } = this.els;
   if (!btnTasks || !tasksModal || !tasksList || !closeTasksBtn) return;
+  
+  btnTasks.addEventListener("click"), async () => {
+tasksModal.classList.remove("hidden");
+  }
 
   // --- render only ---
   const renderTasks = (data) => {
