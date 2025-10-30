@@ -205,10 +205,10 @@ const VORN = {
 
   /* -------- INIT -------- */
   async init() {
-    this.bindEls();
-    this.buildLanguageGrid();
     console.log("⚙️ VORN.init()");
     console.log("🧠 UID from URL:", uidFromURL());
+    this.bindEls();
+    this.buildLanguageGrid();
     this.uid = uidFromURL();
     this.lang = getSavedLang();
 
@@ -225,6 +225,8 @@ const VORN = {
       }, { once: true });
     }
 
+    
+
     this.bindTasksModal();
     await this.ensureVideoPlays();
 
@@ -237,6 +239,8 @@ const VORN = {
   this.preloadTasks();
   this.startMineTicker();
 }
+
+
   
  else {
       console.warn("⚠️ No uid in URL");
@@ -246,6 +250,46 @@ const VORN = {
     this.mountCanvasBackground();
     this.applyI18N && this.applyI18N();
   },
+
+
+  buildLanguageGrid() {
+  const grid = document.getElementById("lang-grid");
+  if (!grid) {
+    console.warn("⚠️ lang-grid not found");
+    return;
+  }
+
+  grid.innerHTML = "";
+
+  const LANGS = {
+    en: "English",
+    ru: "Русский",
+    hy: "Հայերեն",
+    fr: "Français",
+    es: "Español",
+    de: "Deutsch",
+    it: "Italiano",
+    tr: "Türkçe",
+    fa: "فارسی",
+    ar: "العربية",
+    zh: "中文",
+    ja: "日本語",
+    ko: "한국어",
+    pt: "Português",
+    uk: "Українська"
+  };
+
+  Object.entries(LANGS).forEach(([code, name]) => {
+    const btn = document.createElement("button");
+    btn.className = "lang-btn";
+    btn.textContent = name;
+    btn.onclick = () => this.showConfirmLang(code);
+    grid.appendChild(btn);
+  });
+
+  console.log("✅ Language grid created:", Object.keys(LANGS).length, "languages");
+},
+
 
   bindEls() {
     this.els.mineBtn = document.getElementById("btnMine");
