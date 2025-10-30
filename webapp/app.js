@@ -70,8 +70,44 @@ const langButtonsDict = {
   start:    { en: "Start",    ru: "Начать",      hy: "Սկսել",      tr: "Başlat",  fa: "شروع", es: "Empezar",  fr: "Commencer", de: "Starten", it: "Avvia", zh: "开始", ja: "開始", ko: "시작", ar: "ابدأ" },
   tasksTitles: {
     main:  { en: "⭐ Main Tasks", ru: "⭐ Основные задания", hy: "⭐ Հիմնական առաջադրանքներ", tr: "⭐ Ana Görevler", fa: "⭐ ماموریت‌های اصلی", es: "⭐ Tareas principales", fr: "⭐ Tâches principales" },
-    daily: { en: "🌅 Daily Tasks", ru: "🌅 Ежедневные задания", hy: "🌅 Օրվա առաջադրանքներ", tr: "🌅 Günlük Görevler", fa: "🌅 ماموریت‌های روزانه", es: "🌅 Tareas diarias", fr: "🌅 Tâches quotidiennes" }
+    daily: { en: "🌅 Daily Tasks", ru: "🌅 Ежедневные задания", hy: "🌅 Օրվա առաջադրանքներ", tr: "🌅 Günlük Görevler", fa: "🌅 ماموریت‌های روزانه", es: "🌅 Tareas diarias", fr: "🌅 Tâches quotidiennes" },
+      referral: {
+    title: {
+      en: "🤝 Referrals", ru: "🤝 Рефералы", hy: "🤝 Ռեֆերալներ", 
+      fr: "🤝 Parrainages", es: "🤝 Referencias", de: "🤝 Empfehlungen", it: "🤝 Inviti",
+      tr: "🤝 Referanslar", fa: "🤝 دعوت‌ها", ar: "🤝 الإحالات", zh: "🤝 邀请", ja: "🤝 招待", ko: "🤝 추천",
+      hi: "🤝 रेफरल्स", pt: "🤝 Indicações", el: "🤝 Παραπομπές", pl: "🤝 Polecenia", nl: "🤝 Verwijzingen",
+      sv: "🤝 Hänvisningar", ro: "🤝 Recomandări", hu: "🤝 Meghívások", cs: "🤝 Pozvánky", uk: "🤝 Реферали",
+      az: "🤝 Referallar", ka: "🤝 მოწვევები"
+    },
+    calc: {
+      en: "🧮 Calculate", ru: "🧮 Посчитать", hy: "🧮 Հաշվել", 
+      fr: "🧮 Calculer", es: "🧮 Calcular", de: "🧮 Berechnen", it: "🧮 Calcola",
+      tr: "🧮 Hesapla", fa: "🧮 محاسبه", ar: "🧮 احسب", zh: "🧮 计算", ja: "🧮 計算", ko: "🧮 계산",
+      hi: "🧮 गणना करें", pt: "🧮 Calcular", el: "🧮 Υπολογισμός", pl: "🧮 Oblicz", nl: "🧮 Berekenen",
+      sv: "🧮 Beräkna", ro: "🧮 Calculează", hu: "🧮 Számítás", cs: "🧮 Spočítat", uk: "🧮 Порахувати",
+      az: "🧮 Hesabla", ka: "🧮 გამოთვლა"
+    },
+    claim: {
+      en: "💰 Claim", ru: "💰 Получить", hy: "💰 Վերցնել", 
+      fr: "💰 Récupérer", es: "💰 Reclamar", de: "💰 Abholen", it: "💰 Richiedi",
+      tr: "💰 Al", fa: "💰 دریافت", ar: "💰 استلام", zh: "💰 领取", ja: "💰 受け取る", ko: "💰 받기",
+      hi: "💰 प्राप्त करें", pt: "💰 Receber", el: "💰 Λήψη", pl: "💰 Odbierz", nl: "💰 Ontvangen",
+      sv: "💰 Hämta", ro: "💰 Primește", hu: "💰 Felvenni", cs: "💰 Získat", uk: "💰 Отримати",
+      az: "💰 Al", ka: "💰 მიღება"
+    },
+    close: {
+      en: "✖ Close", ru: "✖ Закрыть", hy: "✖ Փակել", 
+      fr: "✖ Fermer", es: "✖ Cerrar", de: "✖ Schließen", it: "✖ Chiudi",
+      tr: "✖ Kapat", fa: "✖ بستن", ar: "✖ إغلاق", zh: "✖ 关闭", ja: "✖ 閉じる", ko: "✖ 닫기",
+      hi: "✖ बंद करें", pt: "✖ Fechar", el: "✖ Κλείσιμο", pl: "✖ Zamknij", nl: "✖ Sluiten",
+      sv: "✖ Stäng", ro: "✖ Închide", hu: "✖ Bezárás", cs: "✖ Zavřít", uk: "✖ Закрити",
+      az: "✖ Bağla", ka: "✖ დახურვა"
+    }
   }
+
+  }
+ 
 };
 function getSavedLang() {
   try { return localStorage.getItem("vorn_lang") || "en"; } catch { return "en"; }
@@ -249,6 +285,8 @@ if (this.els.exchangeBtn) {
       this.showMessage("error", "error");
     }
   },
+
+
 
   async refPreview() {
     try {
@@ -1154,6 +1192,28 @@ document.addEventListener("DOMContentLoaded", () => {
   window.scrollTo(0, 0);
   setTimeout(() => { window.scrollTo(0, 0); }, 800);
   console.log("🩹 Scroll-lock fix applied (Telegram)");
+});
+
+// 🧩 Referral link display and copy
+document.addEventListener("DOMContentLoaded", () => {
+  const refLinkText = document.getElementById("refLinkText");
+  const copyBtn = document.getElementById("copyRefLinkBtn");
+  if (!refLinkText || !copyBtn) return;
+
+  // ⛓️ Generate user's personal link
+  const uid = uidFromURL();
+  const base = window.location.origin + "/app?uid=" + uid;
+  refLinkText.textContent = base;
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(base);
+      copyBtn.textContent = "✅ Copied!";
+      setTimeout(() => (copyBtn.textContent = "📋 Copy Link"), 1500);
+    } catch {
+      alert("⚠️ Copy failed, copy manually.");
+    }
+  });
 });
 
 
