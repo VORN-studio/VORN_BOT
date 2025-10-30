@@ -1227,6 +1227,96 @@ def google_callback():
     return jsonify({"ok": True, "youtube": data})
 
 
+# =====================================================
+# 🧩 Referral unified API (for WebApp frontend)
+# =====================================================
+
+@app_web.route("/api/referrals")
+def api_referrals_list():
+    """Return invited friends + their stats for given uid"""
+    uid = int(request.args.get("uid", 0))
+    if not uid:
+        return jsonify({"ok": False, "error": "missing uid"}), 400
+
+    conn = db(); c = conn.cursor()
+    c.execute("""
+        SELECT user_id, username, balance, vorn_balance
+        FROM users
+        WHERE inviter_id = %s
+        ORDER BY balance DESC
+    """, (uid,))
+    rows = c.fetchall()
+    conn.close()
+
+    data = []
+    for i, (rid, uname, feathers, vorn) in enumerate(rows, start=1):
+        data.append({
+            "rank": i,
+            "username": uname or f"User{rid}",
+            "feathers": feathers or 0,
+            "vorn": float(vorn or 0)
+        })
+
+    return jsonify({"ok": True, "list": data})
+
+
+@app_web.route("/api/referrals/preview")
+def api_referrals_preview():
+    """Compute how much cashback user can claim now (3%)"""
+    uid = int(request.args.get("uid", 0))
+    if not uid:
+        return jsonify({"ok": False, "error": "missing uid"}), 400
+
+    conn = db(); c = conn.cursor()
+    c.execute("SELECT SUM(amount_feathers), SUM(amount_vorn) FROM referral_earnings WHERE inviter_id=%s", (uid,))
+    row = c.fetchone()
+    conn.close()
+
+    total_f = int(row[0] or 0)
+    total_v = float(row[1] or 0)
+
+    return jsonify({
+        "ok": True,
+        "cashback_feathers": total_f,
+        "cashback_vorn": total_v
+    })
+
+
+@app_web.route("/api/referrals/claim", methods=["POST"])
+def api_referrals_claim():
+    """Give user his 3% cashback and reset referral_earnings"""
+    data = request.get_json(force=True, silent=True) or {}
+    uid = int(data.get("uid", 0))
+    if not uid:
+        return jsonify({"ok": False, "error": "missing uid"}), 400
+
+    conn = db(); c = conn.cursor()
+    c.execute("SELECT SUM(amount_feathers), SUM(amount_vorn) FROM referral_earnings WHERE inviter_id=%s", (uid,))
+    row = c.fetchone()
+    total_f = int(row[0] or 0)
+    total_v = float(row[1] or 0)
+
+    # delete claimed entries
+    c.execute("DELETE FROM referral_earnings WHERE inviter_id=%s", (uid,))
+
+    # update user's balances
+    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
+    row2 = c.fetchone()
+    if row2:
+        new_b = (row2[0] or 0) + total_f
+        new_v = (row2[1] or 0) + total_v
+        c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, uid))
+    conn.commit(); conn.close()
+
+    return jsonify({
+        "ok": True,
+        "cashback_feathers": total_f,
+        "cashback_vorn": total_v,
+        "new_balance": new_b,
+        "new_vorn": new_v
+    })
+
+
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
     try:
