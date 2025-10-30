@@ -56,13 +56,7 @@
 
   <!-- START BUTTON (fixed position centered lower on screen) -->
 <div id="startContainer">
-  <button id="startBtn" onclick="(function(){
-    var it=document.querySelector('.intro-text');
-    var lm=document.getElementById('languageModal');
-    if(it) it.style.display='none';
-    if(lm) lm.classList.remove('hidden');
-    console.log('✅ START → languageModal opened (inline)');
-  })();">START</button>
+ <button id="startBtn">START</button>
 </div>
 
 <style>
@@ -243,7 +237,7 @@
       }
     })();
   </script>
-  
+
   <script>
 document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("startBtn");
