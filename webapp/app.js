@@ -301,55 +301,61 @@ document.getElementById("closeRefBtn").textContent = refDict.close[lang] || refD
 
 
 
-  async refPreview() {
-    try {
-      const r = await fetch(`${API_BASE}/api/referrals/${this.uid}`);
-      const d = await r.json();
-      if (!d.ok) throw new Error(d.error || "preview failed");
+ async refPreview() {
+  try {
+    const r = await fetch(`${API_BASE}/api/referrals/preview?uid=${this.uid}`); // ← new
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || "preview failed");
 
-      const cf = d.cashback_feathers || 0;
-      const cv = d.cashback_vorn || 0;
-      this.els.refResult.textContent =
-        `💡 Ըստ հաշվարկի՝ կստանաս ${cf} 🪶 և ${cv.toFixed(4)} 🜂`;
-      if (cf > 0 || cv > 0) this.els.refClaimBtn.classList.remove("hidden");
-      else this.els.refClaimBtn.classList.add("hidden");
-    } catch (e) {
-      console.error("ref preview failed:", e);
-      this.els.refResult.textContent = "⚠️ Չկա որևէ գումար հաշվարկելու։";
-      this.els.refClaimBtn.classList.add("hidden");
-    }
-  },
+    const cf = d.cashback_feathers || 0;
+    const cv = d.cashback_vorn || 0;
+    this.els.refResult.textContent =
+      (this.lang === "ru") ? `💡 По расчёту: ${cf} 🪶 и ${cv.toFixed(4)} 🜂`
+      : (this.lang === "hy") ? `💡 Ըստ հաշվարկի՝ ${cf} 🪶 և ${cv.toFixed(4)} 🜂`
+      : `💡 You can claim ${cf} 🪶 and ${cv.toFixed(4)} 🜂`;
+    if (cf > 0 || cv > 0) this.els.refClaimBtn.classList.remove("hidden");
+    else this.els.refClaimBtn.classList.add("hidden");
+  } catch (e) {
+    console.error("ref preview failed:", e);
+    this.els.refResult.textContent =
+      (this.lang === "ru") ? "⚠️ Нет суммы для расчёта."
+      : (this.lang === "hy") ? "⚠️ Չկա որևէ գումար հաշվարկելու։"
+      : "⚠️ Nothing to calculate.";
+    this.els.refClaimBtn.classList.add("hidden");
+  }
+},
 
-  async refClaim() {
-    try {
-      const r = await fetch(`${API_BASE}/api/referral_claim`, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ user_id: this.uid })
+
+
+async refClaim() {
+  try {
+    const r = await fetch(`${API_BASE}/api/referrals/claim`, { // ← was /api/referral_claim
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ uid: this.uid })                   // ← key is uid
     });
+    const d = await r.json();
+    if (!d.ok) { this.showMessage("error","error"); return; }
 
-      const d = await r.json();
-      if (!d.ok) {
-        this.showMessage("error", "error");
-        return;
-      }
-      // update balances on UI
-      this.balance = d.new_balance ?? this.balance;
-      this.vornBalance = d.new_vorn ?? this.vornBalance;
-      const featherEl = document.getElementById("featherCount");
-      const vornEl = document.getElementById("foodCount");
-      if (featherEl) featherEl.textContent = String(this.balance);
-      if (vornEl) vornEl.textContent = (this.vornBalance).toFixed(2);
+    this.balance = d.new_balance ?? this.balance;
+    this.vornBalance = d.new_vorn ?? this.vornBalance;
+    document.getElementById("featherCount")?.textContent = String(this.balance);
+    document.getElementById("foodCount")?.textContent = (this.vornBalance).toFixed(2);
 
-      this.els.refResult.textContent =
-        `✅ Վերցրեցիր ${d.cashback_feathers} 🪶 և ${Number(d.cashback_vorn).toFixed(4)} 🜂`;
-      this.els.refClaimBtn.classList.add("hidden");
-      this.showMessage("success_exchange", "success");
-    } catch (e) {
-      console.error("ref claim failed:", e);
-      this.showMessage("error", "error");
-    }
-  },
+    const msg =
+      (this.lang === "ru") ? `✅ Получено ${d.cashback_feathers} 🪶 и ${Number(d.cashback_vorn).toFixed(4)} 🜂`
+      : (this.lang === "hy") ? `✅ Վերցրեցիր ${d.cashback_feathers} 🪶 և ${Number(d.cashback_vorn).toFixed(4)} 🜂`
+      : `✅ Claimed ${d.cashback_feathers} 🪶 and ${Number(d.cashback_vorn).toFixed(4)} 🜂`;
+    this.els.refResult.textContent = msg;
+
+    this.els.refClaimBtn.classList.add("hidden");
+    this.showMessage("success_exchange","success");
+  } catch (e) {
+    console.error("ref claim failed:", e);
+    this.showMessage("error","error");
+  }
+},
+
 
 
 

@@ -219,21 +219,27 @@ def release_bot_lock():
     
 
 def ensure_user(user_id: int, username: Optional[str], inviter_id: Optional[int] = None):
+    # ❌ Block self-referral at the gate
+    if inviter_id == user_id:
+        inviter_id = None
+
     conn = db(); c = conn.cursor()
     c.execute("SELECT user_id, inviter_id FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
+
     if row is None:
+        # First time we ever see this user → allow inviter_id (if provided)
         c.execute("""
             INSERT INTO users (user_id, username, balance, last_mine, language, intro_seen, last_reminder_sent, inviter_id)
             VALUES (%s, %s, 0, 0, 'en', 0, 0, %s)
         """, (user_id, username, inviter_id))
     else:
-        old_inviter = row[1]
-        if old_inviter is None and inviter_id:
-            c.execute("UPDATE users SET inviter_id=%s WHERE user_id=%s", (inviter_id, user_id))
+        # Already known user → NEVER change inviter_id (one-time rule)
         c.execute("UPDATE users SET username=%s WHERE user_id=%s", (username, user_id))
+
     conn.commit()
     conn.close()
+
 
 
 def get_balance(user_id: int) -> int:
@@ -344,13 +350,22 @@ def api_get_user(user_id):
 def api_set_language():
     data = request.get_json(force=True, silent=True) or {}
     user_id = int(data.get("user_id", 0))
-    lang = (data.get("language") or "en")[:8]
+    lang = (data.get("language") or "en").lower()[:8]
+    allowed_langs = (
+        "en","ru","hy","fr","es","de","it","tr","fa","ar","zh","ja","ko",
+        "hi","pt","el","pl","nl","sv","ro","hu","cs","uk","az","ka"
+    )
+    if lang not in allowed_langs:
+        lang = "en"
+
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
+
     conn = db(); c = conn.cursor()
     c.execute("UPDATE users SET language=%s WHERE user_id=%s", (lang, user_id))
     conn.commit(); conn.close()
-    return jsonify({"ok": True})
+    return jsonify({"ok": True, "language": lang})
+
 
 @app_web.route("/api/mine", methods=["POST"])
 def api_mine():
@@ -1065,6 +1080,11 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 inviter_id = int(parts[1].replace("ref_", ""))
             except Exception:
                 inviter_id = None
+
+     # ❌ Block self-referral (if user clicks his own link)
+    if inviter_id == user.id:
+        inviter_id = None
+
 
     # 🧩 Գրանցում ենք user-ին բազայում՝ հրավիրողի ID-ով
     ensure_user(user.id, user.username, inviter_id)
