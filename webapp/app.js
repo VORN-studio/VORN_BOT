@@ -1257,7 +1257,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ⛓️ Generate user's personal link
   const uid = uidFromURL();
   // ⛓️ Generate user's personal Telegram referral link
-  const botUsername = "VORN_bot";  // 👈 քո բոտի իրական @անունը այստեղ գրիր առանց @
+  const botUsername = "VORNCoinbot";  // 👈 քո բոտի իրական @անունը այստեղ գրիր առանց @
   const base = `https://t.me/${botUsername}?start=${uid}`;
   refLinkText.textContent = base;
 
