@@ -701,31 +701,38 @@ async onMineClick() {
     }
   },
 
-  // hard-wire start in case any overlay blocks
   wireStartButton() {
-    const bind = () => {
-      const startBtn = document.getElementById("startBtn");
-      const langModal = document.getElementById("languageModal");
-      const introText = document.querySelector(".intro-text");
-      const startCtr = document.querySelector(".button-container");
-      if (startBtn && langModal) {
-        startBtn.replaceWith(startBtn.cloneNode(true));
-        const btn = document.getElementById("startBtn");
-        btn.style.zIndex = "1000";
-        btn.addEventListener("click", () => {
-          introText && (introText.style.display = "none");
-          startCtr && (startCtr.style.display = "none");
-          langModal.classList.remove("hidden");
-          console.log("✅ START → languageModal opened");
-        });
-        return true;
-      }
-      return false;
-    };
-    if (bind()) return;
-    let tries = 0;
-    const t = setInterval(() => { tries++; if (bind() || tries > 10) clearInterval(t); }, 200);
-  },
+  const bind = () => {
+    const startBtn = document.getElementById("startBtn");
+    const langModal = document.getElementById("languageModal");
+    const introText = document.querySelector(".intro-text");
+    const startCtr = document.getElementById("startContainer");
+
+    if (startBtn && langModal) {
+      startBtn.replaceWith(startBtn.cloneNode(true));
+      const btn = document.getElementById("startBtn");
+      btn.style.zIndex = "1000";
+      btn.addEventListener("click", () => {
+        introText && (introText.style.display = "none");
+        startCtr && (startCtr.style.display = "none");
+
+        // 🟢 Ահա սա է հիմնական տողը, որ բացում է լեզուների մենյուն
+        langModal.classList.remove("hidden");
+        console.log("✅ START → languageModal opened");
+      });
+      return true;
+    }
+    return false;
+  };
+
+  if (bind()) return;
+  let tries = 0;
+  const t = setInterval(() => {
+    tries++;
+    if (bind() || tries > 10) clearInterval(t);
+  }, 200);
+},
+
 
   /* -------- TASKS MODAL (Multilingual) -------- */
 bindTasksModal() {
