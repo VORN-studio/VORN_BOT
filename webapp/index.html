@@ -244,5 +244,24 @@
     })();
   </script>
   <script src="/webapp/app.js?v=999001" defer></script>
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const startBtn = document.getElementById("startBtn");
+  const langModal = document.getElementById("languageModal");
+  const introText = document.querySelector(".intro-text");
+  const startContainer = document.getElementById("startContainer");
+
+  if (startBtn && langModal) {
+    startBtn.addEventListener("click", () => {
+      // 🔹 Փակում ենք ինտրոյի տեքստն ու ցույց տալիս լեզուների մենյուն
+      if (introText) introText.style.display = "none";
+      if (startContainer) startContainer.style.display = "none";
+      langModal.classList.remove("hidden");
+      console.log("✅ START → Language menu opened manually (fallback)");
+    });
+  }
+});
+</script>
+
 </body>
 </html>
