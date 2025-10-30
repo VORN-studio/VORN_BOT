@@ -56,7 +56,36 @@
 
   <!-- START BUTTON (fixed position centered lower on screen) -->
 <div id="startContainer">
-  <button id="startBtn">START</button>
+  <button id="startBtn" onclick="openLangMenu()">START</button>
+
+<script>
+function openLangMenu() {
+  try {
+    // փակում ենք intro-ն
+    document.querySelector('.intro-text')?.classList.add('hidden');
+    document.getElementById('startContainer')?.classList.add('hidden');
+
+    // ստուգում ենք՝ արդյոք լեզուների grid-ը կառուցված է
+    const grid = document.getElementById('lang-grid');
+    if (!grid || grid.children.length === 0) {
+      console.log('🩹 building lang-grid manually...');
+      if (window.VORN && typeof VORN.buildLanguageGrid === 'function') {
+        VORN.buildLanguageGrid();
+      } else {
+        console.warn('⚠️ VORN not ready yet');
+      }
+    }
+
+    // բացում ենք ճիշտ մոդալը (ոչ confirm-ը)
+    document.getElementById('confirmLangModal')?.classList.add('hidden');
+    document.getElementById('languageModal')?.classList.remove('hidden');
+
+    console.log('✅ Language menu opened successfully');
+  } catch (err) {
+    console.error('❌ openLangMenu failed', err);
+  }
+}
+</script>
 </div>
 
 <script>
