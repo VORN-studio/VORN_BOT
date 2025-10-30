@@ -1052,7 +1052,40 @@ application = None  # Global
 
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    ensure_user(user.id, user.username)
+    if not user:
+        return
+
+    # 🧩 Ստանում ենք inviter_id եթե կա /start ref_XXXX
+    text = update.message.text if update.message else ""
+    inviter_id = None
+    if text and text.startswith("/start"):
+        parts = text.split()
+        if len(parts) > 1 and parts[1].startswith("ref_"):
+            try:
+                inviter_id = int(parts[1].replace("ref_", ""))
+            except Exception:
+                inviter_id = None
+
+    # 🧩 Գրանցում ենք user-ին բազայում՝ հրավիրողի ID-ով
+    ensure_user(user.id, user.username, inviter_id)
+
+    # 🌐 Բացում ենք WebApp-ը
+    base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
+    wa_url = f"{base}/app?uid={user.id}"
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
+    ])
+    await context.bot.send_message(
+        chat_id=user.id,
+        text="🌕 Press the button to enter VORN App 👇",
+        reply_markup=keyboard
+    )
+
+    try:
+        await context.bot.pin_chat_message(chat_id=user.id, message_id=update.message.message_id)
+    except Exception:
+        pass
 
     base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
     wa_url = f"{base}/app?uid={user.id}"

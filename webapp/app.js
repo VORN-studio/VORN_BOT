@@ -251,8 +251,10 @@ if (this.els.exchangeBtn) {
   async openReferrals() {
     if (!this.uid) return;
     try {
-      const r = await fetch(`${API_BASE}/api/referrals/${this.uid}`);
-      const d = await r.json();
+      // inside openReferrals()
+        const r = await fetch(`${API_BASE}/api/referrals?uid=${this.uid}`);  // ← was /api/referrals/${this.uid}
+        const d = await r.json();
+
       if (!d.ok) throw new Error(d.error || "referrals failed");
 
       // Top-3 trophies
@@ -1248,23 +1250,30 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("🩹 Scroll-lock fix applied (Telegram)");
 });
 
-// 🧩 Referral link display and copy
-document.addEventListener("DOMContentLoaded", () => {
+// 🧩 Referral link display and copy (uses backend API)
+document.addEventListener("DOMContentLoaded", async () => {
   const refLinkText = document.getElementById("refLinkText");
   const copyBtn = document.getElementById("copyRefLinkBtn");
   if (!refLinkText || !copyBtn) return;
 
-  // ⛓️ Generate user's personal link
   const uid = uidFromURL();
-  // ⛓️ Generate user's personal Telegram referral link
-  const botUsername = "VORNCoinbot";  // 👈 քո բոտի իրական @անունը այստեղ գրիր առանց @
-  const base = `https://t.me/${botUsername}?start=${uid}`;
-  refLinkText.textContent = base;
+  let link = "";
+  try {
+    const r = await fetch(`${API_BASE}/api/ref_link/${uid}`);
+    const d = await r.json();
+    if (d.ok && d.link) link = d.link;   // ← always "https://t.me/<bot>?start=ref_<uid>"
+  } catch (e) { console.warn("ref link fetch failed:", e); }
 
+  if (!link) {
+    // fallback just in case
+    const botUsername = "VORNCoinbot";
+    link = `https://t.me/${botUsername}?start=ref_${uid}`;
+  }
+  refLinkText.textContent = link;
 
   copyBtn.addEventListener("click", async () => {
     try {
-      await navigator.clipboard.writeText(base);
+      await navigator.clipboard.writeText(link);
       copyBtn.textContent = "✅ Copied!";
       setTimeout(() => (copyBtn.textContent = "📋 Copy Link"), 1500);
     } catch {
@@ -1272,6 +1281,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
