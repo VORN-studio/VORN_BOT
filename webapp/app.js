@@ -142,46 +142,7 @@ const VORN = {
     this.mountCanvasBackground();
   },
 
-  bindEls() {
-    this.els.mineBtn = document.getElementById("btnMine");
-    // ✅ Exchange button safe rebind
-this.els.exchangeBtn = document.getElementById("btnExchange");
-if (this.els.exchangeBtn) {
-  this.els.exchangeBtn.onclick = null; // remove old listeners
-  this.els.exchangeBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    this.onExchange();
-  });
-}
-
-    this.els.feather = document.getElementById("featherCount");
-    this.els.btnTasks = document.getElementById("btnTasks");
-    this.els.tasksModal = document.getElementById("tasksModal");
-    this.els.tasksList = document.getElementById("tasksList");
-    this.els.closeTasksBtn = document.getElementById("closeTasksBtn");
-    this.els.introVideo = document.getElementById("introVideo");
-    this.els.introSlides = document.getElementById("introSlides");
-    this.els.slideImage = document.getElementById("slideImage");
-    this.els.slideNextBtn = document.getElementById("slideNextBtn");
-    this.els.startBtn = document.getElementById("startBtn");
-    this.els.introText = document.querySelector(".intro-text");
-    this.els.startContainer = document.querySelector(".button-container");
-    this.els.modalLang = document.getElementById("languageModal");
-    this.els.confirmLangModal = document.getElementById("confirmLangModal");
-    this.els.confirmLangTitle = document.getElementById("confirmLangTitle");
-    this.els.confirmLangText = document.getElementById("confirmLangText");
-    this.els.confirmLangBtn = document.getElementById("confirmLangBtn");
-    this.els.changeLangBtn = document.getElementById("changeLangBtn");
-    this.els.langGrid = document.getElementById("lang-grid");
-
-    // Mine button
-    if (this.els.mineBtn) {
-      this.els.mineBtn.addEventListener("click", () => this.onMineClick());
-    }
-  },
-
-
+  
   // ... գոյություն ունեցող կոդ ...
 
   bindEls() {
@@ -1170,21 +1131,6 @@ document.addEventListener("DOMContentLoaded", () => {
   VORN.init();
 });
 
-// Fallback binder for static language buttons in HTML:
-document.addEventListener("click", (e) => {
-  const b = e.target.closest(".lang-option");
-  if (!b) return;
-  const code = b.dataset.lang || "en";
-  try { VORN.showConfirmLang(code); } catch (_) {
-    // եթե նույնիսկ VORN դեռ չի բեռնվել, պահենք ընտրությունը localStorage-ում
-    try { localStorage.setItem("vorn_lang", code); } catch {}
-    // ու փակենք popup-ը, որ UI-ն շարունակի
-    const m = document.getElementById("languageModal");
-    const c = document.getElementById("confirmLangModal");
-    m && m.classList.add("hidden");
-    c && c.classList.add("hidden");
-  }
-});
 
 
 
