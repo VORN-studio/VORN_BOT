@@ -38,6 +38,7 @@ function nowSec() { return Math.floor(Date.now() / 1000); }
 
 /* ------------ I18N CORE ------------ */
 const texts = {
+  
   en: { confirmText: "You have chosen English for the entire experience.\nYou cannot change it later.", confirmBtn: "Confirm", changeBtn: "Change", eggTip: "🥚 Tap the egg to hatch it!" },
   ru: { confirmText: "Вы выбрали русский язык для всей игры.\nВы не сможете изменить его позже.", confirmBtn: "Подтвердить", changeBtn: "Изменить", eggTip: "🥚 Коснитесь яйца, чтобы разбить его!" },
   hy: { confirmText: "Դուք ընտրել եք հայերենը ամբողջ խաղի համար։\nԴուք չեք կարող այն փոխել։", confirmBtn: "Հաստատել", changeBtn: "Փոխել", eggTip: "🥚 Սեղմիր ձվի վրա՝ բացելու համար։" },
@@ -64,6 +65,38 @@ const texts = {
   az: { confirmText: "Siz Azərbaycan dilini seçdiniz.\nSonradan dəyişmək mümkün deyil.", confirmBtn: "Təsdiq et", changeBtn: "Dəyiş", eggTip: "🥚 Yumurtaya toxun!" },
   ka: { confirmText: "შენ აირჩიე ქართული.\nშემდგომ ვერ შეცვლი.", confirmBtn: "დადასტურება", changeBtn: "შეცვლა", eggTip: "🥚 დააჭირე კვერცხს!" }
 };
+
+// ============================================================
+// Safe language labels (no Intl.DisplayNames dependency)
+// ============================================================
+const LANG_LABELS = {
+  en: "English",
+  ru: "Русский",
+  hy: "Հայերեն",
+  fr: "Français",
+  es: "Español",
+  de: "Deutsch",
+  it: "Italiano",
+  tr: "Türkçe",
+  fa: "فارسی",
+  ar: "العربية",
+  zh: "中文",
+  ja: "日本語",
+  ko: "한국어",
+  hi: "हिन्दी",
+  pt: "Português",
+  el: "Ελληνικά",
+  pl: "Polski",
+  nl: "Nederlands",
+  sv: "Svenska",
+  ro: "Română",
+  hu: "Magyar",
+  cs: "Čeština",
+  uk: "Українська",
+  az: "Azərbaycanca",
+  ka: "ქართული"
+};
+
 
 /* -------- APPLY TRANSLATIONS -------- */
 function applyI18N(lang) {
@@ -531,21 +564,29 @@ async onMineClick() {
 
   /* -------- INTRO / LANGUAGE FLOW -------- */
   buildLanguageGrid() {
-    const grid = this.els.langGrid;
-    if (!grid) return;
-    grid.innerHTML = "";
-    const languages = Object.keys(texts).map(code => {
-      const name = new Intl.DisplayNames([code], { type: "language" }).of(code) || code;
-      return { code, name };
-    });
-    languages.forEach(lang => {
-      const btn = document.createElement("button");
-      btn.textContent = lang.name;
-      btn.classList.add("lang-btn");
-      btn.onclick = () => this.showConfirmLang(lang.code);
-      grid.appendChild(btn);
-    });
-  },
+  const grid = this.els.langGrid;
+  if (!grid) { console.warn("⚠️ #lang-grid missing"); return; }
+
+  grid.innerHTML = "";
+
+  // Build list from our safe labels
+  const list = Object.keys(texts).map(code => ({
+    code,
+    name: LANG_LABELS[code] || code.toUpperCase()
+  }));
+
+  list.forEach(({ code, name }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "lang-btn";
+    btn.textContent = name;
+    btn.addEventListener("click", () => this.showConfirmLang(code));
+    grid.appendChild(btn);
+  });
+
+  console.log("🌐 Language grid built:", grid.children.length, "buttons");
+},
+
 
   showConfirmLang(code) {
     const t = texts[code] || texts.en;
