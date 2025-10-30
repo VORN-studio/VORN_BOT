@@ -564,28 +564,40 @@ async onMineClick() {
 
   /* -------- INTRO / LANGUAGE FLOW -------- */
   buildLanguageGrid() {
-  const grid = this.els.langGrid;
-  if (!grid) { console.warn("⚠️ #lang-grid missing"); return; }
+  const grid = document.getElementById("lang-grid");
+  if (!grid) {
+    console.warn("⚠️ lang-grid not found");
+    return;
+  }
 
   grid.innerHTML = "";
+  const LANGS = {
+    en: "English",
+    ru: "Русский",
+    hy: "Հայերեն",
+    fr: "Français",
+    es: "Español",
+    de: "Deutsch",
+    it: "Italiano",
+    tr: "Türkçe",
+    fa: "فارسی",
+    ar: "العربية",
+    zh: "中文",
+    ja: "日本語",
+    ko: "한국어"
+  };
 
-  // Build list from our safe labels
-  const list = Object.keys(texts).map(code => ({
-    code,
-    name: LANG_LABELS[code] || code.toUpperCase()
-  }));
-
-  list.forEach(({ code, name }) => {
+  Object.entries(LANGS).forEach(([code, name]) => {
     const btn = document.createElement("button");
-    btn.type = "button";
     btn.className = "lang-btn";
     btn.textContent = name;
-    btn.addEventListener("click", () => this.showConfirmLang(code));
+    btn.onclick = () => this.showConfirmLang(code);
     grid.appendChild(btn);
   });
 
-  console.log("🌐 Language grid built:", grid.children.length, "buttons");
+  console.log("✅ Language grid created:", Object.keys(LANGS).length, "languages");
 },
+
 
 
   showConfirmLang(code) {
