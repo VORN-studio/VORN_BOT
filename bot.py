@@ -1083,6 +1083,59 @@ def telegram_webhook():
         print("🔥 Webhook processing error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
 
+# =====================================================
+# 🌐 GOOGLE AUTH (for YouTube verification & analytics)
+# =====================================================
+from flask import redirect, session
+import requests
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = f"{PUBLIC_BASE_URL}/auth/google/callback"
+GOOGLE_AUTH_SCOPE = "https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/userinfo.profile"
+
+@app_web.route("/auth/google")
+def google_auth():
+    """Redirect user to Google OAuth page"""
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": GOOGLE_AUTH_SCOPE,
+        "access_type": "offline",
+        "prompt": "consent"
+    }
+    qs = "&".join([f"{k}={v}" for k, v in params.items()])
+    return redirect(f"https://accounts.google.com/o/oauth2/v2/auth?{qs}")
+
+@app_web.route("/auth/google/callback")
+def google_callback():
+    """Handle OAuth response and exchange code for tokens"""
+    code = request.args.get("code")
+    if not code:
+        return "❌ Missing code", 400
+
+    token_data = {
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "grant_type": "authorization_code"
+    }
+    token_resp = requests.post("https://oauth2.googleapis.com/token", data=token_data)
+    tokens = token_resp.json()
+
+    # save or inspect token
+    access_token = tokens.get("access_token")
+    if not access_token:
+        return f"❌ Token exchange failed: {tokens}", 400
+
+    # Example: fetch YouTube info
+    headers = {"Authorization": f"Bearer {access_token}"}
+    yt_resp = requests.get("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true", headers=headers)
+    data = yt_resp.json()
+
+    return jsonify({"ok": True, "youtube": data})
 
 
 if __name__ == "__main__":
