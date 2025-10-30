@@ -1170,6 +1170,22 @@ document.addEventListener("DOMContentLoaded", () => {
   VORN.init();
 });
 
+// Fallback binder for static language buttons in HTML:
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".lang-option");
+  if (!b) return;
+  const code = b.dataset.lang || "en";
+  try { VORN.showConfirmLang(code); } catch (_) {
+    // եթե նույնիսկ VORN դեռ չի բեռնվել, պահենք ընտրությունը localStorage-ում
+    try { localStorage.setItem("vorn_lang", code); } catch {}
+    // ու փակենք popup-ը, որ UI-ն շարունակի
+    const m = document.getElementById("languageModal");
+    const c = document.getElementById("confirmLangModal");
+    m && m.classList.add("hidden");
+    c && c.classList.add("hidden");
+  }
+});
+
 
 
 // Telegram WebApp scroll-lock helper

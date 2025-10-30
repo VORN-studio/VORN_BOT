@@ -596,3 +596,16 @@ button, .menu-btn, .mine-btn {
 .ref-result { margin-top: 8px; }
 
 .hidden { display: none !important; }
+
+
+.language-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.language-options .lang-option {
+  background: linear-gradient(145deg, #ffcc33, #ffae00);
+  color: #26004d;
+  border: 0; border-radius: 12px; padding: 10px 14px; font-weight: 700; cursor: pointer;
+}
