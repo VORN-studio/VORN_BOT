@@ -208,7 +208,7 @@ const VORN = {
     console.log("⚙️ VORN.init()");
     console.log("🧠 UID from URL:", uidFromURL());
     this.bindEls();
-    this.buildLanguageGrid();
+    this.buildLanguageGrid();A
     this.uid = uidFromURL();
     this.lang = getSavedLang();
 
@@ -607,7 +607,7 @@ async onMineClick() {
   },
 
   /* -------- INTRO / LANGUAGE FLOW -------- */
-  buildLanguageGrid() {
+ /* buildLanguageGrid() {
   const grid = document.getElementById("lang-grid");
   if (!grid) {
     console.warn("⚠️ lang-grid not found");
@@ -640,7 +640,7 @@ async onMineClick() {
   });
 
   console.log("✅ Language grid created:", Object.keys(LANGS).length, "languages");
-},
+}, */
 
 
 
