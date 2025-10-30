@@ -56,8 +56,48 @@
 
   <!-- START BUTTON (fixed position centered lower on screen) -->
 <div id="startContainer">
- <button id="startBtn">START</button>
+  <button id="startBtn">START</button>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const startBtn = document.getElementById("startBtn");
+  const langModal = document.getElementById("languageModal");
+  const introText = document.querySelector(".intro-text");
+  const startContainer = document.getElementById("startContainer");
+
+  if (!startBtn || !langModal) {
+    console.error("❌ Missing startBtn or languageModal in DOM");
+    return;
+  }
+
+  // Սկսելու պահին՝ ստուգում ենք՝ արդյոք կա grid
+  startBtn.addEventListener("click", async () => {
+    console.log("🚀 START pressed");
+
+    if (introText) introText.style.display = "none";
+    if (startContainer) startContainer.style.display = "none";
+
+    // սպասում ենք app.js-ի ինիցիալիզացիային
+    for (let i = 0; i < 20; i++) {
+      if (window.VORN && typeof VORN.buildLanguageGrid === "function") break;
+      console.log("⏳ waiting for VORN...");
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    // եթե grid-ը դատարկ է՝ լրացնենք
+    const grid = document.getElementById("lang-grid");
+    if (window.VORN && grid && !grid.children.length) {
+      console.log("🌐 rebuilding lang-grid manually…");
+      VORN.buildLanguageGrid();
+    }
+
+    langModal.classList.remove("hidden");
+    console.log("✅ Language modal opened successfully!");
+  });
+});
+</script>
+
 
 <style>
 #startContainer {
