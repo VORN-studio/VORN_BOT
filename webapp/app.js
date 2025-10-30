@@ -181,6 +181,150 @@ if (this.els.exchangeBtn) {
     }
   },
 
+
+  // ... գոյություն ունեցող կոդ ...
+
+  bindEls() {
+    this.els.mineBtn = document.getElementById("btnMine");
+    this.els.exchangeBtn = document.getElementById("btnExchange");
+    if (this.els.exchangeBtn) {
+      this.els.exchangeBtn.onclick = null;
+      this.els.exchangeBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.onExchange();
+      });
+    }
+
+    this.els.feather = document.getElementById("featherCount");
+    this.els.btnTasks = document.getElementById("btnTasks");
+    this.els.tasksModal = document.getElementById("tasksModal");
+    this.els.tasksList = document.getElementById("tasksList");
+    this.els.closeTasksBtn = document.getElementById("closeTasksBtn");
+
+    // 🔹 Referral elements
+    this.els.btnReferral = document.getElementById("btnReferral");
+    this.els.refModal = document.getElementById("referralsModal");
+    this.els.refTop3 = document.getElementById("refTop3");
+    this.els.refList = document.getElementById("refList");
+    this.els.refResult = document.getElementById("refResult");
+    this.els.refPreviewBtn = document.getElementById("refPreviewBtn");
+    this.els.refClaimBtn = document.getElementById("refClaimBtn");
+    this.els.closeRefBtn = document.getElementById("closeRefBtn");
+
+    if (this.els.mineBtn) {
+      this.els.mineBtn.addEventListener("click", () => this.onMineClick());
+    }
+
+    // 🔸 Open referrals modal
+    if (this.els.btnReferral && this.els.refModal) {
+      this.els.btnReferral.addEventListener("click", async () => {
+        this.openReferrals();
+      });
+    }
+    if (this.els.closeRefBtn) {
+      this.els.closeRefBtn.addEventListener("click", () => {
+        this.els.refModal.classList.add("hidden");
+      });
+    }
+    if (this.els.refPreviewBtn) {
+      this.els.refPreviewBtn.addEventListener("click", () => this.refPreview());
+    }
+    if (this.els.refClaimBtn) {
+      this.els.refClaimBtn.addEventListener("click", () => this.refClaim());
+    }
+  },
+
+  async openReferrals() {
+    if (!this.uid) return;
+    try {
+      const r = await fetch(`${API_BASE}/api/referrals?uid=${this.uid}`);
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || "referrals failed");
+
+      // Top-3 trophies
+      const list = d.list || [];
+      const top3 = list.slice(0, 3);
+      const trophy = (rank) => rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
+      const color = (rank) => rank === 1 ? "gold" : rank === 2 ? "silver" : "#cd7f32";
+
+      this.els.refTop3.innerHTML = top3.map(x => `
+        <div class="ref-trophy" style="border-color:${color(x.rank)}">
+          <div class="ref-trophy-medal">${trophy(x.rank)}</div>
+          <div class="ref-trophy-name">${x.username}</div>
+          <div class="ref-trophy-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
+        </div>
+      `).join("");
+
+      // full list
+      this.els.refList.innerHTML = list.map(x => `
+        <div class="ref-row">
+          <div class="ref-rank">${x.rank}</div>
+          <div class="ref-user">${x.username}</div>
+          <div class="ref-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
+        </div>
+      `).join("") || `<div class="muted">No invited users yet.</div>`;
+
+      this.els.refResult.textContent = "";
+      this.els.refClaimBtn.classList.add("hidden");
+      this.els.refModal.classList.remove("hidden");
+    } catch (e) {
+      console.error("referrals open failed:", e);
+      this.showMessage("error", "error");
+    }
+  },
+
+  async refPreview() {
+    try {
+      const r = await fetch(`${API_BASE}/api/referrals/preview?uid=${this.uid}`);
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || "preview failed");
+
+      const cf = d.cashback_feathers || 0;
+      const cv = d.cashback_vorn || 0;
+      this.els.refResult.textContent =
+        `💡 Ըստ հաշվարկի՝ կստանաս ${cf} 🪶 և ${cv.toFixed(4)} 🜂`;
+      if (cf > 0 || cv > 0) this.els.refClaimBtn.classList.remove("hidden");
+      else this.els.refClaimBtn.classList.add("hidden");
+    } catch (e) {
+      console.error("ref preview failed:", e);
+      this.els.refResult.textContent = "⚠️ Չկա որևէ գումար հաշվարկելու։";
+      this.els.refClaimBtn.classList.add("hidden");
+    }
+  },
+
+  async refClaim() {
+    try {
+      const r = await fetch(`${API_BASE}/api/referrals/claim`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ uid: this.uid })
+      });
+      const d = await r.json();
+      if (!d.ok) {
+        this.showMessage("error", "error");
+        return;
+      }
+      // update balances on UI
+      this.balance = d.new_balance ?? this.balance;
+      this.vornBalance = d.new_vorn ?? this.vornBalance;
+      const featherEl = document.getElementById("featherCount");
+      const vornEl = document.getElementById("foodCount");
+      if (featherEl) featherEl.textContent = String(this.balance);
+      if (vornEl) vornEl.textContent = (this.vornBalance).toFixed(2);
+
+      this.els.refResult.textContent =
+        `✅ Վերցրեցիր ${d.cashback_feathers} 🪶 և ${Number(d.cashback_vorn).toFixed(4)} 🜂`;
+      this.els.refClaimBtn.classList.add("hidden");
+      this.showMessage("success_exchange", "success");
+    } catch (e) {
+      console.error("ref claim failed:", e);
+      this.showMessage("error", "error");
+    }
+  },
+
+
+
   /* -------- USER / SERVER -------- */
   async loadUser() {
     try {
