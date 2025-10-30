@@ -203,7 +203,7 @@ if (this.els.exchangeBtn) {
     this.els.slideNextBtn = document.getElementById("slideNextBtn");
     this.els.startBtn = document.getElementById("startBtn");
     this.els.introText = document.querySelector(".intro-text");
-    this.els.startContainer = document.querySelector(".button-container");
+    this.els.startContainer = document.getElementById("startContainer");
     this.els.modalLang = document.getElementById("languageModal");
     this.els.confirmLangModal = document.getElementById("confirmLangModal");
     this.els.confirmLangTitle = document.getElementById("confirmLangTitle");
@@ -512,6 +512,9 @@ async onMineClick() {
     this.els.confirmLangText && (this.els.confirmLangText.textContent = t.confirmText);
     this.els.confirmLangBtn && (this.els.confirmLangBtn.textContent = t.confirmBtn);
     this.els.changeLangBtn && (this.els.changeLangBtn.textContent = t.changeBtn);
+    // safety: փակել ուրիշ մոդալները, եթե բաց են
+    document.getElementById("tasksModal")?.classList.add("hidden");
+    document.getElementById("referralsModal")?.classList.add("hidden");
     this.els.confirmLangModal.classList.remove("hidden");
 
     if (this._confirmHandlersBound) return;
@@ -600,7 +603,7 @@ async onMineClick() {
 
       // 🩹 Hide Start button & intro elements when main UI opens
   const startBtn = document.getElementById("startBtn");
-  const startContainer = document.querySelector(".button-container");
+  const startContainer = document.getElementById("startContainer");
   const introText = document.querySelector(".intro-text");
   startBtn && (startBtn.style.display = "none");
   startContainer && (startContainer.style.display = "none");
@@ -683,9 +686,23 @@ bindTasksModal() {
   const { btnTasks, tasksModal, tasksList, closeTasksBtn } = this.els;
   if (!btnTasks || !tasksModal || !tasksList || !closeTasksBtn) return;
   
-  btnTasks.addEventListener("click"), async () => {
-tasksModal.classList.remove("hidden");
+
+  btnTasks.addEventListener("click", async () => {
+  // Պատուհանը բացում ենք միայն կոճակից
+  tasksModal.classList.remove("hidden");
+
+  // Եթե արդեն ունենք նախաբեռնված՝ նկարում միայն render
+  if (this.tasks && (this.tasks.main?.length || this.tasks.daily?.length)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/tasks?uid=${this.uid}`);
+    this.tasks = await res.json();
+  } catch (e) {
+    console.warn("⚠️ Preload tasks failed", e);
   }
+});
+
+
 
   // --- render only ---
   const renderTasks = (data) => {
