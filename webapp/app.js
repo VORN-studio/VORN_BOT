@@ -172,6 +172,8 @@ const VORN = {
 
   /* -------- INIT -------- */
   async init() {
+    this.bindEls();
+    this.buildLanguageGrid();
     console.log("⚙️ VORN.init()");
     console.log("🧠 UID from URL:", uidFromURL());
     this.uid = uidFromURL();
@@ -180,8 +182,6 @@ const VORN = {
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
 
-    this.bindEls();
-    this.buildLanguageGrid();
 
     // Start button (one-time open language)
     if (this.els.startBtn) {
