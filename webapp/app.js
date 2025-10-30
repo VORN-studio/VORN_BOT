@@ -65,6 +65,41 @@ const texts = {
   ka: { confirmText: "შენ აირჩიე ქართული.\nშემდგომ ვერ შეცვლი.", confirmBtn: "დადასტურება", changeBtn: "შეცვლა", eggTip: "🥚 დააჭირე კვერცხს!" }
 };
 
+/* -------- APPLY TRANSLATIONS -------- */
+function applyI18N(lang) {
+  // 🧠 Fallback եթե սխալ է ընտրված լեզուն
+  if (!langButtonsDict || !texts[lang]) lang = "en";
+
+  // Լեզուն դնում ենք որպես <html lang="">
+  document.documentElement.setAttribute("lang", lang);
+
+  // Լեզվով վերնագրեր / կոճակներ
+  const tRef = langButtonsDict.tasksTitles.referral;
+  const tTasks = langButtonsDict.tasksTitles;
+
+  // Tasks մոդալ
+  const tasksTitle = document.querySelector("#tasksModal h2");
+  if (tasksTitle) tasksTitle.textContent = tTasks.main[lang] || tTasks.main.en;
+  const tasksClose = document.getElementById("closeTasksBtn");
+  if (tasksClose) tasksClose.textContent = langButtonsDict.referral?.close?.[lang] || "✖ Close";
+
+  // Referrals մոդալ
+  const refTitle = document.getElementById("referralTitle");
+  if (refTitle) refTitle.textContent = tRef.title[lang] || tRef.title.en;
+  const refCalc = document.getElementById("refPreviewBtn");
+  if (refCalc) refCalc.textContent = tRef.calc[lang] || tRef.calc.en;
+  const refClaim = document.getElementById("refClaimBtn");
+  if (refClaim) refClaim.textContent = tRef.claim[lang] || tRef.claim.en;
+  const refClose = document.getElementById("closeRefBtn");
+  if (refClose) refClose.textContent = tRef.close[lang] || tRef.close.en;
+
+  // Toast-երի լեզու նույնպես դնում ենք
+  VORN.lang = lang;
+  localStorage.setItem("vorn_lang", lang);
+  console.log(`🌍 Language applied globally: ${lang}`);
+}
+
+
 const langButtonsDict = {
   continue: { en: "Continue", ru: "Продолжить", hy: "Շարունակել", tr: "Devam et", fa: "ادامه", es: "Continuar", fr: "Continuer", de: "Weiter", it: "Continua", zh: "继续", ja: "続行", ko: "계속", ar: "متابعة" },
   start:    { en: "Start",    ru: "Начать",      hy: "Սկսել",      tr: "Başlat",  fa: "شروع", es: "Empezar",  fr: "Commencer", de: "Starten", it: "Avvia", zh: "开始", ja: "開始", ko: "시작", ar: "ابدأ" },
@@ -402,6 +437,8 @@ if (this.lang) document.documentElement.setAttribute("lang", this.lang);
 // ✅ Պահպանում ենք լեզուն որպես active
 document.documentElement.setAttribute("lang", this.lang);
 console.log("🌐 Language set to:", this.lang);
+// 🌍 Թարգմանությունները կիրառում ենք ամբողջ ինտերֆեյսին
+applyI18N(this.lang);
 
 },
 
@@ -599,6 +636,7 @@ async onMineClick() {
       } else {
         introSlides.classList.add("hidden");
         this.openMainInterface();
+        applyI18N(selectedLangCode);
       }
     };
   },
@@ -1244,6 +1282,7 @@ showMessage(key, type = "info", duration = 2600) {
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🌐 Connecting to API_BASE:", API_BASE);
   VORN.init();
+  applyI18N(getSavedLang());
 });
 
 
