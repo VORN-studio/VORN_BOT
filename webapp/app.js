@@ -296,6 +296,16 @@ if (this.els.exchangeBtn) {
     e.preventDefault();
     e.stopPropagation();
     this.onExchange();
+
+// 💰 Wallet (connect) button — temporarily disabled notice
+this.els.btnWallet = document.getElementById("btnWallet");
+if (this.els.btnWallet) {
+  this.els.btnWallet.onclick = () => {
+    this.showMessage("wallet_disabled", "info", 3000);
+  };
+}
+
+
   });
 
 // 💰 Wallet (connect) button
@@ -1112,22 +1122,154 @@ if (pf) {
   }
 },
 
+/* -------- BEAUTIFUL MULTILINGUAL TOAST -------- */
 showMessage(key, type = "info", duration = 2600) {
-  // եթե key-ն ուղղակի տեքստ է, ոչ թե predefined key
-  if (key.includes("⚠️") || key.includes("✅") || key.includes("🔥")) {
-    const toast = document.createElement("div");
-    toast.className = `vorn-toast ${type}`;
-    toast.innerHTML = key;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add("visible"), 50);
-    setTimeout(() => {
-      toast.classList.remove("visible");
-      setTimeout(() => toast.remove(), 600);
-    }, duration);
-    return;
-  }
+  // Թարգմանությունների հավաքածու
+   const messages = {
+    not_enough: {
+      en: "⚠️ Not enough feathers to exchange!",
+      ru: "⚠️ Недостаточно перьев для обмена!",
+      hy: "⚠️ Փետուրները բավարար չեն փոխանակման համար։",
+      fr: "⚠️ Pas assez de plumes pour échanger !",
+      es: "⚠️ ¡No hay suficientes plumas para intercambiar!",
+      de: "⚠️ Nicht genug Federn zum Tauschen!",
+      it: "⚠️ Piume insufficienti per lo scambio!",
+      tr: "⚠️ Takas için yeterli tüy yok!",
+      fa: "⚠️ پر کافی برای مبادله وجود ندارد!",
+      ar: "⚠️ لا توجد ريش كافية للتبادل!",
+      zh: "⚠️ 羽毛不足以兑换！",
+      ja: "⚠️ 交換する羽が足りません！",
+      ko: "⚠️ 교환할 깃털이 부족합니다!",
+      hi: "⚠️ एक्सचेंज करने के लिए पर्याप्त पंख नहीं हैं!",
+      pt: "⚠️ Penas insuficientes para trocar!",
+      el: "⚠️ Δεν υπάρχουν αρκετά φτερά για ανταλλαγή!",
+      pl: "⚠️ Za mało piór do wymiany!",
+      nl: "⚠️ Niet genoeg veren om te ruilen!",
+      sv: "⚠️ Inte tillräckligt med fjädrar för att byta!",
+      ro: "⚠️ Nu sunt suficiente pene pentru schimb!",
+      hu: "⚠️ Nincs elég toll a cseréhez!",
+      cs: "⚠️ Nedostatek per pro výměnu!",
+      uk: "⚠️ Недостатньо пір'я для обміну!",
+      az: "⚠️ Dəyişmək üçün kifayət qədər lələk yoxdur!",
+      ka: "⚠️ საკმარისი ბუმბული არ არის გასაცვლელად!"
+    },
+
+    success_exchange: {
+      en: "✅ Exchanged 50000 🪶 → +1 🜂",
+      ru: "✅ Обменено 50000 🪶 → +1 🜂",
+      hy: "✅ Փոխանակվեց 50000 🪶 → +1 🜂",
+      fr: "✅ Échangées 50000 🪶 → +1 🜂",
+      es: "✅ Intercambiadas 50000 🪶 → +1 🜂",
+      de: "✅ Getauscht 50000 🪶 → +1 🜂",
+      it: "✅ Scambiate 50000 🪶 → +1 🜂",
+      tr: "✅ 50000 🪶 takas edildi → +1 🜂",
+      fa: "✅ 50000 🪶 مبادله شد → +1 🜂",
+      ar: "✅ تم تبادل 50000 🪶 → +1 🜂",
+      zh: "✅ 兑换 50000 🪶 → +1 🜂",
+      ja: "✅ 交換 50000 🪶 → +1 🜂",
+      ko: "✅ 교환됨 50000 🪶 → +1 🜂",
+      hi: "✅ एक्सचेंज 50000 🪶 → +1 🜂",
+      pt: "✅ Trocadas 50000 🪶 → +1 🜂",
+      el: "✅ Ανταλλάχθηκαν 50000 🪶 → +1 🜂",
+      pl: "✅ Wymieniono 50000 🪶 → +1 🜂",
+      nl: "✅ Gewisseld 50000 🪶 → +1 🜂",
+      sv: "✅ Bytte 50000 🪶 → +1 🜂",
+      ro: "✅ Schimbate 50000 🪶 → +1 🜂",
+      hu: "✅ Kicserélve 50000 🪶 → +1 🜂",
+      cs: "✅ Vyměněno 50000 🪶 → +1 🜂",
+      uk: "✅ Обміняно 50000 🪶 → +1 🜂",
+      az: "✅ 50000 🪶 dəyişdirildi → +1 🜂",
+      ka: "✅ გადაცვლილია 50000 🪶 → +1 🜂"
+    },
+
+    wait_mine: {
+      en: "⏳ Please wait before next mining.",
+      ru: "⏳ Подожди перед следующим майнингом.",
+      hy: "⏳ Սպասիր մինչև հաջորդ մայնինգը։",
+      fr: "⏳ Veuillez attendre avant le prochain minage.",
+      es: "⏳ Espera antes de la próxima minería.",
+      de: "⏳ Bitte warte vor dem nächsten Mining.",
+      it: "⏳ Attendi prima del prossimo mining.",
+      tr: "⏳ Lütfen bir sonraki madencilik için bekleyin.",
+      fa: "⏳ لطفاً قبل از استخراج بعدی صبر کنید.",
+      ar: "⏳ يرجى الانتظار قبل التعدين التالي.",
+      zh: "⏳ 请等待下一次挖矿。",
+      ja: "⏳ 次のマイニングまでお待ちください。",
+      ko: "⏳ 다음 채굴까지 잠시 기다려 주세요.",
+      hi: "⏳ कृपया अगले माइनिंग से पहले प्रतीक्षा करें।",
+      pt: "⏳ Aguarde antes da próxima mineração.",
+      el: "⏳ Παρακαλώ περίμενε πριν το επόμενο mining.",
+      pl: "⏳ Poczekaj przed następnym wydobyciem.",
+      nl: "⏳ Wacht even voor de volgende mining.",
+      sv: "⏳ Vänta före nästa gruvdrift.",
+      ro: "⏳ Așteaptă înainte de următoarea minare.",
+      hu: "⏳ Kérlek várj a következő bányászat előtt.",
+      cs: "⏳ Počkej před dalším těžením.",
+      uk: "⏳ Зачекай перед наступним майнінгом.",
+      az: "⏳ Növbəti qazmadan əvvəl gözləyin.",
+      ka: "⏳ მოიცადე შემდეგი მაინინგამდე."
+    },
+
+    error: {
+      en: "🔥 Something went wrong!",
+      ru: "🔥 Произошла ошибка!",
+      hy: "🔥 Ինչ-որ բան սխալ է տեղի ունեցել։",
+      fr: "🔥 Une erreur s'est produite !",
+      es: "🔥 ¡Algo salió mal!",
+      de: "🔥 Etwas ist schief gelaufen!",
+      it: "🔥 Qualcosa è andato storto!",
+      tr: "🔥 Bir şeyler ters gitti!",
+      fa: "🔥 مشکلی پیش آمد!",
+      ar: "🔥 حدث خطأ ما!",
+      zh: "🔥 出了点问题！",
+      ja: "🔥 何かがうまくいかなかった！",
+      ko: "🔥 문제가 발생했습니다!",
+      hi: "🔥 कुछ गलत हो गया!",
+      pt: "🔥 Algo deu errado!",
+      el: "🔥 Κάτι πήγε στραβά!",
+      pl: "🔥 Coś poszło nie tak!",
+      nl: "🔥 Er is iets misgegaan!",
+      sv: "🔥 Något gick fel!",
+      ro: "🔥 Ceva a mers greșit!",
+      hu: "🔥 Valami elromlott!",
+      cs: "🔥 Něco se pokazilo!",
+      uk: "🔥 Щось пішло не так!",
+      az: "🔥 Nəsə səhv oldu!",
+      ka: "🔥 რაღაც არასწორად მოხდა!"
+    },
+
+    wallet_disabled: {
+      en: "⚠️ This function is temporarily disabled.",
+      ru: "⚠️ Эта функция временно недоступна.",
+      hy: "⚠️ Այս ֆունկցիան ժամանակավորապես անջատված է։",
+      fr: "⚠️ Cette fonction est temporairement désactivée.",
+      es: "⚠️ Esta función está temporalmente deshabilitada.",
+      de: "⚠️ Diese Funktion ist vorübergehend deaktiviert.",
+      it: "⚠️ Questa funzione è temporaneamente disabilitata.",
+      tr: "⚠️ Bu özellik geçici olarak devre dışı.",
+      fa: "⚠️ این قابلیت موقتاً غیرفعال است.",
+      ar: "⚠️ هذه الميزة معطلة مؤقتًا.",
+      zh: "⚠️ 此功能暂时不可用。",
+      ja: "⚠️ この機能は一時的に無効になっています。",
+      ko: "⚠️ 이 기능은 일시적으로 비활성화되어 있습니다.",
+      hi: "⚠️ यह सुविधा अस्थायी रूप से बंद है।",
+      pt: "⚠️ Esta função está temporariamente desativada.",
+      el: "⚠️ Αυτή η λειτουργία είναι προσωρινά απενεργοποιημένη.",
+      pl: "⚠️ Ta funkcja jest tymczasowo wyłączона.",
+      nl: "⚠️ Deze functie is tijdelijk uitgeschakeld.",
+      sv: "⚠️ Den här funktionen är tillfälligt avstängd.",
+      ro: "⚠️ Această funcție este dezactivată temporar.",
+      hu: "⚠️ Ez a funkció átmenetileg le van tiltva.",
+      cs: "⚠️ Tato funkce je dočasně vypnuta.",
+      uk: "⚠️ Ця функція тимчасово вимкнена.",
+      az: "⚠️ Bu funksiya müvəqqəti olaraq deaktiv edilib.",
+      ka: "⚠️ ეს ფუნქცია დროებით გათიშულია."
+    },
+  
+  };
 
 
+  
   // ընտրում ենք օգտատիրոջ լեզուն
   const lang = (this.lang && texts[this.lang]) ? this.lang : getSavedLang();
   const text = (messages[key] && (messages[key][lang] || messages[key].en)) || key;
