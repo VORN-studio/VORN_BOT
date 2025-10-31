@@ -263,20 +263,143 @@
 <style>
   /* 🌌 Unified VORN modal aesthetic (referrals + info + tasks) */
   .referral-box {
-    background: rgba(15, 5, 30, 0.92);
+    position: relative;
+    background: radial-gradient(circle at 50% 40%, rgba(30, 10, 50, 0.95), rgba(10, 0, 20, 0.96));
     color: #fff;
-    border-radius: 20px;
+    border-radius: 22px;
     padding: 22px;
     max-width: 600px;
     width: 92%;
     margin: auto;
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.15);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.18), 0 0 60px rgba(140, 80, 255, 0.15);
     transform: scale(0.9);
     opacity: 0;
-    transition: all 0.3s ease;
+    transition: all 0.35s ease;
     max-height: 85vh;
     overflow-y: auto;
+    backdrop-filter: blur(8px);
   }
+
+  .modal:not(.hidden) .referral-box {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  #referralsModal h2 {
+    text-align: center;
+    color: #ffd54a;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    margin-bottom: 15px;
+  }
+
+  .ref-link-box {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
+  }
+
+  #copyRefLinkBtn {
+    margin-top: 10px;
+    background: linear-gradient(135deg, #ffae00, #ffcc33);
+    color: #26004d;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  #copyRefLinkBtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 200, 0, 0.8);
+  }
+
+  .ref-top3 {
+    display: grid;
+    gap: 12px;
+    margin: 10px 0;
+  }
+
+  .ref-trophy {
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #fff;
+  }
+
+  .ref-trophy-medal {
+    font-size: 1.3rem;
+  }
+
+  .ref-trophy-name {
+    flex: 1;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .ref-trophy-stats {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+
+  .ref-list {
+    margin-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .ref-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.9rem;
+  }
+
+  .ref-actions {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 15px;
+  }
+
+  .ref-actions button {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ref-actions button:hover {
+    background: rgba(255,255,255,0.15);
+  }
+
+  .ref-result {
+    text-align: center;
+    color: #ffd54a;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+
+  /* ✨ Հավելյալ շող */
+  .referral-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(255,215,0,0.08), transparent 70%);
+    border-radius: 22px;
+    pointer-events: none;
+  }
+</style>
 
   .modal:not(.hidden) .referral-box {
     transform: scale(1);
