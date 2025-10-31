@@ -139,6 +139,516 @@ const walletMessages = {
   ka: "⚠️ ეს ფუნქცია დროებით გათიშულია."
 };
 
+// 🌐 25 լեզվով Info բովանդակություն (լրիվ տարբերակներ)
+const infoData = {
+  en: `
+  <h3>🌌 Welcome</h3>
+  <p>Welcome to <b>VORN</b> — a world where consistency, focus, and inner calm turn into real progress.</p>
+  <h3>⚙️ Who We Are</h3>
+  <p><b>VORN Dev Team</b> blends technology, psychology, and design to build a fair, inspiring click-mining experience.</p>
+  <h3>🌱 Why Stay Active</h3>
+  <p>Everything depends on you. Daily actions compound; the more consistent you are, the stronger your results.</p>
+  <h3>⚔️ Rules</h3>
+  <p>Be honest. No bots, scripts, multi-accounts, or exploits. Respect other players and the community.</p>
+  <h3>🛡 Security & Control</h3>
+  <p>We protect accounts and fight abuse. Suspicious activity is monitored and limited automatically.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Any cheating slows or blocks progress. Fair play is rewarded, always.</p>
+  <h3>📜 Policies</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Privacy Policy</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Terms of Use</a></p>
+  <h3>🌙 Support</h3>
+  <p>Step by step you build your future. Support: <b>@VORNsupportbot</b></p>
+  `,
+
+  ru: `
+  <h3>🌌 Добро пожаловать</h3>
+  <p>Добро пожаловать в <b>VORN</b> — мир, где последовательность, фокус и спокойствие превращаются в прогресс.</p>
+  <h3>⚙️ Кто мы</h3>
+  <p><b>VORN Dev Team</b> сочетает технологии, психологию и дизайн, чтобы создать честный и вдохновляющий клик-майнинг.</p>
+  <h3>🌱 Зачем быть активным</h3>
+  <p>Все зависит от тебя. Ежедневные действия накапливаются; чем стабильнее ты, тем сильнее результат.</p>
+  <h3>⚔️ Правила</h3>
+  <p>Играй честно. Без ботов, скриптов, мультиаккаунтов и эксплойтов. Уважай других.</p>
+  <h3>🛡 Безопасность и контроль</h3>
+  <p>Мы защищаем аккаунты и боремся с нарушениями. Подозрительная активность ограничивается автоматически.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Любой обман замедляет или блокирует прогресс. Честная игра всегда вознаграждается.</p>
+  <h3>📜 Политики</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Политика конфиденциальности</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Условия использования</a></p>
+  <h3>🌙 Поддержка</h3>
+  <p>Шаг за шагом ты строишь будущее. Support: <b>@VORNsupportbot</b></p>
+  `,
+
+  hy: `
+  <h3>🌌 Բարի գալուստ</h3>
+  <p>Բարի գալուստ <b>VORN</b>՝ մի աշխարհ, որտեղ հետևողականությունը, կենտրոնացումը և ներքին հանդարտությունը դառնում են առաջընթաց։</p>
+  <h3>⚙️ Ով ենք մենք</h3>
+  <p><b>VORN Dev Team</b> համադրում է տեխնոլոգիան, հոգեբանությունը և դիզայնը՝ ստեղծելով արդար ու ոգեշնչող click-mining փորձ։</p>
+  <h3>🌱 Ինչու մնալ ակտիվ</h3>
+  <p>Ամեն ինչ կախված է քեզանից։ Օրվա պարզ քայլերը կուտակվում են, հետևողականությունը բերում է ուժեղ արդյունք։</p>
+  <h3>⚔️ Խաղի կանոնները</h3>
+  <p>Խաղա ազնվորեն․ առանց բոտերի, սկրիպտերի, բազմահաշիվների ու խոցելիությունների օգտագորման։ Հարգիր մյուսներին։</p>
+  <h3>🛡 Անվտանգություն և վերահսկողություն</h3>
+  <p>Պաշտպանում ենք հաշիվները և պայքարում խախտումների դեմ․ կասկածելի ակտիվությունը սահմանափակվում է ավտոմատ։</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Խարդախությունը դանդաղեցնում կամ արգելափակում է առաջընթացը․ ազնիվ խաղը միշտ պարգևատրվում է։</p>
+  <h3>📜 Քաղաքականություններ</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Privacy Policy</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Terms of Use</a></p>
+  <h3>🌙 Սպասարկում</h3>
+  <p>Քայլ առ քայլ կառուցում ես ապագադ։ Support՝ <b>@VORNsupportbot</b></p>
+  `,
+
+  fr: `
+  <h3>🌌 Bienvenue</h3>
+  <p>Bienvenue dans <b>VORN</b> — cohérence, focus et calme intérieur se transforment en progrès réel.</p>
+  <h3>⚙️ Qui sommes-nous</h3>
+  <p><b>VORN Dev Team</b> réunit technologie, psychologie et design pour une expérience honnête et motivante.</p>
+  <h3>🌱 Pourquoi rester actif</h3>
+  <p>Tout dépend de toi. Les actions quotidiennes s’additionnent et renforcent tes résultats.</p>
+  <h3>⚔️ Règles</h3>
+  <p>Joue honnêtement. Pas de bots, scripts, multi-comptes ni d’exploits. Respecte la communauté.</p>
+  <h3>🛡 Sécurité & contrôle</h3>
+  <p>Nous protégeons les comptes et détectons les abus. L’activité suspecte est limitée automatiquement.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>La triche ralentit ou bloque le progrès. Le jeu équitable est récompensé.</p>
+  <h3>📜 Politiques</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Politique de confidentialité</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Conditions d’utilisation</a></p>
+  <h3>🌙 Support</h3>
+  <p>Pas à pas, tu construis ton futur. Support : <b>@VORNsupportbot</b></p>
+  `,
+
+  es: `
+  <h3>🌌 Bienvenido</h3>
+  <p>Bienvenido a <b>VORN</b>: constancia, enfoque y calma interior se convierten en progreso.</p>
+  <h3>⚙️ Quiénes somos</h3>
+  <p><b>VORN Dev Team</b> une tecnología, psicología y diseño para una experiencia justa e inspiradora.</p>
+  <h3>🌱 Por qué ser activo</h3>
+  <p>Todo depende de ti. Las acciones diarias se acumulan y potencian tus resultados.</p>
+  <h3>⚔️ Reglas</h3>
+  <p>Juega limpio: sin bots, scripts, multicuentas ni exploits. Respeta a los demás.</p>
+  <h3>🛡 Seguridad y control</h3>
+  <p>Protegemos cuentas y detectamos abusos. La actividad sospechosa se limita automáticamente.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Hacer trampa frena o bloquea tu progreso. El juego justo es recompensado.</p>
+  <h3>📜 Políticas</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Política de privacidad</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Términos de uso</a></p>
+  <h3>🌙 Soporte</h3>
+  <p>Paso a paso construyes tu futuro. Soporte: <b>@VORNsupportbot</b></p>
+  `,
+
+  de: `
+  <h3>🌌 Willkommen</h3>
+  <p>Willkommen bei <b>VORN</b> — Beständigkeit, Fokus und innere Ruhe werden zu echtem Fortschritt.</p>
+  <h3>⚙️ Wer wir sind</h3>
+  <p><b>VORN Dev Team</b> vereint Technologie, Psychologie und Design für ein faires, motivierendes Erlebnis.</p>
+  <h3>🌱 Warum aktiv bleiben</h3>
+  <p>Alles liegt an dir. Tägliche Taten summieren sich und stärken dein Ergebnis.</p>
+  <h3>⚔️ Regeln</h3>
+  <p>Spiel fair. Keine Bots, Scripts, Multi-Accounts oder Exploits. Respektiere andere.</p>
+  <h3>🛡 Sicherheit & Kontrolle</h3>
+  <p>Wir schützen Accounts und bekämpfen Missbrauch. Verdächtiges wird automatisch begrenzt.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Cheaten bremst oder blockiert den Fortschritt. Faires Spiel wird belohnt.</p>
+  <h3>📜 Richtlinien</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Datenschutz</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Nutzungsbedingungen</a></p>
+  <h3>🌙 Support</h3>
+  <p>Schritt für Schritt baust du deine Zukunft. Support: <b>@VORNsupportbot</b></p>
+  `,
+
+  it: `
+  <h3>🌌 Benvenuto</h3>
+  <p>Benvenuto in <b>VORN</b> — coerenza, focus e calma interiore diventano progresso reale.</p>
+  <h3>⚙️ Chi siamo</h3>
+  <p><b>VORN Dev Team</b> unisce tecnologia, psicologia e design per un’esperienza giusta e motivante.</p>
+  <h3>🌱 Perché restare attivo</h3>
+  <p>Tutto dipende da te. Le azioni quotidiane si sommano e rafforzano i risultati.</p>
+  <h3>⚔️ Regole</h3>
+  <p>Gioca onestamente: niente bot, script, multi-account o exploit. Rispetta gli altri.</p>
+  <h3>🛡 Sicurezza & controllo</h3>
+  <p>Tuteliamo gli account e rileviamo abusi. Le attività sospette vengono limitate automaticamente.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Barare rallenta o blocca i progressi. Il gioco leale è ricompensato.</p>
+  <h3>📜 Policy</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Privacy Policy</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Termini d’uso</a></p>
+  <h3>🌙 Supporto</h3>
+  <p>Passo dopo passo costruisci il tuo futuro. Supporto: <b>@VORNsupportbot</b></p>
+  `,
+
+  tr: `
+  <h3>🌌 Hoş geldin</h3>
+  <p><b>VORN</b>’a hoş geldin — istikrar, odak ve iç huzur gerçek ilerlemeye dönüşür.</p>
+  <h3>⚙️ Biz kimiz</h3>
+  <p><b>VORN Dev Team</b> teknoloji, psikoloji ve tasarımı birleştirerek adil ve ilham verici bir deneyim sunar.</p>
+  <h3>🌱 Neden aktif kalmalı</h3>
+  <p>Her şey sana bağlı. Günlük eylemler birikir; istikrar sonuçları güçlendirir.</p>
+  <h3>⚔️ Kurallar</h3>
+  <p>Dürüst oyna. Bot, script, çoklu hesap ve açık istismarı yok. Topluma saygı göster.</p>
+  <h3>🛡 Güvenlik & kontrol</h3>
+  <p>Hesapları koruyor, kötüye kullanımı tespit ediyoruz. Şüpheli etkinlik otomatik sınırlandırılır.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Hile ilerlemeni yavaşlatır veya engeller. Adil oyun ödüllendirilir.</p>
+  <h3>📜 Politikalar</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Gizlilik Politikası</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Kullanım Şartları</a></p>
+  <h3>🌙 Destek</h3>
+  <p>Adım adım geleceğini inşa ediyorsun. Destek: <b>@VORNsupportbot</b></p>
+  `,
+
+  fa: `
+  <div dir="rtl">
+  <h3>🌌 خوش آمدید</h3>
+  <p>به <b>VORN</b> خوش آمدید — ثبات، تمرکز و آرامش درونی به پیشرفت واقعی تبدیل می‌شود.</p>
+  <h3>⚙️ ما که هستیم</h3>
+  <p><b>VORN Dev Team</b> فناوری، روان‌شناسی و طراحی را ترکیب می‌کند تا تجربه‌ای عادلانه و الهام‌بخش بسازد.</p>
+  <h3>🌱 چرا فعال بمانیم</h3>
+  <p>همه چیز به شما بستگی دارد. اقدامات روزانه جمع می‌شوند و نتیجه را قوی‌تر می‌کنند.</p>
+  <h3>⚔️ قوانین</h3>
+  <p>صادقانه بازی کنید. بدون بات، اسکریپت، چندحسابی یا سوءاستفاده. به دیگران احترام بگذارید.</p>
+  <h3>🛡 امنیت و کنترل</h3>
+  <p>ما از حساب‌ها حفاظت می‌کنیم و تقلب را شناسایی می‌کنیم. فعالیت مشکوک به‌طور خودکار محدود می‌شود.</p>
+  <h3>🚫 ضد ماین / ضد تسک</h3>
+  <p>تقلب پیشرفت را کند یا مسدود می‌کند. بازی منصفانه همیشه پاداش می‌گیرد.</p>
+  <h3>📜 سیاست‌ها</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">حریم خصوصی</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">شرایط استفاده</a></p>
+  <h3>🌙 پشتیبانی</h3>
+  <p>گام به گام آینده‌ات را می‌سازی. پشتیبانی: <b>@VORNsupportbot</b></p>
+  </div>
+  `,
+
+  ar: `
+  <div dir="rtl">
+  <h3>🌌 أهلاً بك</h3>
+  <p>مرحبًا في <b>VORN</b> — الثبات والتركيز والهدوء الداخلي تتحول إلى تقدم حقيقي.</p>
+  <h3>⚙️ من نحن</h3>
+  <p><b>VORN Dev Team</b> تجمع بين التقنية وعلم النفس والتصميم لتجربة عادلة وملهمة.</p>
+  <h3>🌱 لماذا تبقى نشطًا</h3>
+  <p>كل شيء يعتمد عليك. الأفعال اليومية تتراكم وتقوي النتائج.</p>
+  <h3>⚔️ القواعد</h3>
+  <p>العب بنزاهة. لا للروبوتات أو السكربتات أو تعدد الحسابات أو الاستغلال. احترم الآخرين.</p>
+  <h3>🛡 الأمان والتحكم</h3>
+  <p>نحمي الحسابات ونرصد سوء الاستخدام. النشاط المريب يُقيّد تلقائيًا.</p>
+  <h3>🚫 مضاد التعدين / المهام</h3>
+  <p>الغش يبطئ أو يوقف تقدّمك. اللعب العادل مُكافأ دائمًا.</p>
+  <h3>📜 السياسات</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">سياسة الخصوصية</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">شروط الاستخدام</a></p>
+  <h3>🌙 الدعم</h3>
+  <p>خطوة بخطوة تصنع مستقبلك. الدعم: <b>@VORNsupportbot</b></p>
+  </div>
+  `,
+
+  zh: `
+  <h3>🌌 欢迎</h3>
+  <p>欢迎来到 <b>VORN</b> —— 坚持、专注与内在平静将化为真正的进步。</p>
+  <h3>⚙️ 我们是谁</h3>
+  <p><b>VORN Dev Team</b> 融合科技、心理与设计，打造公平且激励人的体验。</p>
+  <h3>🌱 为什么保持活跃</h3>
+  <p>一切取决于你。日常行动会累积并强化你的成果。</p>
+  <h3>⚔️ 规则</h3>
+  <p>公平游玩。禁止机器人、脚本、多账号与漏洞利用。尊重他人。</p>
+  <h3>🛡 安全与控制</h3>
+  <p>我们保护账号，自动检测并限制可疑行为。</p>
+  <h3>🚫 反挖矿 / 反任务滥用</h3>
+  <p>作弊会减缓甚至阻止进度。公平永远会被奖励。</p>
+  <h3>📜 政策</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">隐私政策</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">使用条款</a></p>
+  <h3>🌙 支持</h3>
+  <p>一步一步建设你的未来。支持：<b>@VORNsupportbot</b></p>
+  `,
+
+  ja: `
+  <h3>🌌 ようこそ</h3>
+  <p><b>VORN</b>へようこそ。継続・集中・内なる静けさが本当の進歩に繋がります。</p>
+  <h3>⚙️ 私たちについて</h3>
+  <p><b>VORN Dev Team</b>は技術・心理・デザインを融合し、公正でモチベーションの上がる体験を提供します。</p>
+  <h3>🌱 なぜアクティブに</h3>
+  <p>すべてはあなた次第。日々の行動が積み重なり、結果を強くします。</p>
+  <h3>⚔️ ルール</h3>
+  <p>公正に。ボット・スクリプト・複数アカウント・不正利用は禁止。互いを尊重。</p>
+  <h3>🛡 セキュリティと管理</h3>
+  <p>アカウントを保護し、不正を自動検知・制限します。</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>不正は進捗を遅らせ、停止させることがあります。フェアプレイは常に報われます。</p>
+  <h3>📜 ポリシー</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">プライバシーポリシー</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">利用規約</a></p>
+  <h3>🌙 サポート</h3>
+  <p>一歩ずつ未来を築こう。サポート：<b>@VORNsupportbot</b></p>
+  `,
+
+  ko: `
+  <h3>🌌 환영합니다</h3>
+  <p><b>VORN</b>에 오신 것을 환영합니다. 꾸준함·집중·내적 평온이 진짜 성과로 이어집니다.</p>
+  <h3>⚙️ 소개</h3>
+  <p><b>VORN Dev Team</b>은 기술·심리·디자인을 결합해 공정하고 동기부여가 되는 경험을 만듭니다.</p>
+  <h3>🌱 왜 활동적으로</h3>
+  <p>모든 것은 당신에게 달려 있습니다. 매일의 행동이 누적되어 결과를 강화합니다.</p>
+  <h3>⚔️ 규칙</h3>
+  <p>정직하게 플레이. 봇/스크립트/멀티계정/익스플로잇 금지. 다른 이용자 존중.</p>
+  <h3>🛡 보안 & 통제</h3>
+  <p>계정을 보호하고 부정행위를 자동 감지·제한합니다.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>치팅은 진행을 늦추거나 막습니다. 공정한 플레이는 보상됩니다.</p>
+  <h3>📜 정책</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">개인정보 처리방침</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">이용약관</a></p>
+  <h3>🌙 지원</h3>
+  <p>한 걸음씩 미래를 쌓아가세요. 지원: <b>@VORNsupportbot</b></p>
+  `,
+
+  hi: `
+  <h3>🌌 स्वागत है</h3>
+  <p><b>VORN</b> में आपका स्वागत है — निरंतरता, फोकस और आंतरिक शांति असली प्रगति बनती है।</p>
+  <h3>⚙️ हम कौन हैं</h3>
+  <p><b>VORN Dev Team</b> तकनीक, मनोविज्ञान और डिज़ाइन को मिलाकर निष्पक्ष और प्रेरक अनुभव बनाती है।</p>
+  <h3>🌱 सक्रिय क्यों रहें</h3>
+  <p>सब कुछ आप पर निर्भर है। रोज़ के छोटे कदम जुड़कर परिणाम को मजबूत बनाते हैं.</p>
+  <h3>⚔️ नियम</h3>
+  <p>ईमानदारी से खेलें: बॉट, स्क्रिप्ट, मल्टी-अकाउंट या एक्सप्लॉइट नहीं। सभी का सम्मान करें।</p>
+  <h3>🛡 सुरक्षा व नियंत्रण</h3>
+  <p>हम अकाउंट सुरक्षित रखते हैं और दुरुपयोग का स्वतः पता लगाते हैं।</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>चीटिंग प्रगति को धीमा या रोक सकती है। निष्पक्ष खेल को हमेशा पुरस्कृत किया जाता है।</p>
+  <h3>📜 नीतियाँ</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">गोपनीयता नीति</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">उपयोग की शर्तें</a></p>
+  <h3>🌙 सपोर्ट</h3>
+  <p>कदम-दर-कदम अपना भविष्य बनाइए। सपोर्ट: <b>@VORNsupportbot</b></p>
+  `,
+
+  pt: `
+  <h3>🌌 Bem-vindo</h3>
+  <p>Bem-vindo ao <b>VORN</b> — consistência, foco e calma interior viram progresso real.</p>
+  <h3>⚙️ Quem somos</h3>
+  <p><b>VORN Dev Team</b> une tecnologia, psicologia e design para uma experiência justa e motivadora.</p>
+  <h3>🌱 Por que ser ativo</h3>
+  <p>Tudo depende de você. Ações diárias se somam e fortalecem seus resultados.</p>
+  <h3>⚔️ Regras</h3>
+  <p>Jogue limpo. Sem bots, scripts, múltiplas contas ou exploits. Respeite a comunidade.</p>
+  <h3>🛡 Segurança & controle</h3>
+  <p>Protegemos contas e detectamos abusos. Atividade suspeita é limitada automaticamente.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Trapacear atrasa ou bloqueia seu progresso. O jogo justo é recompensado.</p>
+  <h3>📜 Políticas</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Política de Privacidade</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Termos de Uso</a></p>
+  <h3>🌙 Suporte</h3>
+  <p>Passo a passo você constrói seu futuro. Suporte: <b>@VORNsupportbot</b></p>
+  `,
+
+  el: `
+  <h3>🌌 Καλωσόρισες</h3>
+  <p>Καλωσόρισες στο <b>VORN</b> — συνέπεια, εστίαση και εσωτερική ηρεμία γίνονται πρόοδος.</p>
+  <h3>⚙️ Ποιοι είμαστε</h3>
+  <p>Η <b>VORN Dev Team</b> συνδυάζει τεχνολογία, ψυχολογία και design για δίκαιη και εμπνευσμένη εμπειρία.</p>
+  <h3>🌱 Γιατί να μείνεις ενεργός</h3>
+  <p>Όλα εξαρτώνται από εσένα. Οι καθημερινές πράξεις συσσωρεύονται και δυναμώνουν το αποτέλεσμα.</p>
+  <h3>⚔️ Κανόνες</h3>
+  <p>Παίξε τίμια. Όχι bots, scripts, πολλαπλοί λογαριασμοί ή exploits. Σεβασμός στην κοινότητα.</p>
+  <h3>🛡 Ασφάλεια & έλεγχος</h3>
+  <p>Προστατεύουμε λογαριασμούς και εντοπίζουμε κατάχρηση. Ύποπτη δραστηριότητα περιορίζεται αυτόματα.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Η απάτη καθυστερεί ή μπλοκάρει την πρόοδο. Το fair play ανταμείβεται.</p>
+  <h3>📜 Πολιτικές</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Πολιτική Απορρήτου</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Όροι Χρήσης</a></p>
+  <h3>🌙 Υποστήριξη</h3>
+  <p>Βήμα-βήμα χτίζεις το μέλλον σου. Support: <b>@VORNsupportbot</b></p>
+  `,
+
+  pl: `
+  <h3>🌌 Witaj</h3>
+  <p>Witaj w <b>VORN</b> — konsekwencja, fokus i spokój wewnętrzny zamieniają się w realny postęp.</p>
+  <h3>⚙️ Kim jesteśmy</h3>
+  <p><b>VORN Dev Team</b> łączy technologię, psychologię i design dla uczciwego, motywującego doświadczenia.</p>
+  <h3>🌱 Dlaczego być aktywnym</h3>
+  <p>Wszystko zależy od ciebie. Codzienne działania kumulują się i wzmacniają wynik.</p>
+  <h3>⚔️ Zasady</h3>
+  <p>Graj uczciwie. Bez botów, skryptów, multi-kont i exploitów. Szanuj innych.</p>
+  <h3>🛡 Bezpieczeństwo i kontrola</h3>
+  <p>Chronimy konta, wykrywamy nadużycia. Podejrzana aktywność jest automatycznie ograniczana.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Oszustwo spowalnia lub blokuje postęp. Uczciwa gra jest nagradzana.</p>
+  <h3>📜 Zasady serwisu</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Polityka prywatności</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Regulamin</a></p>
+  <h3>🌙 Wsparcie</h3>
+  <p>Krok po kroku budujesz przyszłość. Wsparcie: <b>@VORNsupportbot</b></p>
+  `,
+
+  nl: `
+  <h3>🌌 Welkom</h3>
+  <p>Welkom bij <b>VORN</b> — consistentie, focus en innerlijke rust worden echte vooruitgang.</p>
+  <h3>⚙️ Wie wij zijn</h3>
+  <p><b>VORN Dev Team</b> combineert technologie, psychologie en design voor een eerlijke, motiverende ervaring.</p>
+  <h3>🌱 Waarom actief blijven</h3>
+  <p>Alles hangt van jou af. Dagelijkse acties stapelen op en versterken je resultaat.</p>
+  <h3>⚔️ Regels</h3>
+  <p>Speel eerlijk. Geen bots, scripts, meerdere accounts of exploits. Respecteer anderen.</p>
+  <h3>🛡 Veiligheid & controle</h3>
+  <p>We beschermen accounts en detecteren misbruik. Verdachte activiteit wordt automatisch beperkt.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Vals spelen vertraagt of blokkeert vooruitgang. Eerlijk spel wordt beloond.</p>
+  <h3>📜 Beleid</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Privacybeleid</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Gebruiksvoorwaarden</a></p>
+  <h3>🌙 Support</h3>
+  <p>Stap voor stap bouw je je toekomst. Support: <b>@VORNsupportbot</b></p>
+  `,
+
+  sv: `
+  <h3>🌌 Välkommen</h3>
+  <p>Välkommen till <b>VORN</b> — konsekvens, fokus och inre lugn blir verkliga framsteg.</p>
+  <h3>⚙️ Vilka vi är</h3>
+  <p><b>VORN Dev Team</b> förenar teknik, psykologi och design för en rättvis och motiverande upplevelse.</p>
+  <h3>🌱 Varför vara aktiv</h3>
+  <p>Allt hänger på dig. Dagliga handlingar byggs på och stärker resultatet.</p>
+  <h3>⚔️ Regler</h3>
+  <p>Spela rättvist. Inga bots, skript, flera konton eller exploits. Respektera andra.</p>
+  <h3>🛡 Säkerhet & kontroll</h3>
+  <p>Vi skyddar konton och upptäcker missbruk. Misstänkt aktivitet begränsas automatiskt.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Fusk bromsar eller stoppar din utveckling. Rättvist spel belönas.</p>
+  <h3>📜 Policyer</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Integritetspolicy</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Användarvillkor</a></p>
+  <h3>🌙 Support</h3>
+  <p>Steg för steg bygger du din framtid. Support: <b>@VORNsupportbot</b></p>
+  `,
+
+  ro: `
+  <h3>🌌 Bine ai venit</h3>
+  <p>Bine ai venit în <b>VORN</b> — consecvența, concentrarea și calmul interior devin progres real.</p>
+  <h3>⚙️ Cine suntem</h3>
+  <p><b>VORN Dev Team</b> îmbină tehnologia, psihologia și designul pentru o experiență corectă și motivantă.</p>
+  <h3>🌱 De ce să rămâi activ</h3>
+  <p>Totul depinde de tine. Acțiunile zilnice se adună și îți întăresc rezultatele.</p>
+  <h3>⚔️ Reguli</h3>
+  <p>Joacă cinstit: fără boți, scripturi, conturi multiple sau exploatări. Respectă comunitatea.</p>
+  <h3>🛡 Securitate & control</h3>
+  <p>Protejăm conturile și detectăm abuzurile. Activitatea suspectă este limitată automat.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Trișatul îți încetinește sau blochează progresul. Jocul corect este recompensat.</p>
+  <h3>📜 Politici</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Politica de confidențialitate</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Termeni de utilizare</a></p>
+  <h3>🌙 Suport</h3>
+  <p>Pas cu pas îți construiești viitorul. Suport: <b>@VORNsupportbot</b></p>
+  `,
+
+  hu: `
+  <h3>🌌 Üdv</h3>
+  <p>Üdv a <b>VORN</b> világában — a következetesség, fókusz és belső nyugalom valódi haladássá válnak.</p>
+  <h3>⚙️ Kik vagyunk</h3>
+  <p>A <b>VORN Dev Team</b> technológiát, pszichológiát és designt ötvöz egy tisztességes, motiváló élményért.</p>
+  <h3>🌱 Miért maradj aktív</h3>
+  <p>Minden rajtad múlik. A napi tettek összeadódnak, erősítve az eredményt.</p>
+  <h3>⚔️ Szabályok</h3>
+  <p>Játssz tisztán: nincs bot, script, több fiók vagy exploit. Tiszteld a többieket.</p>
+  <h3>🛡 Biztonság & kontroll</h3>
+  <p>Védjük a fiókokat és észleljük a visszaéléseket. A gyanús aktivitás automatikusan korlátozott.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Csalás lassítja vagy blokkolja a haladást. A fair játék jutalmazott.</p>
+  <h3>📜 Irányelvek</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Adatvédelmi irányelv</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Felhasználási feltételek</a></p>
+  <h3>🌙 Támogatás</h3>
+  <p>Lépésről lépésre építed a jövőd. Support: <b>@VORNsupportbot</b></p>
+  `,
+
+  cs: `
+  <h3>🌌 Vítej</h3>
+  <p>Vítej ve <b>VORN</b> — konzistence, fokus a vnitřní klid se mění v reálný pokrok.</p>
+  <h3>⚙️ Kdo jsme</h3>
+  <p><b>VORN Dev Team</b> spojuje technologie, psychologii a design pro férový a motivující zážitek.</p>
+  <h3>🌱 Proč být aktivní</h3>
+  <p>Všechno záleží na tobě. Každodenní kroky se sčítají a posilují výsledky.</p>
+  <h3>⚔️ Pravidla</h3>
+  <p>Hraj férově. Žádní boti, skripty, multiúčty ani exploity. Respektuj ostatní.</p>
+  <h3>🛡 Bezpečnost & kontrola</h3>
+  <p>Chráníme účty a detekujeme zneužití. Podezřelá aktivita je automaticky omezena.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Podvádění zpomaluje nebo blokuje postup. Férová hra je odměňována.</p>
+  <h3>📜 Zásady</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Zásady ochrany osobních údajů</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Podmínky použití</a></p>
+  <h3>🌙 Podpora</h3>
+  <p>Krok za krokem stavíš svou budoucnost. Support: <b>@VORNsupportbot</b></p>
+  `,
+
+  uk: `
+  <h3>🌌 Ласкаво просимо</h3>
+  <p>Вітаємо у <b>VORN</b> — послідовність, фокус та внутрішній спокій стають реальним прогресом.</p>
+  <h3>⚙️ Хто ми</h3>
+  <p><b>VORN Dev Team</b> поєднує технології, психологію та дизайн для чесного, мотивуючого досвіду.</p>
+  <h3>🌱 Чому бути активним</h3>
+  <p>Все залежить від тебе. Щоденні дії накопичуються та підсилюють результат.</p>
+  <h3>⚔️ Правила</h3>
+  <p>Грай чесно. Без ботів, скриптів, мультиакаунтів і експлойтів. Поважай інших.</p>
+  <h3>🛡 Безпека та контроль</h3>
+  <p>Ми захищаємо акаунти й виявляємо зловживання. Підозрілу активність обмежуємо автоматично.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Шахрайство сповільнює або блокує прогрес. Чесна гра винагороджується.</p>
+  <h3>📜 Політики</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Політика конфіденційності</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">Умови використання</a></p>
+  <h3>🌙 Підтримка</h3>
+  <p>Крок за кроком ти будуєш майбутнє. Support: <b>@VORNsupportbot</b></p>
+  `,
+
+  az: `
+  <h3>🌌 Xoş gəldin</h3>
+  <p><b>VORN</b> dünyasına xoş gəldin — davamlılıq, fokus və daxili sakitlik real irəliləyişə çevrilir.</p>
+  <h3>⚙️ Biz kimik</h3>
+  <p><b>VORN Dev Team</b> texnologiya, psixologiya və dizaynı birləşdirir və ədalətli, motivasiyaedici təcrübə yaradır.</p>
+  <h3>🌱 Niyə aktiv qalmalısan</h3>
+  <p>Hər şey səndən asılıdır. Gündəlik addımlar toplanır və nəticəni gücləndirir.</p>
+  <h3>⚔️ Qaydalar</h3>
+  <p>Dürüst oyna: bot, skript, çox hesab və exploit yoxdur. İstifadəçilərə hörmət et.</p>
+  <h3>🛡 Təhlükəsizlik və nəzarət</h3>
+  <p>Hesabları qoruyuruq, sui-istifadəni aşkar edirik. Şübhəli fəaliyyət avtomatik məhdudlaşdırılır.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>Fırıldaqçı hərəkətlər irəliləyişi ləngidir və ya dayandırır. Dürüst oyun həmişə mükafatlandırılır.</p>
+  <h3>📜 Siyasətlər</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">Məxfilik siyasəti</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">İstifadə şərtləri</a></p>
+  <h3>🌙 Dəstək</h3>
+  <p>Addım-addım gələcəyini qurursan. Dəstək: <b>@VORNsupportbot</b></p>
+  `,
+
+  ka: `
+  <h3>🌌 კეთილი იყოს შენი მობრძანება</h3>
+  <p>კეთილი იყოს შენი მობრძანება <b>VORN</b>-ში — თანმიმდევრულობა, ფოკუსი და შინაგანი სიმშვიდე რეალურ პროგრესად იქცევა.</p>
+  <h3>⚙️ ვინ ვართ ჩვენ</h3>
+  <p><b>VORN Dev Team</b> აერთიანებს ტექნოლოგიას, ფსიქოლოგიას და დიზაინს სამართლიანი და შთამაგონებელი გამოცდილებისთვის.</p>
+  <h3>🌱 რატომ უნდა იყო აქტიური</h3>
+  <p>ყველაფერი შენზეა დამოკიდებული. ყოველდღიური ქმედებები გროვდება და აძლიერებს შედეგს.</p>
+  <h3>⚔️ წესები</h3>
+  <p>ითამაშე სამართლიანად: არავითარი ბოტები, სკრიპტები, მრავალანგარიში ან ექსპლოიტი. პატივი ეცი სხვებს.</p>
+  <h3>🛡 უსაფრთხოება და კონტროლი</h3>
+  <p>ვიცავთ ანგარიშებს და ვამჩნევთ ბოროტად გამოყენებას. საეჭვო აქტივობა ავტომატურად იზღუდება.</p>
+  <h3>🚫 Anti-Mine / Anti-Task</h3>
+  <p>თაღლითობა აფერხებს ან აჩერებს პროგრესს. სამართლიანი თამაში ყოველთვის ფასდება.</p>
+  <h3>📜 პოლიტიკა</h3>
+  <p><a href="https://vorn-studio.github.io/vornbot.github.io/privacy.html" target="_blank">კონფიდენციალურობა</a><br>
+     <a href="https://vorn-studio.github.io/vornbot.github.io/terms.html" target="_blank">გამოყენების პირობები</a></p>
+  <h3>🌙 მხარდაჭერა</h3>
+  <p>ნაბიჯ-ნაბიჯ შენ ქმნი მომავალს. მხარდაჭერა: <b>@VORNsupportbot</b></p>
+  `
+};
+
+// 🔁 Օգնական՝ RTL լեզուներ
+const RTL_LANGS = new Set(["ar","fa"]);
+
 
 /* -------- APPLY TRANSLATIONS -------- */
 function applyI18N(lang) {
@@ -315,6 +825,36 @@ if (this.els.btnWallet) {
     const lang = this.lang || getSavedLang() || "en";
     const text = walletMessages[lang] || walletMessages.en;
     this.showMessage(text, "info", 2800);
+  };
+}
+
+// ℹ️ Info button — multilingual info modal
+this.els.btnInfo = document.getElementById("btnInfo");
+if (this.els.btnInfo) {
+  this.els.btnInfo.onclick = () => {
+    const lang = this.lang || getSavedLang() || "en";
+    const infoModal = document.getElementById("infoModal");
+    const infoText  = document.getElementById("infoText");
+    const infoTitle = document.getElementById("infoTitle");
+    const closeBtn  = document.getElementById("closeInfoBtn");
+
+    if (!infoModal || !infoText) return;
+
+    // Language titles
+    const titles = { en:"ℹ️ Information", ru:"ℹ️ Информация", hy:"ℹ️ Տեղեկություն" };
+    infoTitle.textContent = titles[lang] || titles.en;
+
+    // RTL language support
+    const RTL_LANGS = new Set(["ar","fa"]);
+    if (RTL_LANGS.has(lang)) infoText.setAttribute("dir","rtl");
+    else infoText.removeAttribute("dir");
+
+    // Full 25-language data
+    infoText.innerHTML = infoData[lang] || infoData.en;
+
+    // Show modal
+    infoModal.classList.remove("hidden");
+    closeBtn.onclick = () => infoModal.classList.add("hidden");
   };
 }
 

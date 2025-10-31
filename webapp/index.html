@@ -223,6 +223,50 @@
   </div>
 </div>
 
+<!-- 🧩 INFO MODAL -->
+<div id="infoModal" class="modal hidden">
+  <div class="modal-content info-box">
+    <h2 id="infoTitle">ℹ️ Information</h2>
+    <div id="infoText" class="info-text"></div>
+    <button id="closeInfoBtn" class="close-btn">✖ Close</button>
+  </div>
+</div>
+
+<style>
+  .info-box {
+    max-height: 80vh;
+    overflow-y: auto;
+    background: rgba(15, 5, 30, 0.9);
+    color: #fff;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  .modal:not(.hidden) .info-box {
+    transform: scale(1);
+    opacity: 1;
+  }
+  .info-text h3 {
+    margin-top: 18px;
+    color: #ffd54a;
+  }
+  .info-text p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .info-text a {
+    color: #ffcc33;
+    text-decoration: none;
+  }
+  .info-text a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+
 <!-- APP LOGIC -->
 <script src="/webapp/app.js?v=4"></script>
 
