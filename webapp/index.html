@@ -56,35 +56,47 @@
 
   <!-- START BUTTON (fixed position centered lower on screen) -->
 <div id="startContainer">
-  <button id="startBtn" onclick="openLangMenu()">START</button>
+  <button id="startBtn">START</button>
+</div>
 
 <script>
-function openLangMenu() {
-  try {
-    // փակում ենք intro-ն
-    document.querySelector('.intro-text')?.classList.add('hidden');
-    document.getElementById('startContainer')?.classList.add('hidden');
+document.addEventListener("DOMContentLoaded", () => {
+  const startBtn = document.getElementById("startBtn");
+  const langModal = document.getElementById("languageModal");
+  const introText = document.querySelector(".intro-text");
+  const startContainer = document.getElementById("startContainer");
 
-    // ստուգում ենք՝ արդյոք լեզուների grid-ը կառուցված է
-    const grid = document.getElementById('lang-grid');
-    if (!grid || grid.children.length === 0) {
-      console.log('🩹 building lang-grid manually...');
-      if (window.VORN && typeof VORN.buildLanguageGrid === 'function') {
-        VORN.buildLanguageGrid();
+  if (startBtn && langModal) {
+    startBtn.addEventListener("click", () => {
+      // Փակում ենք ինտրոյի տեքստը և կոճակը
+      introText?.classList.add("hidden");
+      startContainer?.classList.add("hidden");
+
+      // Ստուգում ենք՝ արդյոք VORN հասանելի է
+      if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
+        const grid = document.getElementById("lang-grid");
+        if (!grid || grid.children.length === 0) {
+          console.log("🧱 Building lang grid manually before open...");
+          VORN.buildLanguageGrid();
+        }
       } else {
-        console.warn('⚠️ VORN not ready yet');
+        console.warn("⚠️ VORN not initialized yet, waiting 300ms...");
+        setTimeout(() => {
+          if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
+            VORN.buildLanguageGrid();
+          }
+        }, 300);
       }
-    }
 
-    // բացում ենք ճիշտ մոդալը (ոչ confirm-ը)
-    document.getElementById('confirmLangModal')?.classList.add('hidden');
-    document.getElementById('languageModal')?.classList.remove('hidden');
-
-    console.log('✅ Language menu opened successfully');
-  } catch (err) {
-    console.error('❌ openLangMenu failed', err);
+      // Բացում ենք մոդալը
+      document.getElementById("confirmLangModal")?.classList.add("hidden");
+      langModal.classList.remove("hidden");
+      console.log("✅ Language modal opened with grid");
+    });
   }
-}
+});
+</script>
+
 </script>
 </div>
 

@@ -65,74 +65,6 @@ const texts = {
   az: { confirmText: "Siz Azərbaycan dilini seçdiniz.\nSonradan dəyişmək mümkün deyil.", confirmBtn: "Təsdiq et", changeBtn: "Dəyiş", eggTip: "🥚 Yumurtaya toxun!" },
   ka: { confirmText: "შენ აირჩიე ქართული.\nშემდგომ ვერ შეცვლი.", confirmBtn: "დადასტურება", changeBtn: "შეცვლა", eggTip: "🥚 დააჭირე კვერცხს!" }
 };
-
-// ============================================================
-// Safe language labels (no Intl.DisplayNames dependency)
-// ============================================================
-const LANG_LABELS = {
-  en: "English",
-  ru: "Русский",
-  hy: "Հայերեն",
-  fr: "Français",
-  es: "Español",
-  de: "Deutsch",
-  it: "Italiano",
-  tr: "Türkçe",
-  fa: "فارسی",
-  ar: "العربية",
-  zh: "中文",
-  ja: "日本語",
-  ko: "한국어",
-  hi: "हिन्दी",
-  pt: "Português",
-  el: "Ελληνικά",
-  pl: "Polski",
-  nl: "Nederlands",
-  sv: "Svenska",
-  ro: "Română",
-  hu: "Magyar",
-  cs: "Čeština",
-  uk: "Українська",
-  az: "Azərbaycanca",
-  ka: "ქართული"
-};
-
-
-/* -------- APPLY TRANSLATIONS -------- */
-function applyI18N(lang) {
-  // 🧠 Fallback եթե սխալ է ընտրված լեզուն
-  if (!langButtonsDict || !texts[lang]) lang = "en";
-
-  // Լեզուն դնում ենք որպես <html lang="">
-  document.documentElement.setAttribute("lang", lang);
-
-  // Լեզվով վերնագրեր / կոճակներ
-  const tRef = langButtonsDict.tasksTitles.referral;
-  const tTasks = langButtonsDict.tasksTitles;
-
-  // Tasks մոդալ
-  const tasksTitle = document.querySelector("#tasksModal h2");
-  if (tasksTitle) tasksTitle.textContent = tTasks.main[lang] || tTasks.main.en;
-  const tasksClose = document.getElementById("closeTasksBtn");
-  if (tasksClose) tasksClose.textContent = langButtonsDict.referral?.close?.[lang] || "✖ Close";
-
-  // Referrals մոդալ
-  const refTitle = document.getElementById("referralTitle");
-  if (refTitle) refTitle.textContent = tRef.title[lang] || tRef.title.en;
-  const refCalc = document.getElementById("refPreviewBtn");
-  if (refCalc) refCalc.textContent = tRef.calc[lang] || tRef.calc.en;
-  const refClaim = document.getElementById("refClaimBtn");
-  if (refClaim) refClaim.textContent = tRef.claim[lang] || tRef.claim.en;
-  const refClose = document.getElementById("closeRefBtn");
-  if (refClose) refClose.textContent = tRef.close[lang] || tRef.close.en;
-
-  // Toast-երի լեզու նույնպես դնում ենք
-  VORN.lang = lang;
-  localStorage.setItem("vorn_lang", lang);
-  console.log(`🌍 Language applied globally: ${lang}`);
-}
-
-
 const langButtonsDict = {
   continue: { en: "Continue", ru: "Продолжить", hy: "Շարունակել", tr: "Devam et", fa: "ادامه", es: "Continuar", fr: "Continuer", de: "Weiter", it: "Continua", zh: "继续", ja: "続行", ko: "계속", ar: "متابعة" },
   start:    { en: "Start",    ru: "Начать",      hy: "Սկսել",      tr: "Başlat",  fa: "شروع", es: "Empezar",  fr: "Commencer", de: "Starten", it: "Avvia", zh: "开始", ja: "開始", ko: "시작", ar: "ابدأ" },
@@ -177,6 +109,42 @@ const langButtonsDict = {
   }
  
 };
+
+/* -------- APPLY TRANSLATIONS -------- */
+function applyI18N(lang) {
+  // 🧠 Fallback եթե սխալ է ընտրված լեզուն
+  if (!langButtonsDict || !texts[lang]) lang = "en";
+
+  // Լեզուն դնում ենք որպես <html lang="">
+  document.documentElement.setAttribute("lang", lang);
+
+  // Լեզվով վերնագրեր / կոճակներ
+  const tRef = langButtonsDict.tasksTitles.referral;
+  const tTasks = langButtonsDict.tasksTitles;
+
+  // Tasks մոդալ
+  const tasksTitle = document.querySelector("#tasksModal h2");
+  if (tasksTitle) tasksTitle.textContent = tTasks.main[lang] || tTasks.main.en;
+  const tasksClose = document.getElementById("closeTasksBtn");
+  if (tasksClose) tasksClose.textContent = langButtonsDict.referral?.close?.[lang] || "✖ Close";
+
+  // Referrals մոդալ
+  const refTitle = document.getElementById("referralTitle");
+  if (refTitle) refTitle.textContent = tRef.title[lang] || tRef.title.en;
+  const refCalc = document.getElementById("refPreviewBtn");
+  if (refCalc) refCalc.textContent = tRef.calc[lang] || tRef.calc.en;
+  const refClaim = document.getElementById("refClaimBtn");
+  if (refClaim) refClaim.textContent = tRef.claim[lang] || tRef.claim.en;
+  const refClose = document.getElementById("closeRefBtn");
+  if (refClose) refClose.textContent = tRef.close[lang] || tRef.close.en;
+
+  // Toast-երի լեզու նույնպես դնում ենք
+  VORN.lang = lang;
+  localStorage.setItem("vorn_lang", lang);
+  console.log(`🌍 Language applied globally: ${lang}`);
+}
+
+
 function getSavedLang() {
   try { return localStorage.getItem("vorn_lang") || "en"; } catch { return "en"; }
 }
