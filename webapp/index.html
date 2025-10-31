@@ -66,9 +66,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const introText = document.querySelector(".intro-text");
   const startContainer = document.getElementById("startContainer");
 
-  // մենք սպասելու ենք app.js-ից custom իրադարձությանը
+  let vornReady = false;
+
+  // լսում ենք app.js-ից եկող ազդանշանը
   window.addEventListener("vorn_ready", () => {
-    console.log("✅ VORN ready signal received.");
+    vornReady = true;
+    console.log("✅ Received vorn_ready signal from app.js");
   });
 
   if (startBtn && langModal) {
@@ -76,37 +79,26 @@ document.addEventListener("DOMContentLoaded", () => {
       introText?.classList.add("hidden");
       startContainer?.classList.add("hidden");
 
-      // սպասում ենք մինչև app.js ուղարկի իրադարձությունը
-      let ready = false;
-      for (let i = 0; i < 30; i++) {
-        if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
-          ready = true;
-          break;
-        }
+      console.log("🕐 Waiting for VORN to be ready...");
+      for (let i = 0; i < 25; i++) {
+        if (vornReady && window.VORN && typeof VORN.buildLanguageGrid === "function") break;
         await new Promise(r => setTimeout(r, 200));
       }
 
-      if (!ready) {
-        console.error("❌ VORN never initialized — forcing manual event.");
-      }
-
       const grid = document.getElementById("lang-grid");
-      if (!grid || grid.children.length === 0) {
-        try {
-          console.log("🧱 Building lang grid...");
-          window.VORN?.buildLanguageGrid();
-        } catch (err) {
-          console.error("❌ buildLanguageGrid failed:", err);
-        }
+      if (!grid || !grid.children.length) {
+        console.log("🧱 Building language grid manually...");
+        window.VORN?.buildLanguageGrid?.();
       }
 
       document.getElementById("confirmLangModal")?.classList.add("hidden");
       langModal.classList.remove("hidden");
-      console.log("✅ Language modal opened with grid:", grid?.children?.length || 0);
+      console.log("✅ Language menu opened with", grid.children.length, "buttons");
     });
   }
 });
 </script>
+
 
 
 
@@ -277,48 +269,6 @@ document.addEventListener("DOMContentLoaded", () => {
     <button id="closeTasksBtn" class="close-btn">✖ Close</button>
   </div>
 </div>
-
-
-      <!-- Safe loader to always fetch latest app.js (cache-bust) AFTER DOM is ready -->
-    <!-- Safe loader to always fetch latest app.js (cache-bust) AFTER DOM is ready -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      try {
-        const s = document.createElement("script");
-        s.src = window.location.origin + "/webapp/app.js?v=" + Date.now();
-        s.async = false;
-        document.body.appendChild(s);
-        console.log("✅ app.js loaded AFTER DOM");
-      } catch (e) {
-        console.error("❌ app.js not loaded:", e);
-      }
-    });
-  </script>
-
-
-
-
-  <script>
-
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  const startBtn = document.getElementById("startBtn");
-  const langModal = document.getElementById("languageModal");
-  const introText = document.querySelector(".intro-text");
-  const startContainer = document.getElementById("startContainer");
-
-  if (startBtn && langModal) {
-    startBtn.addEventListener("click", () => {
-      // 🔹 Փակում ենք ինտրոյի տեքստն ու ցույց տալիս լեզուների մենյուն
-      if (introText) introText.style.display = "none";
-      if (startContainer) startContainer.style.display = "none";
-      langModal.classList.remove("hidden");
-      console.log("✅ START → Language menu opened manually (fallback)");
-    });
-  }
-});
-</script>
 
 </body>
 </html>

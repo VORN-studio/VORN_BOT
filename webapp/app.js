@@ -1412,9 +1412,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-document.dispatchEvent(new Event("vorn_ready"));
-window.dispatchEvent(new Event("vorn_ready"));
-console.log("📣 VORN ready event emitted");
+    this.mountDebugOverlay();
+    this.mountCanvasBackground();
+    this.applyI18N && this.applyI18N();
+
+    // ✅ emit the ready signal only AFTER everything initialized
+    setTimeout(() => {
+      document.dispatchEvent(new Event("vorn_ready"));
+      window.dispatchEvent(new Event("vorn_ready"));
+      console.log("📣 VORN ready event emitted (delayed)");
+    }, 500);
+  
 
 
 
