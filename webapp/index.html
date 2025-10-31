@@ -66,37 +66,48 @@ document.addEventListener("DOMContentLoaded", () => {
   const introText = document.querySelector(".intro-text");
   const startContainer = document.getElementById("startContainer");
 
+  // մենք սպասելու ենք app.js-ից custom իրադարձությանը
+  window.addEventListener("vorn_ready", () => {
+    console.log("✅ VORN ready signal received.");
+  });
+
   if (startBtn && langModal) {
     startBtn.addEventListener("click", async () => {
       introText?.classList.add("hidden");
       startContainer?.classList.add("hidden");
 
-      console.log("🕐 Waiting for VORN to initialize...");
-      // ✅ Սպասում ենք մինչև VORN.init() ավարտվի
-      let tries = 0;
-      while ((!window.VORN || typeof VORN.buildLanguageGrid !== "function") && tries < 20) {
+      // սպասում ենք մինչև app.js ուղարկի իրադարձությունը
+      let ready = false;
+      for (let i = 0; i < 30; i++) {
+        if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
+          ready = true;
+          break;
+        }
         await new Promise(r => setTimeout(r, 200));
-        tries++;
       }
 
-      if (!window.VORN || typeof VORN.buildLanguageGrid !== "function") {
-        console.error("❌ VORN still not ready after waiting");
-        return;
+      if (!ready) {
+        console.error("❌ VORN never initialized — forcing manual event.");
       }
 
       const grid = document.getElementById("lang-grid");
       if (!grid || grid.children.length === 0) {
-        console.log("🧱 Building lang grid...");
-        VORN.buildLanguageGrid();
+        try {
+          console.log("🧱 Building lang grid...");
+          window.VORN?.buildLanguageGrid();
+        } catch (err) {
+          console.error("❌ buildLanguageGrid failed:", err);
+        }
       }
 
       document.getElementById("confirmLangModal")?.classList.add("hidden");
       langModal.classList.remove("hidden");
-      console.log("✅ Language modal opened with buttons:", grid?.children?.length);
+      console.log("✅ Language modal opened with grid:", grid?.children?.length || 0);
     });
   }
 });
 </script>
+
 
 
 </script>
