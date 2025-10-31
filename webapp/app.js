@@ -222,74 +222,38 @@ const VORN = {
 
   
 
-  buildLanguageGrid() {
-    console.log("🧱 Building language grid manually...");
-    const grid = document.getElementById("lang-grid");
-    if (!grid) {
-      console.warn("⚠️ lang-grid not found in DOM");
-      return;
-    }
+   buildLanguageGrid() {
+  console.log("🧱 Building language grid (on-demand)…");
 
-    grid.innerHTML = "";
+  const LANGS = {
+    en: "English", ru: "Русский", hy: "Հայերեն", fr: "Français", es: "Español",
+    de: "Deutsch", it: "Italiano", tr: "Türkçe", fa: "فارسی", ar: "العربية",
+    zh: "中文", ja: "日本語", ko: "한국어", hi: "हिन्दी", pt: "Português",
+    el: "Ελληνικά", pl: "Polski", nl: "Nederlands", sv: "Svenska",
+    ro: "Română", hu: "Magyar", cs: "Čeština", uk: "Українська",
+    az: "Azərbaycanca", ka: "ქართული"
+  };
 
-    const LANGS = {
-      en: "English", ru: "Русский", hy: "Հայերեն", fr: "Français", es: "Español",
-      de: "Deutsch", it: "Italiano", tr: "Türkçe", fa: "فارسی", ar: "العربية",
-      zh: "中文", ja: "日本語", ko: "한국어", hi: "हिन्दी", pt: "Português",
-      el: "Ελληνικά", pl: "Polski", nl: "Nederlands", sv: "Svenska",
-      ro: "Română", hu: "Magyar", cs: "Čeština", uk: "Українська",
-      az: "Azərbaycanca", ka: "ქართული"
-    };
+  // այստեղ գտնում ենք grid-ը հենց այն պահին, երբ մենյուն բացվում է
+  const grid = document.getElementById("lang-grid");
+  if (!grid) {
+    console.error("❌ lang-grid not found when building!");
+    return;
+  }
 
-    setTimeout(() => {
-      let count = 0;
-      Object.entries(LANGS).forEach(([code, name]) => {
-        const btn = document.createElement("button");
-        btn.className = "lang-btn";
-        btn.textContent = name;
-        btn.onclick = () => VORN.showConfirmLang(code);
-        grid.appendChild(btn);
-        count++;
-      });
-      console.log(`✅ Language grid created successfully with ${count} languages`);
-    }, 100);
-  },
+  grid.innerHTML = "";
+  Object.entries(LANGS).forEach(([code, name]) => {
+    const btn = document.createElement("button");
+    btn.className = "lang-btn";
+    btn.textContent = name;
+    btn.onclick = () => VORN.showConfirmLang(code);
+    grid.appendChild(btn);
+  });
+
+  console.log(`✅ Language grid filled with ${Object.keys(LANGS).length} buttons`);
+},
 
 
-  buildLanguageGrid() {
-    console.log("🧱 Building language grid manually...");
-    const grid = document.getElementById("lang-grid");
-    if (!grid) {
-      console.warn("⚠️ lang-grid not found in DOM");
-      return;
-    }
-
-    // մաքրում ենք նախորդ բովանդակությունը
-    grid.innerHTML = "";
-
-    // Լեզուների ցանկը
-    const LANGS = {
-      en: "English", ru: "Русский", hy: "Հայերեն", fr: "Français", es: "Español",
-      de: "Deutsch", it: "Italiano", tr: "Türkçe", fa: "فارسی", ar: "العربية",
-      zh: "中文", ja: "日本語", ko: "한국어", hi: "हिन्दी", pt: "Português",
-      el: "Ελληνικά", pl: "Polski", nl: "Nederlands", sv: "Svenska",
-      ro: "Română", hu: "Magyar", cs: "Čeština", uk: "Українська",
-      az: "Azərbaycanca", ka: "ქართული"
-    };
-
-    setTimeout(() => {
-      let count = 0;
-      Object.entries(LANGS).forEach(([code, name]) => {
-        const btn = document.createElement("button");
-        btn.className = "lang-btn";
-        btn.textContent = name;
-        btn.onclick = () => VORN.showConfirmLang(code);
-        grid.appendChild(btn);
-        count++;
-      });
-      console.log(`✅ Language grid created successfully with ${count} languages`);
-    }, 200);
-  },
 
 
   bindEls() {
@@ -610,42 +574,6 @@ if (btn) btn.classList.add("hidden");
     setTimeout(()=> this.els.mineBtn.classList.remove("ready"), 350);
   },
 
-  /* -------- INTRO / LANGUAGE FLOW -------- */
- buildLanguageGrid() {
-  console.log("🧱 Building language grid manually (safe delay)...");
-  
-  // Փորձում ենք մի քանի անգամ գտնել lang-grid-ը մինչև հայտնվի
-  let attempts = 0;
-  const interval = setInterval(() => {
-    const grid = document.getElementById("lang-grid");
-    if (grid) {
-      clearInterval(interval);
-      grid.innerHTML = "";
-
-      const LANGS = {
-        en: "English", ru: "Русский", hy: "Հայերեն", fr: "Français", es: "Español",
-        de: "Deutsch", it: "Italiano", tr: "Türkçe", fa: "فارسی", ar: "العربية",
-        zh: "中文", ja: "日本語", ko: "한국어", hi: "हिन्दी", pt: "Português",
-        el: "Ελληνικά", pl: "Polski", nl: "Nederlands", sv: "Svenska",
-        ro: "Română", hu: "Magyar", cs: "Čeština", uk: "Українська",
-        az: "Azərbaycanca", ka: "ქართული"
-      };
-
-      Object.entries(LANGS).forEach(([code, name]) => {
-        const btn = document.createElement("button");
-        btn.className = "lang-btn";
-        btn.textContent = name;
-        btn.onclick = () => VORN.showConfirmLang(code);
-        grid.appendChild(btn);
-      });
-
-      console.log(`✅ Language grid created successfully with ${grid.children.length} languages`);
-    } else if (++attempts > 30) {
-      clearInterval(interval);
-      console.error("❌ lang-grid not found after waiting — aborting.");
-    }
-  }, 200);
-},
 
 
 

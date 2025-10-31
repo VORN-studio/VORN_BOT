@@ -75,9 +75,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   if (startBtn && langModal) {
-    startBtn.addEventListener("click", async () => {
-      introText?.classList.add("hidden");
-      startContainer?.classList.add("hidden");
+   startBtn.addEventListener("click", async () => {
+  introText?.classList.add("hidden");
+  startContainer?.classList.add("hidden");
+
+  // 🧩 Լցնում ենք լեզուների ցանկը հենց հիմա, մինչև մենյուն երևա
+  if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
+    VORN.buildLanguageGrid();
+  }
+
+  document.getElementById("confirmLangModal")?.classList.add("hidden");
+  langModal.classList.remove("hidden");
+  console.log("✅ Language modal opened with grid:", grid?.children?.length || 0);
+
 
       console.log("🕐 Waiting for VORN readiness...");
       for (let i = 0; i < 40; i++) { // մինչև 8 վրկ
