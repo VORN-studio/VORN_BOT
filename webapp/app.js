@@ -220,56 +220,76 @@ const VORN = {
     this.applyI18N && this.applyI18N();
   },
 
+  
 
   buildLanguageGrid() {
-  const grid = document.getElementById("lang-grid");
-  if (!grid) {
-    console.warn("⚠️ lang-grid not found");
-    return;
-  }
+    console.log("🧱 Building language grid manually...");
+    const grid = document.getElementById("lang-grid");
+    if (!grid) {
+      console.warn("⚠️ lang-grid not found in DOM");
+      return;
+    }
 
-  grid.innerHTML = "";
+    grid.innerHTML = "";
 
-  // Քո ամբողջ 25 լեզուների ցանկը՝ առանց կորուստի
-  const LANGS = {
-    en: "English",
-    ru: "Русский",
-    hy: "Հայերեն",
-    fr: "Français",
-    es: "Español",
-    de: "Deutsch",
-    it: "Italiano",
-    tr: "Türkçe",
-    fa: "فارسی",
-    ar: "العربية",
-    zh: "中文",
-    ja: "日本語",
-    ko: "한국어",
-    hi: "हिन्दी",
-    pt: "Português",
-    el: "Ελληνικά",
-    pl: "Polski",
-    nl: "Nederlands",
-    sv: "Svenska",
-    ro: "Română",
-    hu: "Magyar",
-    cs: "Čeština",
-    uk: "Українська",
-    az: "Azərbaycanca",
-    ka: "ქართული"
-  };
+    const LANGS = {
+      en: "English", ru: "Русский", hy: "Հայերեն", fr: "Français", es: "Español",
+      de: "Deutsch", it: "Italiano", tr: "Türkçe", fa: "فارسی", ar: "العربية",
+      zh: "中文", ja: "日本語", ko: "한국어", hi: "हिन्दी", pt: "Português",
+      el: "Ελληνικά", pl: "Polski", nl: "Nederlands", sv: "Svenska",
+      ro: "Română", hu: "Magyar", cs: "Čeština", uk: "Українська",
+      az: "Azərbaycanca", ka: "ქართული"
+    };
 
-  Object.entries(LANGS).forEach(([code, name]) => {
-    const btn = document.createElement("button");
-    btn.className = "lang-btn";
-    btn.textContent = name;
-    btn.onclick = () => this.showConfirmLang(code);
-    grid.appendChild(btn);
-  });
+    setTimeout(() => {
+      let count = 0;
+      Object.entries(LANGS).forEach(([code, name]) => {
+        const btn = document.createElement("button");
+        btn.className = "lang-btn";
+        btn.textContent = name;
+        btn.onclick = () => VORN.showConfirmLang(code);
+        grid.appendChild(btn);
+        count++;
+      });
+      console.log(`✅ Language grid created successfully with ${count} languages`);
+    }, 100);
+  },
 
-  console.log("✅ Language grid created:", Object.keys(LANGS).length, "languages");
-},
 
+  buildLanguageGrid() {
+    console.log("🧱 Building language grid manually...");
+    const grid = document.getElementById("lang-grid");
+    if (!grid) {
+      console.warn("⚠️ lang-grid not found in DOM");
+      return;
+    }
+
+    // մաքրում ենք նախորդ բովանդակությունը
+    grid.innerHTML = "";
+
+    // Լեզուների ցանկը
+    const LANGS = {
+      en: "English", ru: "Русский", hy: "Հայերեն", fr: "Français", es: "Español",
+      de: "Deutsch", it: "Italiano", tr: "Türkçe", fa: "فارسی", ar: "العربية",
+      zh: "中文", ja: "日本語", ko: "한국어", hi: "हिन्दी", pt: "Português",
+      el: "Ελληνικά", pl: "Polski", nl: "Nederlands", sv: "Svenska",
+      ro: "Română", hu: "Magyar", cs: "Čeština", uk: "Українська",
+      az: "Azərbaycanca", ka: "ქართული"
+    };
+
+    setTimeout(() => {
+      let count = 0;
+      Object.entries(LANGS).forEach(([code, name]) => {
+        const btn = document.createElement("button");
+        btn.className = "lang-btn";
+        btn.textContent = name;
+        btn.onclick = () => VORN.showConfirmLang(code);
+        grid.appendChild(btn);
+        count++;
+      });
+      console.log(`✅ Language grid created successfully with ${count} languages`);
+    }, 200);
+  },
 
 
   bindEls() {
