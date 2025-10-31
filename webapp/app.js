@@ -1270,28 +1270,33 @@ showMessage(key, type = "info", duration = 2600) {
 
 
   
-  // ընտրում ենք օգտատիրոջ լեզուն
-  const lang = (this.lang && texts[this.lang]) ? this.lang : getSavedLang();
-  const text = (messages[key] && (messages[key][lang] || messages[key].en)) || key;
+ const lang = (this.lang && messages[key] && messages[key][this.lang]) ? this.lang : getSavedLang();
+let text = key;
 
-  // հին toast-ը ջնջում ենք
-  const old = document.querySelector(".vorn-toast");
-  if (old) old.remove();
+if (messages[key]) {
+  if (messages[key][lang]) text = messages[key][lang];
+  else if (messages[key]["en"]) text = messages[key]["en"];
+}
 
-  // ստեղծում ենք նոր toast
-  const toast = document.createElement("div");
-  toast.className = `vorn-toast ${type}`;
-  toast.innerHTML = text;
-  document.body.appendChild(toast);
+// հին toast-ը ջնջում ենք
+const old = document.querySelector(".vorn-toast");
+if (old) old.remove();
 
-  // Fade-in
-  setTimeout(() => toast.classList.add("visible"), 50);
+// ստեղծում ենք նոր toast
+const toast = document.createElement("div");
+toast.className = "vorn-toast " + type;
+toast.innerHTML = text;
+document.body.appendChild(toast);
 
-  // Fade-out
-  setTimeout(() => {
-    toast.classList.remove("visible");
-    setTimeout(() => toast.remove(), 600);
-  }, duration);
+// Fade-in/out
+setTimeout(function() {
+  toast.classList.add("visible");
+}, 50);
+
+setTimeout(function() {
+  toast.classList.remove("visible");
+  setTimeout(function() { toast.remove(); }, 600);
+}, duration);
 },
 
 
