@@ -208,7 +208,7 @@ const VORN = {
     console.log("⚙️ VORN.init()");
     console.log("🧠 UID from URL:", uidFromURL());
     this.bindEls();
-    this.buildLanguageGrid();A
+    this.buildLanguageGrid();
     this.uid = uidFromURL();
     this.lang = getSavedLang();
 
