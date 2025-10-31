@@ -67,35 +67,37 @@ document.addEventListener("DOMContentLoaded", () => {
   const startContainer = document.getElementById("startContainer");
 
   if (startBtn && langModal) {
-    startBtn.addEventListener("click", () => {
-      // Փակում ենք ինտրոյի տեքստը և կոճակը
+    startBtn.addEventListener("click", async () => {
       introText?.classList.add("hidden");
       startContainer?.classList.add("hidden");
 
-      // Ստուգում ենք՝ արդյոք VORN հասանելի է
-      if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
-        const grid = document.getElementById("lang-grid");
-        if (!grid || grid.children.length === 0) {
-          console.log("🧱 Building lang grid manually before open...");
-          VORN.buildLanguageGrid();
-        }
-      } else {
-        console.warn("⚠️ VORN not initialized yet, waiting 300ms...");
-        setTimeout(() => {
-          if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
-            VORN.buildLanguageGrid();
-          }
-        }, 300);
+      console.log("🕐 Waiting for VORN to initialize...");
+      // ✅ Սպասում ենք մինչև VORN.init() ավարտվի
+      let tries = 0;
+      while ((!window.VORN || typeof VORN.buildLanguageGrid !== "function") && tries < 20) {
+        await new Promise(r => setTimeout(r, 200));
+        tries++;
       }
 
-      // Բացում ենք մոդալը
+      if (!window.VORN || typeof VORN.buildLanguageGrid !== "function") {
+        console.error("❌ VORN still not ready after waiting");
+        return;
+      }
+
+      const grid = document.getElementById("lang-grid");
+      if (!grid || grid.children.length === 0) {
+        console.log("🧱 Building lang grid...");
+        VORN.buildLanguageGrid();
+      }
+
       document.getElementById("confirmLangModal")?.classList.add("hidden");
       langModal.classList.remove("hidden");
-      console.log("✅ Language modal opened with grid");
+      console.log("✅ Language modal opened with buttons:", grid?.children?.length);
     });
   }
 });
 </script>
+
 
 </script>
 </div>
