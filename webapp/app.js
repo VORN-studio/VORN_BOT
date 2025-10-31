@@ -555,14 +555,19 @@ async onMineClick() {
     const done = COOLDOWN_SEC - left;
     return Math.max(0, Math.min(100, (done / COOLDOWN_SEC) * 100));
   },
-  paintMineButton() {
-    const btn = this.els.startBtn;
-if (btn) btn.classList.add("hidden");
-    const left = this.secsUntilReady();
-    const pct = this.pctReady();
-    btn.style.setProperty("--pct", pct.toFixed(2));
-    if (left <= 0) btn.classList.add("ready"); else btn.classList.remove("ready");
-  },
+ paintMineButton() {
+  const btn = this.els.mineBtn;
+  if (!btn) return;
+  const left = this.secsUntilReady();
+  const pct = this.pctReady();
+  btn.style.setProperty("--pct", `${pct.toFixed(2)}%`);
+  if (left <= 0) {
+    btn.classList.add("ready");
+  } else {
+    btn.classList.remove("ready");
+  }
+},
+
   startMineTicker() {
     if (this.timer) clearInterval(this.timer);
     this.paintMineButton();

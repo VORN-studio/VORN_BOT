@@ -643,3 +643,45 @@ button, .menu-btn, .mine-btn {
   font-size: 14px;
   color: #ffd700;
 }
+
+/* 🔮 Mine button loading ring */
+.mine-btn {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #3a004d 0%, #0a0014 100%);
+  box-shadow: 0 0 15px rgba(160, 80, 255, 0.5);
+  overflow: hidden;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.mine-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    #b76dff var(--pct, 0%),
+    rgba(255, 255, 255, 0.05) 0%
+  );
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.mine-btn .mine-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 1.6rem;
+  color: #fff;
+}
+
+.mine-btn.ready {
+  box-shadow: 0 0 25px rgba(255, 220, 120, 0.9);
+  transform: scale(1.05);
+}
+
+.mine-btn.ready::before {
+  background: conic-gradient(#ffd700 100%, #ffd700 100%);
+}
