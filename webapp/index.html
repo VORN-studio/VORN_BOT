@@ -254,20 +254,24 @@ function openLangMenu() {
 </div>
 
 
-  <!-- Safe loader to always fetch latest app.js (cache-bust) -->
+      <!-- Safe loader to always fetch latest app.js (cache-bust) AFTER DOM is ready -->
+    <!-- Safe loader to always fetch latest app.js (cache-bust) AFTER DOM is ready -->
   <script>
-    (function() {
+    document.addEventListener("DOMContentLoaded", () => {
       try {
-        var s = document.createElement("script");
+        const s = document.createElement("script");
         s.src = window.location.origin + "/webapp/app.js?v=" + Date.now();
         s.async = false;
         document.body.appendChild(s);
-        console.log("✅ app.js forced load triggered");
+        console.log("✅ app.js loaded AFTER DOM");
       } catch (e) {
-        alert("❌ app.js not loaded: " + e.message);
+        console.error("❌ app.js not loaded:", e);
       }
-    })();
+    });
   </script>
+
+
+
 
   <script>
 

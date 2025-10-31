@@ -210,6 +210,7 @@ const VORN = {
     this.bindEls();
     this.buildLanguageGrid();
     this.uid = uidFromURL();
+
     this.lang = getSavedLang();
 
     document.body.style.overflow = "hidden";
