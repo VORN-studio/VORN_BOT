@@ -432,8 +432,11 @@ async refClaim() {
 
     this.balance = d.new_balance ?? this.balance;
     this.vornBalance = d.new_vorn ?? this.vornBalance;
-    document.getElementById("featherCount")?.textContent = String(this.balance);
-    document.getElementById("foodCount")?.textContent = (this.vornBalance).toFixed(2);
+    const el = document.getElementById("featherCount");
+if (el) el.textContent = String(this.balance);
+    const food = document.getElementById("foodCount");
+if (food) food.textContent = this.vornBalance.toFixed(2);
+
 
     const msg =
       (this.lang === "ru") ? `✅ Получено ${d.cashback_feathers} 🪶 и ${Number(d.cashback_vorn).toFixed(4)} 🜂`
@@ -569,8 +572,8 @@ async onMineClick() {
     return Math.max(0, Math.min(100, (done / COOLDOWN_SEC) * 100));
   },
   paintMineButton() {
-    const btn = this.els.mineBtn;
-    if (!btn) return;
+    const btn = this.els.startBtn;
+if (btn) btn.classList.add("hidden");
     const left = this.secsUntilReady();
     const pct = this.pctReady();
     btn.style.setProperty("--pct", pct.toFixed(2));
@@ -1424,16 +1427,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-    this.mountDebugOverlay();
-    this.mountCanvasBackground();
-    this.applyI18N && this.applyI18N();
-
-    // ✅ emit the ready signal only AFTER everything initialized
-    setTimeout(() => {
-      document.dispatchEvent(new Event("vorn_ready"));
-      window.dispatchEvent(new Event("vorn_ready"));
-      console.log("📣 VORN ready event emitted (delayed)");
-    }, 500);
   
 
 
