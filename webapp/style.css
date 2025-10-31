@@ -598,17 +598,59 @@ button, .menu-btn, .mine-btn {
 .hidden { display: none !important; }
 
 
-/* ===== REFERRALS MODAL ===== */
+
+/* === REFERRALS MODAL (same style as TASKS) === */
+#referralsModal {
+  background: radial-gradient(circle at center, rgba(15,0,25,0.95), rgba(0,0,0,0.9));
+  backdrop-filter: blur(8px);
+  z-index: 2200;
+}
+
 #referralsModal .modal-content {
-  background: rgba(20, 20, 25, 0.95);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 16px;
+  background: rgba(25, 0, 50, 0.6);
+  border: 1px solid rgba(255,215,0,0.4);
+  box-shadow: 0 0 30px rgba(166,91,255,0.4);
+  border-radius: 18px;
+  padding: 25px;
   max-width: 420px;
-  margin: 40px auto;
-  padding: 20px;
-  text-align: center;
+  width: 90%;
+  color: #ffe79b;
+  text-shadow: 0 0 8px rgba(255,215,0,0.4);
+  animation: modalPop .4s ease;
+}
+
+/* keep inner elements consistent */
+#referralsModal h2 {
+  color: gold;
+  text-shadow: 0 0 8px rgba(255,215,0,0.5);
+  margin-bottom: 10px;
+}
+
+#referralsModal .ref-link-box {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,215,0,0.3);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
   color: #fff;
 }
+
+#referralsModal .ref-actions button {
+  background: linear-gradient(135deg, #ffae00, #ffcc33);
+  color: #26004d;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 22px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(255,215,0,0.4);
+}
+#referralsModal .ref-actions button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255,215,0,0.6);
+}
+
 .ref-link-box {
   background: rgba(255,255,255,0.05);
   border-radius: 10px;
