@@ -110,6 +110,36 @@ const langButtonsDict = {
  
 };
 
+// Wallet temporarily disabled message
+const walletMessages = {
+  en: "⚠️ This function is temporarily disabled.",
+  ru: "⚠️ Эта функция временно недоступна.",
+  hy: "⚠️ Այս ֆունկցիան ժամանակավորապես անջատված է։",
+  fr: "⚠️ Cette fonction est temporairement désactivée.",
+  es: "⚠️ Esta función está temporalmente deshabilitada.",
+  de: "⚠️ Diese Funktion ist vorübergehend deaktiviert.",
+  it: "⚠️ Questa funzione è temporaneamente disabilitata.",
+  tr: "⚠️ Bu özellik geçici olarak devre dışı.",
+  fa: "⚠️ این قابلیت موقتاً غیرفعال است.",
+  ar: "⚠️ هذه الميزة معطلة مؤقتًا.",
+  zh: "⚠️ 此功能暂时不可用。",
+  ja: "⚠️ この機能は一時的に無効になっています。",
+  ko: "⚠️ 이 기능은 일시적으로 비활성화되어 있습니다.",
+  hi: "⚠️ यह सुविधा अस्थायी रूप से बंद है।",
+  pt: "⚠️ Esta função está temporariamente desativada.",
+  el: "⚠️ Αυτή η λειτουργία είναι προσωρινά απενεργοποιημένη.",
+  pl: "⚠️ Ta funkcja jest tymczasowo wyłączona.",
+  nl: "⚠️ Deze functie is tijdelijk uitgeschakeld.",
+  sv: "⚠️ Den här funktionen är tillfälligt avstängd.",
+  ro: "⚠️ Această funcție este dezactivată temporar.",
+  hu: "⚠️ Ez a funkció átmenetileg le van tiltva.",
+  cs: "⚠️ Tato funkce je dočasně vypnuta.",
+  uk: "⚠️ Ця функція тимчасово вимкнена.",
+  az: "⚠️ Bu funksiya müvəqqəti olaraq deaktiv edilib.",
+  ka: "⚠️ ეს ფუნქცია დროებით გათიშულია."
+};
+
+
 /* -------- APPLY TRANSLATIONS -------- */
 function applyI18N(lang) {
   // 🧠 Fallback եթե սխալ է ընտրված լեզուն
@@ -267,6 +297,18 @@ if (this.els.exchangeBtn) {
     e.stopPropagation();
     this.onExchange();
   });
+
+// 💰 Wallet (connect) button
+this.els.btnWallet = document.getElementById("btnWallet");
+if (this.els.btnWallet) {
+  this.els.btnWallet.onclick = () => {
+    const lang = this.lang || getSavedLang() || "en";
+    const text = walletMessages[lang] || walletMessages.en;
+    this.showMessage(text, "info", 2800);
+  };
+}
+
+
 }
 
     this.els.feather = document.getElementById("featherCount");
@@ -1035,6 +1077,7 @@ if (pf) {
 }
 
   },
+
   regenEnergyTick() {
     this.energy.value = Math.min(this.energy.max, this.energy.value + this.energy.regenPerSec);
     this.paintEnergy();
@@ -1069,31 +1112,21 @@ if (pf) {
   }
 },
 
-/* -------- BEAUTIFUL MULTILINGUAL TOAST -------- */
 showMessage(key, type = "info", duration = 2600) {
-  // Թարգմանությունների հավաքածու
-  const messages = {
-    not_enough: {
-      en: "⚠️ Not enough feathers to exchange!",
-      ru: "⚠️ Недостаточно перьев для обмена!",
-      hy: "⚠️ Փետուրները բավարար չեն փոխանակման համար։"
-    },
-    success_exchange: {
-      en: "✅ Exchanged 50000 🪶 → +1 🜂",
-      ru: "✅ Обменено 50000 🪶 → +1 🜂",
-      hy: "✅ Փոխանակվեց 50000 🪶 → +1 🜂"
-    },
-    wait_mine: {
-      en: "⏳ Please wait before next mining.",
-      ru: "⏳ Подожди перед следующим майнингом.",
-      hy: "⏳ Սպասիր մինչև հաջորդ մայնինգը։"
-    },
-    error: {
-      en: "🔥 Something went wrong!",
-      ru: "🔥 Произошла ошибка!",
-      hy: "🔥 Ինչ-որ բան սխալ է տեղի ունեցել։"
-    }
-  };
+  // եթե key-ն ուղղակի տեքստ է, ոչ թե predefined key
+  if (key.includes("⚠️") || key.includes("✅") || key.includes("🔥")) {
+    const toast = document.createElement("div");
+    toast.className = `vorn-toast ${type}`;
+    toast.innerHTML = key;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add("visible"), 50);
+    setTimeout(() => {
+      toast.classList.remove("visible");
+      setTimeout(() => toast.remove(), 600);
+    }, duration);
+    return;
+  }
+
 
   // ընտրում ենք օգտատիրոջ լեզուն
   const lang = (this.lang && texts[this.lang]) ? this.lang : getSavedLang();
