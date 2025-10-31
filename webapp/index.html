@@ -66,12 +66,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const introText = document.querySelector(".intro-text");
   const startContainer = document.getElementById("startContainer");
 
-  let vornReady = false;
+  let ready = false;
 
   // լսում ենք app.js-ից եկող ազդանշանը
   window.addEventListener("vorn_ready", () => {
-    vornReady = true;
-    console.log("✅ Received vorn_ready signal from app.js");
+    ready = true;
+    console.log("✅ Received vorn_ready from app.js");
   });
 
   if (startBtn && langModal) {
@@ -79,9 +79,9 @@ document.addEventListener("DOMContentLoaded", () => {
       introText?.classList.add("hidden");
       startContainer?.classList.add("hidden");
 
-      console.log("🕐 Waiting for VORN to be ready...");
-      for (let i = 0; i < 25; i++) {
-        if (vornReady && window.VORN && typeof VORN.buildLanguageGrid === "function") break;
+      console.log("🕐 Waiting for VORN readiness...");
+      for (let i = 0; i < 40; i++) { // մինչև 8 վրկ
+        if (ready && window.VORN && typeof VORN.buildLanguageGrid === "function") break;
         await new Promise(r => setTimeout(r, 200));
       }
 
@@ -93,17 +93,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       document.getElementById("confirmLangModal")?.classList.add("hidden");
       langModal.classList.remove("hidden");
-      console.log("✅ Language menu opened with", grid.children.length, "buttons");
+      console.log("✅ Language menu opened with", grid?.children?.length || 0, "buttons");
     });
   }
 });
 </script>
-
-
-
-
-</script>
-</div>
 
 
 

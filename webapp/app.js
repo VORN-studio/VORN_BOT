@@ -1370,6 +1370,18 @@ document.addEventListener("DOMContentLoaded", () => {
   applyI18N(getSavedLang());
 });
 
+// ✅ Safe delayed ready signal
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
+      console.log("📣 VORN fully ready → emitting event");
+      document.dispatchEvent(new Event("vorn_ready"));
+      window.dispatchEvent(new Event("vorn_ready"));
+    } else {
+      console.warn("⚠️ VORN not ready after load");
+    }
+  }, 1200); // փոքր ուշացում՝ որպեսզի Render-ում էլ լիովին բեռնվի
+});
 
 
 
