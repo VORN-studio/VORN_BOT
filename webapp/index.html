@@ -59,49 +59,6 @@
   <button id="startBtn">START</button>
 </div>
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const startBtn = document.getElementById("startBtn");
-  const langModal = document.getElementById("languageModal");
-  const introText = document.querySelector(".intro-text");
-  const startContainer = document.getElementById("startContainer");
-
-  let ready = false;
-
-  // լսում ենք app.js-ից եկող ազդանշանը
-  window.addEventListener("vorn_ready", () => {
-    ready = true;
-    console.log("✅ Received vorn_ready from app.js");
-  });
-
-  if (startBtn && langModal) {
-  startBtn.addEventListener("click", async () => {
-  introText?.classList.add("hidden");
-  startContainer?.classList.add("hidden");
-
-  // 🧩 Ստուգում ենք որ գոյություն ունի լեզուների մոդալը
-  const langModal = document.getElementById("languageModal");
-  const grid = document.getElementById("lang-grid");
-
-  // 🧩 Լցնում ենք լեզուների ցանկը հենց հիմա, մինչև մենյուն երևա
-  if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
-    VORN.buildLanguageGrid();
-  } else {
-    console.warn("⚠️ VORN.buildLanguageGrid not ready yet");
-  }
-
-  document.getElementById("confirmLangModal")?.classList.add("hidden");
-
-  // 👇 հիմա բացում ենք մոդալը միայն հետո
-  langModal.classList.remove("hidden");
-
-  console.log("✅ Language modal opened successfully");
-});
-  }
-});
-</script>
-
-
 
 <style>
 #startContainer {
@@ -265,6 +222,40 @@ document.addEventListener("DOMContentLoaded", () => {
     <button id="closeTasksBtn" class="close-btn">✖ Close</button>
   </div>
 </div>
+
+<!-- APP LOGIC -->
+<script src="/webapp/app.js?v=4"></script>
+
+<script>
+window.addEventListener("vorn_ready", () => {
+  console.log("✅ Received vorn_ready — binding Start button now…");
+  const startBtn = document.getElementById("startBtn");
+  const langModal = document.getElementById("languageModal");
+  const introText = document.querySelector(".intro-text");
+  const startContainer = document.getElementById("startContainer");
+
+  if (!startBtn) {
+    console.error("❌ startBtn not found in DOM");
+    return;
+  }
+
+  startBtn.addEventListener("click", () => {
+    introText?.classList.add("hidden");
+    startContainer?.classList.add("hidden");
+
+    // Այստեղ արդեն վստահ ենք, որ VORN պատրաստ է
+    if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
+      VORN.buildLanguageGrid();
+      console.log("✅ Language grid built via vorn_ready hook");
+    } else {
+      console.warn("⚠️ VORN.buildLanguageGrid still not ready");
+    }
+
+    langModal?.classList.remove("hidden");
+  });
+});
+</script>
+
 
 </body>
 </html>
