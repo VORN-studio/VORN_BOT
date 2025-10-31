@@ -438,6 +438,102 @@ def api_vorn_reward():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+# ==========================================
+# 🔗 REFERRALS SYSTEM API
+# ==========================================
+
+from flask import request, jsonify
+import math
+
+# 🧮 ռեֆերալների տվյալների բազա (պարզ placeholder տարբերակ)
+# Նորմալ տարբերակով սա պետք է գրանցվի DB-ում
+user_referrals = {}  # uid -> list of invited users
+user_levels = {}      # uid -> current referral level
+user_ref_cashbacks = {}  # uid -> pending bonus {feathers, vorn}
+
+# 🪶 Level progression (հիմնված քո նշած արժեքների վրա)
+REF_LEVELS = [
+    {"lvl": 1, "need": 3, "feathers": 3000, "vorn": 0.5},
+    {"lvl": 2, "need": 5, "feathers": 5000, "vorn": 0.7},
+    {"lvl": 3, "need": 8, "feathers": 8000, "vorn": 1.0},
+    {"lvl": 4, "need": 10, "feathers": 10000, "vorn": 1.2},
+    {"lvl": 5, "need": 12, "feathers": 12000, "vorn": 1.4},
+    {"lvl": 6, "need": 14, "feathers": 14000, "vorn": 1.6},
+    {"lvl": 7, "need": 16, "feathers": 16000, "vorn": 1.8},
+    {"lvl": 8, "need": 18, "feathers": 18000, "vorn": 2.0},
+    {"lvl": 9, "need": 20, "feathers": 20000, "vorn": 2.2},
+    {"lvl": 10, "need": 22, "feathers": 22000, "vorn": 2.4},
+    {"lvl": 20, "need": 42, "feathers": 42000, "vorn": 4.5},
+    {"lvl": 40, "need": 100, "feathers": 100000, "vorn": 10.0},
+    {"lvl": 60, "need": 160, "feathers": 160000, "vorn": 18.0},
+    {"lvl": 80, "need": 220, "feathers": 220000, "vorn": 27.0},
+    {"lvl": 100, "need": 300, "feathers": 300000, "vorn": 40.0},
+]
+
+def get_ref_level_data(uid):
+    invited = len(user_referrals.get(uid, []))
+    cur_lvl = user_levels.get(uid, 1)
+    next_lvl = REF_LEVELS[min(cur_lvl, len(REF_LEVELS)) - 1]
+    return invited, cur_lvl, next_lvl
+
+@app_web.route("/api/referrals")
+def get_referrals():
+    uid = int(request.args.get("uid", 0))
+    if not uid:
+        return jsonify({"ok": False, "error": "no uid"})
+    invited = user_referrals.get(uid, [])
+    list_data = []
+    for i, ref in enumerate(invited, 1):
+        list_data.append({
+            "rank": i,
+            "username": f"Player{ref}",
+            "feathers": 0,
+            "vorn": 0.0
+        })
+    return jsonify({"ok": True, "list": list_data})
+
+
+@app_web.route("/api/referrals/preview")
+def preview_referral():
+    uid = int(request.args.get("uid", 0))
+    if not uid:
+        return jsonify({"ok": False, "error": "no uid"})
+    invited, lvl, next_lvl = get_ref_level_data(uid)
+    needed = next_lvl["need"]
+    if invited < needed:
+        return jsonify({"ok": False, "error": "not enough invites"})
+    feathers = next_lvl["feathers"]
+    vorn = next_lvl["vorn"]
+    user_ref_cashbacks[uid] = {"feathers": feathers, "vorn": vorn}
+    return jsonify({
+        "ok": True,
+        "cashback_feathers": feathers,
+        "cashback_vorn": vorn
+    })
+
+
+@app_web.route("/api/referrals/claim", methods=["POST"])
+def claim_referral():
+    data = request.get_json(force=True)
+    uid = int(data.get("uid", 0))
+    if not uid:
+        return jsonify({"ok": False, "error": "no uid"})
+    if uid not in user_ref_cashbacks:
+        return jsonify({"ok": False, "error": "nothing to claim"})
+
+    reward = user_ref_cashbacks.pop(uid)
+    # այստեղ պետք է թարմացվի օգտատիրոջ balance-ը բազայում
+    new_balance = 0
+    new_vorn = 0.0
+    user_levels[uid] = user_levels.get(uid, 1) + 1
+    return jsonify({
+        "ok": True,
+        "cashback_feathers": reward["feathers"],
+        "cashback_vorn": reward["vorn"],
+        "new_balance": new_balance + reward["feathers"],
+        "new_vorn": new_vorn + reward["vorn"]
+    })
+
 
 @app_web.route("/api/vorn_exchange", methods=["POST"])
 def api_vorn_exchange():
