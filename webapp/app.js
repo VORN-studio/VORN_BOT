@@ -261,6 +261,7 @@ const VORN = {
 
   grid.innerHTML = "";
 
+  // Քո ամբողջ 25 լեզուների ցանկը՝ առանց կորուստի
   const LANGS = {
     en: "English",
     ru: "Русский",
@@ -275,8 +276,18 @@ const VORN = {
     zh: "中文",
     ja: "日本語",
     ko: "한국어",
+    hi: "हिन्दी",
     pt: "Português",
-    uk: "Українська"
+    el: "Ελληνικά",
+    pl: "Polski",
+    nl: "Nederlands",
+    sv: "Svenska",
+    ro: "Română",
+    hu: "Magyar",
+    cs: "Čeština",
+    uk: "Українська",
+    az: "Azərbaycanca",
+    ka: "ქართული"
   };
 
   Object.entries(LANGS).forEach(([code, name]) => {
@@ -289,6 +300,7 @@ const VORN = {
 
   console.log("✅ Language grid created:", Object.keys(LANGS).length, "languages");
 },
+
 
 
   bindEls() {
