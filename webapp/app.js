@@ -14,7 +14,9 @@ const COOLDOWN_SEC = 6 * 60 * 60; // 6 ժամ
 const REWARD = 500;
 
 // always call the same origin where the WebApp is served (Render)
-const API_BASE = window.location.origin;
+const API_BASE = window.location.origin.includes("web.app")
+  ? "https://vorn-bot-nggr.onrender.com"
+  : window.location.origin;
 const API = {
   user: (uid) => `${API_BASE}/api/user/${uid}`,
   mine: `${API_BASE}/api/mine`,

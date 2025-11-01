@@ -261,7 +261,10 @@ def get_balance(user_id: int) -> int:
     return row[0] if row else 0
 
 def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: float = 0.0):
-    """Գրանցում է 3% բոնուս հրավիրողին (եթե կա inviter_id)"""
+    """
+    ՍԱ ՔԱՅԼԱԹՈՂ — ՈՉԻՆՉ ՉԵՆՔ ԱՆԵԼԻ ԲԱՑԻ ԿՈՒՏԱԿԵԼՈՒՑ.
+    Գ੍ਰանցում ենք 3% referral_earnings աղյուսակում, իսկ գումարելը կլինի միայն claim-ով:
+    """
     conn = db(); c = conn.cursor()
     c.execute("SELECT inviter_id FROM users WHERE user_id=%s", (referred_id,))
     row = c.fetchone()
@@ -273,20 +276,14 @@ def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: 
     bonus_feathers = int(reward_feathers * 0.03)
     bonus_vorn = float(reward_vorn * 0.03)
 
-    # Պահպանում ենք աղյուսակում
+    # ՄԻԱՅՆ կուտակում ենք
     c.execute("""
         INSERT INTO referral_earnings (inviter_id, referred_id, amount_feathers, amount_vorn, created_at)
         VALUES (%s, %s, %s, %s, %s)
     """, (inviter_id, referred_id, bonus_feathers, bonus_vorn, int(time.time())))
 
-    # Թարմացնում ենք հրավիրողի հաշվեկշիռը
-    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (inviter_id,))
-    row2 = c.fetchone()
-    if row2:
-        new_b = row2[0] + bonus_feathers
-        new_v = (row2[1] or 0) + bonus_vorn
-        c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, inviter_id))
     conn.commit(); conn.close()
+
 
 
 def update_balance(user_id: int, delta: int) -> int:
