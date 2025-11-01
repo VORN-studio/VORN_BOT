@@ -2046,6 +2046,8 @@ setTimeout(function() {
 /* ------------ BOOTSTRAP ------------ */
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🌐 Connecting to API_BASE:", API_BASE);
+  window.VORN = VORN;                        // ← ԱՎԵԼԱՑՐՈւ
+  window.dispatchEvent(new Event("vorn_ready")); // ← ԱՎԵԼԱՑՐՈւ
   VORN.init();
   applyI18N(getSavedLang());
 });
