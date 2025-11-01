@@ -159,6 +159,11 @@ CREATE TABLE IF NOT EXISTS user_tasks (
 )
 """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS referral_history AS
+        SELECT * FROM referral_earnings WHERE false;
+""")
+
 
     # safe alters (ignore if exist)
     alters = [
@@ -624,7 +629,11 @@ def api_referral_claim():
     total_v = float(row[1] or 0)
 
     # զրոյացնում ենք ցուցակը
-    c.execute("DELETE FROM referral_earnings WHERE inviter_id=%s", (user_id,))
+    c.execute("""
+    UPDATE referral_earnings
+    SET amount_feathers = 0, amount_vorn = 0
+    WHERE inviter_id = %s
+""", (user_id,))
 
     # Թարմացնում ենք հաշվեկշիռը
     c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (user_id,))
