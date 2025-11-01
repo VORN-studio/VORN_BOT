@@ -1437,6 +1437,7 @@ def api_referrals_preview():
     })
 
 
+
 @app_web.route("/api/referrals/claim", methods=["POST"])
 def api_referrals_claim():
     """Give user his 3% cashback and reset referral_earnings"""
@@ -1470,6 +1471,28 @@ def api_referrals_claim():
         "new_balance": new_b,
         "new_vorn": new_v
     })
+
+
+# ==========================================
+# 🕐 KEEP-ALIVE (Render-safe background ping)
+# ==========================================
+import threading, requests, time
+
+def keep_alive():
+    url = "https://vorn-bot-nggr.onrender.com"  # ⚠️ փոխիր քո իրական Render domain-ով
+    while True:
+        try:
+            res = requests.get(url, timeout=10)
+            if res.status_code == 200:
+                print("🟢 Keep-alive ping successful.")
+            else:
+                print(f"⚠️ Keep-alive status: {res.status_code}")
+        except Exception as e:
+            print("⚠️ Keep-alive failed:", e)
+        time.sleep(600)  # ամեն 10 րոպեն մեկ (600 վրկ)
+
+# Ֆոնային թելը՝ սկսվում է անմիջապես
+threading.Thread(target=keep_alive, daemon=True).start()
 
 
 if __name__ == "__main__":
