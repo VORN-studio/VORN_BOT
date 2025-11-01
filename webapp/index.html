@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VORN — Future World</title>
   <meta name="theme-color" content="#0a0014"/>
-  <link rel="stylesheet" href="style.css?v=2"/>
+  <link rel="stylesheet" href="/webapp/style.css?v=2"/>
 
   <!-- Hard lock to prevent scroll/white flash in Telegram WebView -->
   <style>
@@ -36,7 +36,7 @@
     <div class="fog-layer"></div>
     <div class="branches-layer"></div>
     <div class="glow-layer"></div>
-    <img src="assets/interface_male.png"alt="VORN background" id="static-bg">
+    <img src="/webapp/assets/interface_male.png" alt="VORN background" id="static-bg">
   </div>
 
   <!-- Extra effect layers -->
@@ -46,7 +46,7 @@
 
   <!-- INTRO VIDEO -->
   <video id="introVideo" autoplay muted playsinline preload="auto" loop>
-    <source src="crow_fly.mp4" type="video/mp4">
+    <source src="/webapp/crow_fly.mp4" type="video/mp4">
   </video>
 
   <!-- INTRO TEXT -->
@@ -116,14 +116,14 @@
 
   <!-- SLIDES -->
   <section id="introSlides" class="hidden">
-    <img id="slideImage" src="assets/slide1.png"alt="Slide 1">
+    <img id="slideImage" src="/webapp/assets/slide1.png" alt="Slide 1">
     <div class="slide-cta">
       <button id="slideNextBtn">Continue</button>
     </div>
   </section>
 
   <!-- BG (you use IMG; JS supports video too) -->
-  <img id="mainBgVideo" src="assets/interface_male.png" class="hidden" alt="VORN background">
+  <img id="mainBgVideo" src="/webapp/assets/interface_male.png" class="hidden" alt="VORN background">
 
   <!-- === MAIN INTERFACE UI === -->
   <div id="mainUI" class="hidden">
@@ -512,7 +512,7 @@
 
 
 <!-- APP LOGIC -->
-<script src="app.js?v=4" defer></script>
+<script src="/webapp/app.js?v=4"></script>
 
 <script>
 window.addEventListener("vorn_ready", () => {
