@@ -30,6 +30,12 @@ def catch_all(anypath):
     return "✅ VORN Bot is running. Unknown path: /" + anypath, 200
 # ----------------------------------------------------
 
+from flask import send_from_directory
+
+@app_web.route('/googleac678a462577a462.html')
+def google_verification():
+    return send_from_directory('.', 'googleac678a462577a462.html')
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEBAPP_DIR = os.path.join(BASE_DIR, "webapp")  # contains index.html, app.js, style.css, assets/
