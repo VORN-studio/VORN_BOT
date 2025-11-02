@@ -1536,6 +1536,19 @@ def test_register_ref():
     return jsonify({"ok": True, "uid": uid, "inviter": inviter})
 
 
+@app_web.route("/test_add_feathers", methods=["POST"])
+def test_add_feathers():
+    data = request.get_json(force=True, silent=True) or {}
+    uid = int(data.get("uid", 0))
+    amount = int(data.get("amount", 0))
+    if not uid or not amount:
+        return jsonify({"ok": False, "error": "missing uid or amount"}), 400
+
+    new_bal = update_balance(uid, amount)
+    add_referral_bonus(uid, reward_feathers=amount, reward_vorn=0.0)
+    return jsonify({"ok": True, "added": amount, "new_balance": new_bal})
+
+
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
     try:
