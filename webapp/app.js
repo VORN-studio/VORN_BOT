@@ -1525,9 +1525,10 @@ bindTasksModal() {
     this.energy.regenTimer = setInterval(() => this.regenEnergyTick(), 1000);
   },
   updateHUD() {
-    if (window._featherEl) window._featherEl.textContent = String(this.balance);
-    if (window._foodEl) window._foodEl.textContent = "0"; // placeholder
-  },
+  if (window._featherEl) window._featherEl.textContent = String(this.balance);
+  if (window._foodEl) window._foodEl.textContent = this.vornBalance.toFixed(2);
+},
+
   paintEnergy() {
     if (!window._eFill) return;
     const pct = Math.max(0, Math.min(100, (this.energy.value / this.energy.max) * 100));
@@ -1644,17 +1645,22 @@ if (pf) {
       body: JSON.stringify({ user_id: this.uid })
     });
     const data = await r.json();
+
     if (data.ok) {
-      // թարմացնենք local state-ը և UI-ն
-      this.balance = data.new_balance;
-      this.vornBalance = data.new_vorn ?? 0;
+      // ✅ թարմացնենք balance-ը և VORN քանակը
+      this.balance = data.new_balance ?? this.balance;
+      this.vornBalance = data.new_vorn ?? this.vornBalance;
 
       const featherEl = document.getElementById("featherCount");
       const vornEl = document.getElementById("foodCount");
       if (featherEl) featherEl.textContent = String(this.balance);
-      if (vornEl) vornEl.textContent = (this.vornBalance).toFixed(2);
+      if (vornEl) vornEl.textContent = this.vornBalance.toFixed(2);
 
+      // ✅ վիզուալ toast
       this.showMessage("success_exchange", "success");
+
+      // ✅ նաև DB-ից refresh անել user-ը՝ ամեն ինչ համընկնի
+      setTimeout(() => this.loadUser(), 1000);
     } else {
       this.showMessage("not_enough", "error");
     }
@@ -1663,6 +1669,7 @@ if (pf) {
     this.showMessage("error", "error");
   }
 },
+
 
 /* -------- BEAUTIFUL MULTILINGUAL TOAST -------- */
 showMessage(key, type = "info", duration = 2600) {
