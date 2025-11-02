@@ -799,110 +799,123 @@ const VORN = {
 
 
   bindEls() {
-  this.els.mineBtn = document.getElementById("btnMine");
+    this.els.mineBtn = document.getElementById("btnMine");
+    // ✅ Exchange button safe rebind
+this.els.exchangeBtn = document.getElementById("btnExchange");
+if (this.els.exchangeBtn) {
+  this.els.exchangeBtn.onclick = null; // remove old listeners
+  this.els.exchangeBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.onExchange();
 
-  // ✅ EXCHANGE BUTTON — safe single binding
-  this.els.exchangeBtn = document.getElementById("btnExchange");
-  if (this.els.exchangeBtn) {
-    const btn = this.els.exchangeBtn.cloneNode(true);
-    this.els.exchangeBtn.parentNode.replaceChild(btn, this.els.exchangeBtn);
+// 💰 Wallet (connect) button — temporarily disabled notice
+this.els.btnWallet = document.getElementById("btnWallet");
+if (this.els.btnWallet) {
+  this.els.btnWallet.onclick = () => {
+    this.showMessage("wallet_disabled", "info", 3000);
+  };
+}
 
-    btn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      if (this._exchangeBusy) return;
-      this._exchangeBusy = true;
-      btn.classList.add("opacity-60");
-      await this.onExchange();
-      btn.classList.remove("opacity-60");
-      this._exchangeBusy = false;
-    });
-  }
 
-  // 💰 WALLET BUTTON — temporarily disabled notice
-  this.els.btnWallet = document.getElementById("btnWallet");
-  if (this.els.btnWallet) {
-    this.els.btnWallet.onclick = () => {
-      const lang = this.lang || getSavedLang() || "en";
-      const text = walletMessages[lang] || walletMessages.en;
-      this.showMessage(text, "info", 2800);
-    };
-  }
+  });
 
-  // ℹ️ INFO BUTTON — multilingual info modal
-  this.els.btnInfo = document.getElementById("btnInfo");
-  if (this.els.btnInfo) {
-    this.els.btnInfo.onclick = () => {
-      const lang = this.lang || getSavedLang() || "en";
-      const infoModal = document.getElementById("infoModal");
-      const infoText  = document.getElementById("infoText");
-      const infoTitle = document.getElementById("infoTitle");
-      const closeBtn  = document.getElementById("closeInfoBtn");
-      if (!infoModal || !infoText) return;
-      const titles = { en:"ℹ️ Information", ru:"ℹ️ Информация", hy:"ℹ️ Տեղեկություն" };
-      infoTitle.textContent = titles[lang] || titles.en;
-      const RTL_LANGS = new Set(["ar","fa"]);
-      if (RTL_LANGS.has(lang)) infoText.setAttribute("dir","rtl");
-      else infoText.removeAttribute("dir");
-      infoText.innerHTML = infoData[lang] || infoData.en;
-      infoModal.classList.remove("hidden");
-      closeBtn.onclick = () => infoModal.classList.add("hidden");
-    };
-  }
+// 💰 Wallet (connect) button
+this.els.btnWallet = document.getElementById("btnWallet");
+if (this.els.btnWallet) {
+  this.els.btnWallet.onclick = () => {
+    const lang = this.lang || getSavedLang() || "en";
+    const text = walletMessages[lang] || walletMessages.en;
+    this.showMessage(text, "info", 2800);
+  };
+}
 
-  // 🪶 FEATHER COUNTER
-  this.els.feather = document.getElementById("featherCount");
-  this.els.btnTasks = document.getElementById("btnTasks");
-  this.els.tasksModal = document.getElementById("tasksModal");
-  this.els.tasksList = document.getElementById("tasksList");
-  this.els.closeTasksBtn = document.getElementById("closeTasksBtn");
-  this.els.introVideo = document.getElementById("introVideo");
-  this.els.introSlides = document.getElementById("introSlides");
-  this.els.slideImage = document.getElementById("slideImage");
-  this.els.slideNextBtn = document.getElementById("slideNextBtn");
-  this.els.startBtn = document.getElementById("startBtn");
-  this.els.introText = document.querySelector(".intro-text");
-  this.els.startContainer = document.getElementById("startContainer");
-  this.els.modalLang = document.getElementById("languageModal");
-  this.els.confirmLangModal = document.getElementById("confirmLangModal");
-  this.els.confirmLangTitle = document.getElementById("confirmLangTitle");
-  this.els.confirmLangText = document.getElementById("confirmLangText");
-  this.els.confirmLangBtn = document.getElementById("confirmLangBtn");
-  this.els.changeLangBtn = document.getElementById("changeLangBtn");
-  this.els.langGrid = document.getElementById("lang-grid");
+// ℹ️ Info button — multilingual info modal
+this.els.btnInfo = document.getElementById("btnInfo");
+if (this.els.btnInfo) {
+  this.els.btnInfo.onclick = () => {
+    const lang = this.lang || getSavedLang() || "en";
+    const infoModal = document.getElementById("infoModal");
+    const infoText  = document.getElementById("infoText");
+    const infoTitle = document.getElementById("infoTitle");
+    const closeBtn  = document.getElementById("closeInfoBtn");
 
-  // ⛏️ Mine button
-  if (this.els.mineBtn) {
-    this.els.mineBtn.addEventListener("click", () => this.onMineClick());
-  }
+    if (!infoModal || !infoText) return;
 
-  // 🔹 Referral buttons
-  this.els.btnReferral = document.getElementById("btnReferral");
-  this.els.refModal = document.getElementById("referralsModal");
-  this.els.refTop3 = document.getElementById("refTop3");
-  this.els.refList = document.getElementById("refList");
-  this.els.refResult = document.getElementById("refResult");
-  this.els.refPreviewBtn = document.getElementById("refPreviewBtn");
-  this.els.refClaimBtn = document.getElementById("refClaimBtn");
-  this.els.closeRefBtn = document.getElementById("closeRefBtn");
+    // Language titles
+    const titles = { en:"ℹ️ Information", ru:"ℹ️ Информация", hy:"ℹ️ Տեղեկություն" };
+    infoTitle.textContent = titles[lang] || titles.en;
 
-  if (this.els.btnReferral && this.els.refModal) {
+    // RTL language support
+    const RTL_LANGS = new Set(["ar","fa"]);
+    if (RTL_LANGS.has(lang)) infoText.setAttribute("dir","rtl");
+    else infoText.removeAttribute("dir");
+
+    // Full 25-language data
+    infoText.innerHTML = infoData[lang] || infoData.en;
+
+    // Show modal
+    infoModal.classList.remove("hidden");
+    closeBtn.onclick = () => infoModal.classList.add("hidden");
+  };
+}
+
+
+}
+
+    this.els.feather = document.getElementById("featherCount");
+    this.els.btnTasks = document.getElementById("btnTasks");
+    this.els.tasksModal = document.getElementById("tasksModal");
+    this.els.tasksList = document.getElementById("tasksList");
+    this.els.closeTasksBtn = document.getElementById("closeTasksBtn");
+    this.els.introVideo = document.getElementById("introVideo");
+    this.els.introSlides = document.getElementById("introSlides");
+    this.els.slideImage = document.getElementById("slideImage");
+    this.els.slideNextBtn = document.getElementById("slideNextBtn");
+    this.els.startBtn = document.getElementById("startBtn");
+    this.els.introText = document.querySelector(".intro-text");
+    this.els.startContainer = document.getElementById("startContainer");
+    this.els.modalLang = document.getElementById("languageModal");
+    this.els.confirmLangModal = document.getElementById("confirmLangModal");
+    this.els.confirmLangTitle = document.getElementById("confirmLangTitle");
+    this.els.confirmLangText = document.getElementById("confirmLangText");
+    this.els.confirmLangBtn = document.getElementById("confirmLangBtn");
+    this.els.changeLangBtn = document.getElementById("changeLangBtn");
+    this.els.langGrid = document.getElementById("lang-grid");
+
+    // Mine button
+    if (this.els.mineBtn) {
+      this.els.mineBtn.addEventListener("click", () => this.onMineClick());
+    }
+
+    // 🔹 Referral elements
+    this.els.btnReferral = document.getElementById("btnReferral");
+    this.els.refModal = document.getElementById("referralsModal");
+    this.els.refTop3 = document.getElementById("refTop3");
+    this.els.refList = document.getElementById("refList");
+    this.els.refResult = document.getElementById("refResult");
+    this.els.refPreviewBtn = document.getElementById("refPreviewBtn");
+    this.els.refClaimBtn = document.getElementById("refClaimBtn");
+    this.els.closeRefBtn = document.getElementById("closeRefBtn");
+
+    if (this.els.btnReferral && this.els.refModal) {
     this.els.btnReferral.addEventListener("click", async () => {
-      this.openReferrals();
-    });
+    this.openReferrals();
+  });
   }
   if (this.els.closeRefBtn) {
-    this.els.closeRefBtn.addEventListener("click", () => {
-      this.els.refModal.classList.add("hidden");
-    });
+  this.els.closeRefBtn.addEventListener("click", () => {
+    this.els.refModal.classList.add("hidden");
+  });
   }
   if (this.els.refPreviewBtn) {
-    this.els.refPreviewBtn.addEventListener("click", () => this.refPreview());
+  this.els.refPreviewBtn.addEventListener("click", () => this.refPreview());
   }
   if (this.els.refClaimBtn) {
-    this.els.refClaimBtn.addEventListener("click", () => this.refClaim());
+  this.els.refClaimBtn.addEventListener("click", () => this.refClaim());
   }
-},
 
+},
 
 
 
@@ -1624,9 +1637,7 @@ if (pf) {
   },
 
   async onExchange() {
-  if (!this.uid) return this.showMessage("error", "error");
-  if (this._exchangeBusy) return;
-  this._exchangeBusy = true;
+  if (!this.uid) return alert("⚠️ User not found!");
   try {
     const r = await fetch(`${API_BASE}/api/vorn_exchange`, {
       method: "POST",
@@ -1635,30 +1646,29 @@ if (pf) {
     });
     const data = await r.json();
 
-    if (!data.ok) {
+    if (data.ok) {
+      // ✅ թարմացնենք balance-ը և VORN քանակը
+      this.balance = data.new_balance ?? this.balance;
+      this.vornBalance = data.new_vorn ?? this.vornBalance;
+
+      const featherEl = document.getElementById("featherCount");
+      const vornEl = document.getElementById("foodCount");
+      if (featherEl) featherEl.textContent = String(this.balance);
+      if (vornEl) vornEl.textContent = this.vornBalance.toFixed(2);
+
+      // ✅ վիզուալ toast
+      this.showMessage("success_exchange", "success");
+
+      // ✅ նաև DB-ից refresh անել user-ը՝ ամեն ինչ համընկնի
+      setTimeout(() => this.loadUser(), 1000);
+    } else {
       this.showMessage("not_enough", "error");
-      return;
     }
-
-    // ✅ թարմացնենք balance-ը և VORN քանակը (միայն մեկ անգամ)
-    this.balance = data.new_balance ?? this.balance;
-    this.vornBalance = data.new_vorn ?? this.vornBalance;
-
-    const featherEl = document.getElementById("featherCount");
-    const vornEl = document.getElementById("foodCount");
-    if (featherEl) featherEl.textContent = String(this.balance);
-    if (vornEl) vornEl.textContent = this.vornBalance.toFixed(2);
-
-    // ✅ վիզուալ toast
-    this.showMessage("success_exchange", "success");
   } catch (e) {
     console.error("🔥 Exchange failed:", e);
     this.showMessage("error", "error");
-  } finally {
-    this._exchangeBusy = false;
   }
 },
-
 
 
 /* -------- BEAUTIFUL MULTILINGUAL TOAST -------- */
