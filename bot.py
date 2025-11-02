@@ -547,6 +547,20 @@ def api_vorn_reward():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app_web.route("/test_register_ref", methods=["POST"])
+def test_register_ref():
+    data = request.get_json(force=True, silent=True) or {}
+    uid = int(data.get("uid", 0))
+    inviter = int(data.get("inviter", 0))
+    if not uid or not inviter:
+        return jsonify({"ok": False, "error": "missing uid or inviter"}), 400
+    if uid == inviter:
+        return jsonify({"ok": False, "error": "self referral not allowed"}), 400
+
+    ensure_user(uid, f"Tester{uid}", inviter)
+    return jsonify({"ok": True, "uid": uid, "inviter": inviter})
+
+
 # ==========================================
 # 🔗 REFERRALS SYSTEM API
 # ==========================================
@@ -554,11 +568,7 @@ def api_vorn_reward():
 from flask import request, jsonify
 import math
 
-# 🧮 ռեֆերալների տվյալների բազա (պարզ placeholder տարբերակ)
-# Նորմալ տարբերակով սա պետք է գրանցվի DB-ում
-user_referrals = {}  # uid -> list of invited users
-user_levels = {}      # uid -> current referral level
-user_ref_cashbacks = {}  # uid -> pending bonus {feathers, vorn}
+
 
 # 🪶 Level progression (հիմնված քո նշած արժեքների վրա)
 REF_LEVELS = [
@@ -585,63 +595,7 @@ def get_ref_level_data(uid):
     next_lvl = REF_LEVELS[min(cur_lvl, len(REF_LEVELS)) - 1]
     return invited, cur_lvl, next_lvl
 
-@app_web.route("/api/referrals")
-def get_referrals():
-    uid = int(request.args.get("uid", 0))
-    if not uid:
-        return jsonify({"ok": False, "error": "no uid"})
-    invited = user_referrals.get(uid, [])
-    list_data = []
-    for i, ref in enumerate(invited, 1):
-        list_data.append({
-            "rank": i,
-            "username": f"Player{ref}",
-            "feathers": 0,
-            "vorn": 0.0
-        })
-    return jsonify({"ok": True, "list": list_data})
 
-
-@app_web.route("/api/referrals/preview")
-def preview_referral():
-    uid = int(request.args.get("uid", 0))
-    if not uid:
-        return jsonify({"ok": False, "error": "no uid"})
-    invited, lvl, next_lvl = get_ref_level_data(uid)
-    needed = next_lvl["need"]
-    if invited < needed:
-        return jsonify({"ok": False, "error": "not enough invites"})
-    feathers = next_lvl["feathers"]
-    vorn = next_lvl["vorn"]
-    user_ref_cashbacks[uid] = {"feathers": feathers, "vorn": vorn}
-    return jsonify({
-        "ok": True,
-        "cashback_feathers": feathers,
-        "cashback_vorn": vorn
-    })
-
-
-@app_web.route("/api/referrals/claim", methods=["POST"])
-def claim_referral():
-    data = request.get_json(force=True)
-    uid = int(data.get("uid", 0))
-    if not uid:
-        return jsonify({"ok": False, "error": "no uid"})
-    if uid not in user_ref_cashbacks:
-        return jsonify({"ok": False, "error": "nothing to claim"})
-
-    reward = user_ref_cashbacks.pop(uid)
-    # այստեղ պետք է թարմացվի օգտատիրոջ balance-ը բազայում
-    new_balance = 0
-    new_vorn = 0.0
-    user_levels[uid] = user_levels.get(uid, 1) + 1
-    return jsonify({
-        "ok": True,
-        "cashback_feathers": reward["feathers"],
-        "cashback_vorn": reward["vorn"],
-        "new_balance": new_balance + reward["feathers"],
-        "new_vorn": new_vorn + reward["vorn"]
-    })
 
 
 @app_web.route("/api/vorn_exchange", methods=["POST"])
@@ -841,61 +795,10 @@ def parse_start_payload(text: Optional[str]) -> Optional[int]:
         except Exception: return None
     return None
 
-async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user or (update.message.from_user if update.message else None)
-    if not user: return
-    ensure_user(user.id, user.username)
 
-    base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
-    wa_url = f"{base}/app?uid={user.id}"
 
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
-    ])
-    await context.bot.send_message(
-        chat_id=user.id,
-        text="🌕 Welcome to the world of the future.\n\nPress the button below to enter the VORN App 👇",
-        reply_markup=keyboard
-    )
-    await context.bot.send_message(chat_id=user.id, text=f"✅ Connected successfully.\n🔗 {wa_url}")
 
-async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer("OK")
 
-# Admin helpers
-async def addcore_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS: return
-    raw = " ".join(context.args)
-    parts = [p.strip() for p in raw.split("|")]
-    if len(parts) < 4:
-        await update.message.reply_text("Usage:\n/addcore Title | Reward | Link | Description")
-        return
-    title, reward, link, desc = parts[0], int(parts[1]), parts[2], parts[3]
-    add_task_db("core", title, reward, link, desc, "tg_join", 1)
-    await update.message.reply_text(f"✅ Core task added: {title} (+{reward})")
-
-async def adddaily_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS: return
-    raw = update.message.text.replace("/adddaily", "", 1).strip()
-    parts = [p.strip() for p in raw.split("|")]
-    if len(parts) < 2:
-        await update.message.reply_text("Usage:\n/adddaily Title | Reward | [Link] | [Description]")
-        return
-    title = parts[0]
-    reward = int(parts[1])
-    link = parts[2] if len(parts) > 2 else None
-    desc = parts[3] if len(parts) > 3 else None
-    add_task_db("daily", title, reward, link, desc)
-    await update.message.reply_text(f"✅ Daily task added: {title} (+{reward})")
-
-async def cleardaily_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS: return
-    clear_tasks("daily"); await update.message.reply_text("🧹 Daily tasks cleared.")
-
-async def clearcore_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS: return
-    clear_tasks("core"); await update.message.reply_text("🧹 Core tasks cleared.")
 
     # =========================
 # TASK SYSTEM — Unified API
@@ -1186,8 +1089,8 @@ def api_task_attempt_verify():
 
     conn.commit()
     conn.close()
-        # 3% կուտակում հրավիրողին՝ REWARD չափով VORN-ից
-    add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
+    # 3% referral to inviter from THIS task reward (both feathers & vorn)
+    add_referral_bonus(user_id, reward_feathers=reward_feather, reward_vorn=reward_vorn)
 
     return jsonify({
         "ok": True,
@@ -1359,7 +1262,6 @@ async def start_bot_webhook():
     application.add_handler(CommandHandler("adddaily", adddaily_cmd))
     application.add_handler(CommandHandler("deltask", deltask_cmd))
     application.add_handler(CommandHandler("listtasks", listtasks_cmd))
-    application.add_handler(CommandHandler("clearcore", clearcore_cmd))
     application.add_handler(CallbackQueryHandler(btn_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, block_text))
 
@@ -1546,6 +1448,15 @@ def api_referrals_preview():
         "cashback_feathers": total_f,
         "cashback_vorn": total_v
     })
+
+
+    # optional: archive before delete
+    c.execute("""
+        INSERT INTO referral_history (inviter_id, referred_id, amount_feathers, amount_vorn, created_at)
+        SELECT inviter_id, referred_id, amount_feathers, amount_vorn, created_at
+        FROM referral_earnings
+        WHERE inviter_id = %s
+    """, (uid,))
 
 
 
