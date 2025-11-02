@@ -271,6 +271,7 @@ def get_balance(user_id: int) -> int:
     return row[0] if row else 0
 
 def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: float = 0.0):
+    print(f"🎯 add_referral_bonus called for referred_id={referred_id}, reward_feathers={reward_feathers}, reward_vorn={reward_vorn}")
     """
     ՍԱ ՔԱՅԼԱԹՈՂ — ՈՉԻՆՉ ՉԵՆՔ ԱՆԵԼԻ ԲԱՑԻ ԿՈՒՏԱԿԵԼՈՒՑ.
     Գ੍ਰանցում ենք 3% referral_earnings աղյուսակում, իսկ գումարելը կլինի միայն claim-ով:
@@ -780,6 +781,11 @@ def list_tasks(task_type: str):
     """, (task_type,))
     rows = c.fetchall(); conn.close()
     return rows
+
+async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles inline button clicks — temporarily just acknowledges them."""
+    query = update.callback_query
+    await query.answer("OK")
 
 
 # =========================
