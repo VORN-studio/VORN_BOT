@@ -1516,6 +1516,13 @@ def keep_alive():
 # Ֆոնային թելը՝ սկսվում է անմիջապես
 threading.Thread(target=keep_alive, daemon=True).start()
 
+@app_web.route("/debug/referrals")
+def debug_referrals():
+    conn = db(); c = conn.cursor()
+    c.execute("SELECT inviter_id, referred_id, amount_feathers, amount_vorn FROM referral_earnings ORDER BY id DESC LIMIT 20;")
+    rows = c.fetchall(); conn.close()
+    return jsonify(rows)
+
 
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
