@@ -1308,8 +1308,8 @@ async onMineClick() {
     }
 
     this.initMiningDOM();
-    // ✅ Rebind UI elements after DOM is visible
-    this.bindEls();
+    
+    
 
   },
 
