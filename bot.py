@@ -597,49 +597,60 @@ def api_vorn_exchange():
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
-    COST = 50000      # 🪶 required per conversion
-    REWARD = 1.0      # 🜂 gained
+    COST = 50000
+    REWARD = 1.0
 
-    conn = db()
-    c = conn.cursor()
-
-    # ensure vorn_balance column exists
     try:
-        c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
-    except Exception:
-        pass
+        conn = db()
+        c = conn.cursor()
 
-    # read current balances
-    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (user_id,))
-    row = c.fetchone()
-    if not row:
+        # make sure user exists
+        c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (user_id,))
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"ok": False, "error": "user not found"}), 404
+
+        feathers, vorn = row
+        if feathers < COST:
+            conn.close()
+            return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
+
+        # update balances atomically
+        new_feathers = feathers - COST
+        new_vorn = (vorn or 0) + REWARD
+
+        c.execute(
+            "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
+            (new_feathers, new_vorn, user_id)
+        )
+
+        # also record inviter bonus but within the SAME connection
+        c.execute("SELECT inviter_id FROM users WHERE user_id=%s", (user_id,))
+        inviter_row = c.fetchone()
+        if inviter_row and inviter_row[0]:
+            inviter_id = inviter_row[0]
+            bonus_vorn = round(REWARD * 0.03, 4)
+            c.execute(
+                "INSERT INTO referral_earnings (inviter_id, referred_id, amount_feathers, amount_vorn, created_at) VALUES (%s, %s, %s, %s, %s)",
+                (inviter_id, user_id, 0, bonus_vorn, int(time.time()))
+            )
+
+        conn.commit()
         conn.close()
-        return jsonify({"ok": False, "error": "user not found"}), 404
 
-    feathers, vorn = row
-    if feathers < COST:
-        conn.close()
-        return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
+        print(f"✅ Exchange OK: {user_id} spent {COST}, +{REWARD}🜂 total now {new_vorn}")
+        return jsonify({
+            "ok": True,
+            "spent_feathers": COST,
+            "new_balance": new_feathers,
+            "new_vorn": new_vorn
+        })
 
-    # do exchange
-    new_feathers = feathers - COST
-    new_vorn = vorn + REWARD
+    except Exception as e:
+        print("🔥 /api/vorn_exchange failed:", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
 
-    c.execute(
-        "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
-        (new_feathers, new_vorn, user_id)
-    )
-    conn.commit()
-    conn.close()
-    # 3% կուտակում հրավիրողին՝ REWARD չափով VORN-ից
-    add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
-
-    return jsonify({
-        "ok": True,
-        "spent_feathers": COST,
-        "new_balance": new_feathers,
-        "new_vorn": new_vorn
-    })
 
 @app_web.route("/api/referrals/<int:user_id>")
 def api_referrals(user_id):
