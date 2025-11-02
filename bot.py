@@ -548,19 +548,6 @@ def api_vorn_reward():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app_web.route("/test_register_ref", methods=["POST"])
-def test_register_ref():
-    data = request.get_json(force=True, silent=True) or {}
-    uid = int(data.get("uid", 0))
-    inviter = int(data.get("inviter", 0))
-    if not uid or not inviter:
-        return jsonify({"ok": False, "error": "missing uid or inviter"}), 400
-    if uid == inviter:
-        return jsonify({"ok": False, "error": "self referral not allowed"}), 400
-
-    ensure_user(uid, f"Tester{uid}", inviter)
-    return jsonify({"ok": True, "uid": uid, "inviter": inviter})
-
 
 # ==========================================
 # 🔗 REFERRALS SYSTEM API
@@ -1528,6 +1515,25 @@ def debug_referrals():
     c.execute("SELECT inviter_id, referred_id, amount_feathers, amount_vorn FROM referral_earnings ORDER BY id DESC LIMIT 20;")
     rows = c.fetchall(); conn.close()
     return jsonify(rows)
+
+
+@app_web.route("/test_register_ref", methods=["POST"])
+def test_register_ref():
+    """
+    Փոքրիկ օգնողական route՝ ֆեյք օգտատեր գրանցելու համար՝ referral համակարգի ստուգման նպատակով։
+    Օրինակ՝
+    curl -X POST https://vorn-bot-nggr.onrender.com/test_register_ref \
+      -H "Content-Type: application/json" \
+      -d "{\"uid\":222222, \"inviter\":5274439601}"
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    uid = int(data.get("uid", 0))
+    inviter = int(data.get("inviter", 0))
+    if not uid or not inviter:
+        return jsonify({"ok": False, "error": "missing uid or inviter"}), 400
+
+    ensure_user(uid, f"test_user_{uid}", inviter)
+    return jsonify({"ok": True, "uid": uid, "inviter": inviter})
 
 
 if __name__ == "__main__":
