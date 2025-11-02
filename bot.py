@@ -572,11 +572,11 @@ REF_LEVELS = [
     {"lvl": 8, "need": 18, "feathers": 18000, "vorn": 2.0},
     {"lvl": 9, "need": 20, "feathers": 20000, "vorn": 2.2},
     {"lvl": 10, "need": 22, "feathers": 22000, "vorn": 2.4},
-    {"lvl": 20, "need": 42, "feathers": 42000, "vorn": 4.5},
-    {"lvl": 40, "need": 100, "feathers": 100000, "vorn": 10.0},
-    {"lvl": 60, "need": 160, "feathers": 160000, "vorn": 18.0},
-    {"lvl": 80, "need": 220, "feathers": 220000, "vorn": 27.0},
-    {"lvl": 100, "need": 300, "feathers": 300000, "vorn": 40.0},
+    {"lvl": 11, "need": 42, "feathers": 42000, "vorn": 4.5},
+    {"lvl": 12, "need": 100, "feathers": 100000, "vorn": 10.0},
+    {"lvl": 13, "need": 160, "feathers": 160000, "vorn": 18.0},
+    {"lvl": 14, "need": 220, "feathers": 220000, "vorn": 27.0},
+    {"lvl": 15, "need": 300, "feathers": 300000, "vorn": 40.0},
 ]
 
 def get_ref_level_data(uid):
@@ -1186,6 +1186,8 @@ def api_task_attempt_verify():
 
     conn.commit()
     conn.close()
+        # 3% կուտակում հրավիրողին՝ REWARD չափով VORN-ից
+    add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
 
     return jsonify({
         "ok": True,
