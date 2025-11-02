@@ -178,6 +178,16 @@ CREATE TABLE IF NOT EXISTS user_tasks (
         "ALTER TABLE tasks ADD COLUMN active INTEGER DEFAULT 1",
     ]
 
+    c.execute("""
+CREATE TABLE IF NOT EXISTS ref_progress (
+    user_id BIGINT PRIMARY KEY,
+    level INTEGER DEFAULT 1,
+    carried_invites INTEGER DEFAULT 0,
+    updated_at BIGINT
+)
+""")
+
+
         # --- Referral earnings table ---
     c.execute("""
     CREATE TABLE IF NOT EXISTS referral_earnings (
@@ -284,6 +294,35 @@ def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: 
 
     conn.commit(); conn.close()
 
+def get_ref_level_state(uid: int):
+    conn = db(); c = conn.cursor()
+    c.execute("SELECT level, carried_invites FROM ref_progress WHERE user_id=%s", (uid,))
+    row = c.fetchone()
+    if not row:
+        level, carry = 1, 0
+        c.execute("INSERT INTO ref_progress (user_id, level, carried_invites, updated_at) VALUES (%s, %s, %s, %s)",
+                  (uid, level, carry, int(time.time())))
+        conn.commit()
+    else:
+        level, carry = row
+
+    # քանի հոգի է lifetime հրավիրել
+    c.execute("SELECT COUNT(*) FROM users WHERE inviter_id=%s", (uid,))
+    total_invited = c.fetchone()[0] or 0
+
+    idx = min(level, len(REF_LEVELS)) - 1
+    need = REF_LEVELS[idx]["need"] if idx >= 0 else 999999
+
+    # պարզ progress (եթե մնացորդային խելոքություն ուզենաս՝ կավելացնենք)
+    progress = min(total_invited + carry, need)
+
+    conn.close()
+    return {
+        "level": level,
+        "need": need,
+        "progress": progress,
+        "total_invited": total_invited
+    }
 
 
 def update_balance(user_id: int, delta: int) -> int:
@@ -352,6 +391,67 @@ def api_get_user(user_id):
         "vorn_balance": vorn_balance or 0
     })
 
+@app_web.route("/api/reflevel/state")
+def api_reflevel_state():
+    uid = int(request.args.get("uid", 0))
+    if not uid:
+        return jsonify({"ok": False, "error": "missing uid"}), 400
+    st = get_ref_level_state(uid)
+    return jsonify({"ok": True, **st})
+
+
+@app_web.route("/api/reflevel/claim", methods=["POST"])
+def api_reflevel_claim():
+    data = request.get_json(force=True, silent=True) or {}
+    uid = int(data.get("uid", 0))
+    if not uid:
+        return jsonify({"ok": False, "error": "missing uid"}), 400
+
+    conn = db(); c = conn.cursor()
+    c.execute("SELECT level, carried_invites FROM ref_progress WHERE user_id=%s", (uid,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"ok": False, "error": "state not initialized"}), 400
+
+    level, carry = row
+    idx = min(level, len(REF_LEVELS)) - 1
+    if idx < 0:
+        conn.close()
+        return jsonify({"ok": False, "error": "invalid level"}), 400
+
+    need = REF_LEVELS[idx]["need"]
+
+    # recompute total invited
+    c.execute("SELECT COUNT(*) FROM users WHERE inviter_id=%s", (uid,))
+    total_invited = c.fetchone()[0] or 0
+
+    if total_invited + carry < need:
+        conn.close()
+        return jsonify({"ok": False, "error": "not_enough_invites", "need": need, "have": total_invited+carry}), 400
+
+    feathers = REF_LEVELS[idx]["feathers"]
+    vorn = REF_LEVELS[idx]["vorn"]
+
+    # reward
+    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
+    ub = c.fetchone() or (0, 0.0)
+    new_b = (ub[0] or 0) + feathers
+    new_v = (ub[1] or 0.0) + vorn
+    c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, uid))
+
+    # advance level, reset carry (պարզ տարբերակ)
+    new_level = level + 1
+    c.execute("UPDATE ref_progress SET level=%s, carried_invites=%s, updated_at=%s WHERE user_id=%s",
+              (new_level, 0, int(time.time()), uid))
+
+    conn.commit(); conn.close()
+    return jsonify({
+        "ok": True,
+        "level_was": level, "level_now": new_level,
+        "reward_feathers": feathers, "reward_vorn": vorn,
+        "new_balance": new_b, "new_vorn": new_v
+    })
 
 
 @app_web.route("/api/set_language", methods=["POST"])
@@ -439,6 +539,7 @@ def api_vorn_reward():
         conn.commit()
         conn.close()
         print(f"🜂 Added {amount} VORN to {user_id}, new total = {vbal}")
+        add_referral_bonus(user_id, reward_feathers=0, reward_vorn=amount)
         return jsonify({"ok": True, "vorn_added": amount, "vorn_balance": vbal})
 
     except Exception as e:
@@ -588,6 +689,8 @@ def api_vorn_exchange():
     )
     conn.commit()
     conn.close()
+    # 3% կուտակում հրավիրողին՝ REWARD չափով VORN-ից
+    add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
 
     return jsonify({
         "ok": True,
