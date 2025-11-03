@@ -101,16 +101,34 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is missing!")
 
+# 🧠 GLOBAL DB POOL
+_db_pool = None
+
 def db():
-    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
-    conn.autocommit = True  # ✅ prevents "InFailedSqlTransaction"
-    c = conn.cursor()
+    """
+    Efficient connection pool version — keeps a small number of reusable connections.
+    Prevents 'remaining connection slots' errors.
+    """
+    global _db_pool
+    import psycopg2.pool
+
     try:
-        c.execute("CREATE SCHEMA IF NOT EXISTS public;")
-        c.execute("SET search_path TO public;")
+        if _db_pool is None:
+            _db_pool = psycopg2.pool.SimpleConnectionPool(
+                minconn=1,
+                maxconn=5,  # only 5 open at once
+                dsn=DATABASE_URL,
+                sslmode="require"
+            )
+            print("🧩 PostgreSQL pool initialized (max 5 connections).")
+
+        conn = _db_pool.getconn()
+        conn.autocommit = True
+        return conn
     except Exception as e:
-        print("⚠️ DB schema check error:", e)
-    return conn
+        print("🔥 DB connection failed:", e)
+        raise e
+
 
 
 
@@ -1339,22 +1357,20 @@ def telegram_webhook():
 
     try:
         upd = Update.de_json(update_data, application.bot)
-        loop = asyncio.get_event_loop()
-        loop.create_task(application.process_update(upd))
-        return jsonify({"ok": True}), 200
-    except RuntimeError:
-        # if no loop in this thread (rare), run it quickly in a new loop
+
         try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(application.process_update(upd))
-            return jsonify({"ok": True}), 200
-        except Exception as e:
-            print("🔥 Webhook secondary error:", e)
-            return jsonify({"ok": False, "error": str(e)}), 500
+
+        loop.create_task(application.process_update(upd))
+        return jsonify({"ok": True}), 200
+
     except Exception as e:
-        print("🔥 Webhook processing error:", e)
+        print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 # =====================================================
 # 🌐 GOOGLE AUTH (for YouTube verification & analytics)
@@ -1430,7 +1446,8 @@ def api_referrals_list():
         ORDER BY balance DESC
     """, (uid,))
     rows = c.fetchall()
-    conn.close()
+    release_db(conn)
+
 
     data = []
     for i, (rid, uname, feathers, vorn) in enumerate(rows, start=1):
@@ -1454,7 +1471,8 @@ def api_referrals_preview():
     conn = db(); c = conn.cursor()
     c.execute("SELECT SUM(amount_feathers), SUM(amount_vorn) FROM referral_earnings WHERE inviter_id=%s", (uid,))
     row = c.fetchone()
-    conn.close()
+    release_db(conn)
+
 
     total_f = int(row[0] or 0)
     total_v = float(row[1] or 0)
@@ -1509,6 +1527,15 @@ def api_referrals_claim():
         "new_balance": new_b,
         "new_vorn": new_v
     })
+
+def release_db(conn):
+    """Safely return connection to the pool."""
+    global _db_pool
+    try:
+        if _db_pool:
+            _db_pool.putconn(conn)
+    except Exception as e:
+        print("⚠️ release_db error:", e)
 
 
 # ==========================================
