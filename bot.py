@@ -101,16 +101,60 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is missing!")
 
+import psycopg2
+from psycopg2 import pool  # ✅ սա պետք է լինի այստեղ, ոչ թե հետո
+
+# 🧠 GLOBAL DB POOL
+_db_pool = None
+
 def db():
-    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
-    conn.autocommit = True  # ✅ prevents "InFailedSqlTransaction"
-    c = conn.cursor()
+    """
+    Creates or reuses PostgreSQL connection pool.
+    Fixes psycopg2.pool.PoolError and NoneType issues.
+    """
+    global _db_pool
+
     try:
-        c.execute("CREATE SCHEMA IF NOT EXISTS public;")
-        c.execute("SET search_path TO public;")
+        # եթե pool-ը դեռ չկա — ստեղծում ենք
+        if _db_pool is None:
+            _db_pool = pool.SimpleConnectionPool(
+                minconn=1,
+                maxconn=8,
+                dsn=DATABASE_URL,
+                sslmode="require"
+            )
+            print("🧩 PostgreSQL pool initialized (max 8 connections).")
+
+        # փորձում ենք վերցնել կապ pool-ից
+        try:
+            conn = _db_pool.getconn()
+        except Exception as e:
+            print("⚠️ Pool exhausted, using temporary direct connection:", e)
+            conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+
+        conn.autocommit = True
+        return conn
+
     except Exception as e:
-        print("⚠️ DB schema check error:", e)
-    return conn
+        print("🔥 DB connection failed:", e)
+        raise e
+
+
+def release_db(conn):
+    """
+    Safely return connection to the pool.
+    """
+    global _db_pool
+    try:
+        if _db_pool:
+            _db_pool.putconn(conn)
+        else:
+            conn.close()
+    except Exception as e:
+        print("⚠️ release_db error:", e)
+
+
+
 
 
 
@@ -130,8 +174,19 @@ CREATE TABLE IF NOT EXISTS users (
     intro_seen BOOLEAN DEFAULT FALSE,
     last_reminder_sent BIGINT DEFAULT 0,
     inviter_id BIGINT,
-    vorn_balance REAL DEFAULT 0
+    vorn_balance NUMERIC(20,6) DEFAULT 0
 )
+""")
+
+    c.execute("""
+    ALTER TABLE users
+    ALTER COLUMN vorn_balance TYPE NUMERIC(20,6)
+    USING COALESCE(vorn_balance, 0)::NUMERIC(20,6)
+""")
+
+    c.execute("""
+    ALTER TABLE users
+    ALTER COLUMN vorn_balance SET DEFAULT 0
 """)
 
 
@@ -208,8 +263,31 @@ CREATE TABLE IF NOT EXISTS ref_progress (
         except Exception: pass
 
         conn.commit()
-    conn.close()
+    release_db(conn)
     print("✅ Tables created successfully in PostgreSQL.")
+
+
+    # ---- DB helper to always return connections to the pool ----
+def close_conn(conn, cursor=None, commit=False):
+    try:
+        if cursor is not None:
+            try:
+                if commit:
+                    conn.commit()
+                else:
+                    conn.rollback()
+            except Exception:
+                pass
+            try:
+                cursor.close()
+            except Exception:
+                pass
+    finally:
+        try:
+            _db_pool.putconn(conn)
+        except Exception:
+            pass
+
 
 
 def acquire_bot_lock() -> bool:
@@ -223,7 +301,7 @@ def acquire_bot_lock() -> bool:
         # Use a constant app-wide key. Any BIGINT OK; choose a stable “random” number.
         c.execute("SELECT pg_try_advisory_lock(905905905905)")
         got = c.fetchone()[0]
-        conn.commit(); conn.close()
+        conn.commit(); release_db(conn)
         return bool(got)
     except Exception as e:
         print(f"⚠️ advisory_lock error: {e}")
@@ -235,7 +313,7 @@ def release_bot_lock():
     try:
         conn = db(); c = conn.cursor()
         c.execute("SELECT pg_advisory_unlock(905905905905)")
-        conn.commit(); conn.close()
+        conn.commit(); release_db(conn)
     except Exception:
         pass
 
@@ -261,7 +339,7 @@ def ensure_user(user_id: int, username: Optional[str], inviter_id: Optional[int]
         c.execute("UPDATE users SET username=%s WHERE user_id=%s", (username, user_id))
 
     conn.commit()
-    conn.close()
+    release_db(conn)
 
 
 
@@ -269,7 +347,7 @@ def get_balance(user_id: int) -> int:
     conn = db(); c = conn.cursor()
     c.execute("SELECT balance FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
-    conn.close()
+    release_db(conn)
     return row[0] if row else 0
 
 def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: float = 0.0):
@@ -282,7 +360,7 @@ def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: 
     c.execute("SELECT inviter_id FROM users WHERE user_id=%s", (referred_id,))
     row = c.fetchone()
     if not row or not row[0]:
-        conn.close()
+        release_db(conn)
         return
     inviter_id = row[0]
 
@@ -295,7 +373,7 @@ def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: 
         VALUES (%s, %s, %s, %s, %s)
     """, (inviter_id, referred_id, bonus_feathers, bonus_vorn, int(time.time())))
 
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
 def get_ref_level_state(uid: int):
     conn = db(); c = conn.cursor()
@@ -319,7 +397,7 @@ def get_ref_level_state(uid: int):
     # պարզ progress (եթե մնացորդային խելոքություն ուզենաս՝ կավելացնենք)
     progress = min(total_invited + carry, need)
 
-    conn.close()
+    release_db(conn)
     return {
         "level": level,
         "need": need,
@@ -339,7 +417,7 @@ def update_balance(user_id: int, delta: int) -> int:
         new_balance = int(row[0]) + int(delta)
         c.execute("UPDATE users SET balance=%s WHERE user_id=%s", (new_balance, user_id))
     conn.commit()
-    conn.close()
+    release_db(conn)
     return new_balance
 
 
@@ -354,7 +432,7 @@ def can_mine(user_id: int):
     c.execute("SELECT last_mine FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     last_mine = row[0] if row and row[0] else 0
-    conn.close()
+    release_db(conn)
 
     # 6 ժամ = 21600 վայրկյան
     diff = now - last_mine
@@ -369,7 +447,7 @@ def set_last_mine(user_id: int):
     conn = db(); c = conn.cursor()
     c.execute("UPDATE users SET last_mine=%s, last_reminder_sent=0 WHERE user_id=%s", (now, user_id))
     conn.commit()
-    conn.close()
+    release_db(conn)
 
 
 # =========================
@@ -377,29 +455,40 @@ def set_last_mine(user_id: int):
 # =========================
 @app_web.route("/api/user/<int:user_id>")
 def api_get_user(user_id):
-    conn = db(); c = conn.cursor()
-    c.execute("SELECT username, balance, last_mine, language, vorn_balance FROM users WHERE user_id=%s", (user_id,))
-    row = c.fetchone(); conn.close()
+    try:
+        conn = db(); c = conn.cursor()
+        c.execute("""
+            SELECT username, balance, last_mine, language, vorn_balance
+              FROM users
+             WHERE user_id=%s
+        """, (user_id,))
+        row = c.fetchone()
+        close_conn(conn, c, commit=False)
 
-    if not row:
-        return jsonify({"error": "User not found"}), 404
+        if not row:
+            return jsonify({"error": "User not found"}), 404
 
-    username, balance, last_mine, language, vorn_balance = row
-    return jsonify({
-        "user_id": user_id,
-        "username": username,
-        "balance": balance,
-        "last_mine": last_mine,
-        "language": language or "en",
-        "vorn_balance": vorn_balance or 0
-    })
+        username, balance, last_mine, language, vorn_balance = row
+        return jsonify({
+            "user_id": user_id,
+            "username": username,
+            "balance": balance,
+            "last_mine": last_mine,
+            "language": language or "en",
+            "vorn_balance": vorn_balance or 0
+        })
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
+
 
 
 @app_web.route("/api/_debug/balances/<int:user_id>")
 def api_debug_balances(user_id):
     conn = db(); c = conn.cursor()
     c.execute("SELECT balance, COALESCE(vorn_balance,0) FROM users WHERE user_id=%s", (user_id,))
-    row = c.fetchone(); conn.close()
+    row = c.fetchone(); release_db(conn)
     if not row:
         return jsonify({"ok": False, "error": "user not found"}), 404
     return jsonify({"ok": True, "balance": int(row[0] or 0), "vorn_balance": float(row[1] or 0)})
@@ -425,13 +514,13 @@ def api_reflevel_claim():
     c.execute("SELECT level, carried_invites FROM ref_progress WHERE user_id=%s", (uid,))
     row = c.fetchone()
     if not row:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "state not initialized"}), 400
 
     level, carry = row
     idx = min(level, len(REF_LEVELS)) - 1
     if idx < 0:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "invalid level"}), 400
 
     need = REF_LEVELS[idx]["need"]
@@ -441,7 +530,7 @@ def api_reflevel_claim():
     total_invited = c.fetchone()[0] or 0
 
     if total_invited + carry < need:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "not_enough_invites", "need": need, "have": total_invited+carry}), 400
 
     feathers = REF_LEVELS[idx]["feathers"]
@@ -459,7 +548,7 @@ def api_reflevel_claim():
     c.execute("UPDATE ref_progress SET level=%s, carried_invites=%s, updated_at=%s WHERE user_id=%s",
               (new_level, 0, int(time.time()), uid))
 
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
     return jsonify({
         "ok": True,
         "level_was": level, "level_now": new_level,
@@ -485,8 +574,9 @@ def api_set_language():
 
     conn = db(); c = conn.cursor()
     c.execute("UPDATE users SET language=%s WHERE user_id=%s", (lang, user_id))
-    conn.commit(); conn.close()
+    close_conn(conn, c, commit=True)
     return jsonify({"ok": True, "language": lang})
+
 
 
 @app_web.route("/api/mine", methods=["POST"])
@@ -547,14 +637,22 @@ def api_vorn_reward():
             c.execute("INSERT INTO users (user_id, vorn_balance) VALUES (%s, %s)", (user_id, amount))
             vbal = amount
         else:
-            vbal = (row[0] if row[0] else 0.0) + amount
-            c.execute("UPDATE users SET vorn_balance=%s WHERE user_id=%s", (vbal, user_id))
+            c.execute("""
+            UPDATE users
+           SET vorn_balance = COALESCE(vorn_balance, 0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+         WHERE user_id = %s
+         RETURNING vorn_balance
+        """, (amount, user_id))
+        vbal = c.fetchone()[0]
 
-        conn.commit()
-        conn.close()
+
+
+                
+        close_conn(conn, c, commit=True)
         print(f"🜂 Added {amount} VORN to {user_id}, new total = {vbal}")
         add_referral_bonus(user_id, reward_feathers=0, reward_vorn=amount)
         return jsonify({"ok": True, "vorn_added": amount, "vorn_balance": vbal})
+
 
     except Exception as e:
         print("🔥 /api/vorn_reward failed:", e)
@@ -604,74 +702,64 @@ def api_vorn_exchange():
     """
     Converts Feathers (🪶) into VORN (🜂)
     50_000 Feathers = 1 🜂
-    - Single atomic update (no double spend)
-    - Returns canonical keys: ok, spent_feathers, new_balance, new_vorn
+    Atomic SQL + proper connection closing.
     """
     data = request.get_json(force=True, silent=True) or {}
-    user_id = int(data.get("user_id", 0))
-    if not user_id:
+    uid = int(data.get("user_id", 0))
+    if not uid:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
-    COST = 50000     # 🪶 required per conversion
-    GAIN = 1.0       # 🜂 gained
-
-    conn = db()
-    c = conn.cursor()
-
-    # ensure vorn_balance column exists
+    COST = 50000
     try:
-        c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
-    except Exception:
-        pass
+        conn = db()
+        cur = conn.cursor()
 
-    # lock user row to avoid race (optional but good)
-    try:
-        c.execute("BEGIN")
-        c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s FOR UPDATE", (user_id,))
-        row = c.fetchone()
-        if not row:
-            c.execute("ROLLBACK")
-            conn.close()
-            return jsonify({"ok": False, "error": "user not found"}), 404
-
-        feathers, vorn = row[0] or 0, row[1] or 0.0
-        if feathers < COST:
-            c.execute("ROLLBACK")
-            conn.close()
-            return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
-
-        new_feathers = feathers - COST
-        new_vorn = vorn + GAIN
-
-        c.execute(
-            "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
-            (new_feathers, new_vorn, user_id)
-        )
-
-        # ✅ գրանցենք 3%-ը հրավիրողին՝ ԿՈՒՏԱԿՄԱՆ (claim-ով է տրվում)
+        # ensure vorn_balance exists (safe)
         try:
-            add_referral_bonus(user_id, reward_feathers=0, reward_vorn=GAIN)
-        except Exception as e:
-            # referral-ը չպետք ա խափանի հիմնական գործարքը
-            print("⚠️ add_referral_bonus failed:", e)
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
+        except Exception:
+            pass
 
-        c.execute("COMMIT")
-        conn.close()
+        # ATOMIC: one UPDATE that both subtracts feathers and adds vorn
+        cur.execute("""
+            UPDATE users
+                SET balance      = balance - %s,
+                vorn_balance = COALESCE(vorn_balance, 0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+             WHERE user_id = %s AND balance >= %s
+             RETURNING balance, vorn_balance
+        """, (COST, REWARD, uid, COST))
+
+
+        row = cur.fetchone()
+        if not row:
+            close_conn(conn, cur, commit=False)
+            return jsonify({"ok": False, "error": "not_enough_feathers"}), 400
+
+        new_balance, new_vorn = row
+        close_conn(conn, cur, commit=True)
+
+        # 3% referral accrual ONLY after successful exchange (non-blocking)
+        try:
+            add_referral_bonus(uid, reward_feathers=0, reward_vorn=1.0)
+        except Exception:
+            pass
 
         return jsonify({
             "ok": True,
             "spent_feathers": COST,
-            "new_balance": new_feathers,
-            "new_vorn": float(f"{new_vorn:.4f}")
-        })
+            "new_balance": int(new_balance),
+            "new_vorn": float(new_vorn)
+        }), 200
+
     except Exception as e:
         try:
-            c.execute("ROLLBACK")
+            close_conn(conn, cur, commit=False)
         except Exception:
             pass
-        conn.close()
-        print("🔥 /api/vorn_exchange failed:", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
+
+
+
 
 
 
@@ -680,16 +768,22 @@ def api_vorn_exchange():
 @app_web.route("/api/referrals/<int:user_id>")
 def api_referrals(user_id):
     """Բերում է հրավիրվածների ցուցակը և նրանց հավաքած ընդհանուր քոյինները"""
-    conn = db(); c = conn.cursor()
-    c.execute("""
-        SELECT u.user_id, u.username, u.balance
-        FROM users u
-        WHERE u.inviter_id = %s
-        ORDER BY u.balance DESC
-    """, (user_id,))
-    friends = [{"id": r[0], "username": r[1] or f"User{r[0]}", "balance": r[2]} for r in c.fetchall()]
-    conn.close()
-    return jsonify({"ok": True, "friends": friends})
+    try:
+        conn = db(); c = conn.cursor()
+        c.execute("""
+            SELECT u.user_id, u.username, u.balance
+              FROM users u
+             WHERE u.inviter_id = %s
+             ORDER BY u.balance DESC
+        """, (user_id,))
+        friends = [{"id": r[0], "username": r[1] or f"User{r[0]}", "balance": r[2]} for r in c.fetchall()]
+        close_conn(conn, c, commit=False)
+        return jsonify({"ok": True, "friends": friends})
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
+
 
 
 @app_web.route("/api/referral_claim", methods=["POST"])
@@ -720,7 +814,7 @@ def api_referral_claim():
         new_b = r2[0] + total_f
         new_v = r2[1] + total_v
         c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, user_id))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
     return jsonify({"ok": True, "claimed_feathers": total_f, "claimed_vorn": total_v})
 
 
@@ -728,53 +822,58 @@ def api_referral_claim():
 def api_tasks():
     """Return all active tasks grouped by type + user's completion state."""
     uid = int(request.args.get("uid", 0))
+    try:
+        conn = db(); c = conn.cursor()
 
-    conn = db(); c = conn.cursor()
+        for sql in [
+            "ALTER TABLE tasks ADD COLUMN reward_feather INTEGER DEFAULT 0",
+            "ALTER TABLE tasks ADD COLUMN reward_vorn REAL DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0"
+        ]:
+            try: c.execute(sql)
+            except Exception: pass
 
-    # ensure columns exist
-    for sql in [
-        "ALTER TABLE tasks ADD COLUMN reward_feather INTEGER DEFAULT 0",
-        "ALTER TABLE tasks ADD COLUMN reward_vorn REAL DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0"
-    ]:
-        try: c.execute(sql)
-        except Exception: pass
+        c.execute("""
+            SELECT id, type, title, reward_feather, reward_vorn, link
+              FROM tasks
+             WHERE active = TRUE
+             ORDER BY id DESC
+        """)
+        rows = c.fetchall()
 
-    # get all tasks
-    c.execute("""
-        SELECT id, type, title, reward_feather, reward_vorn, link
-        FROM tasks
-        WHERE active = TRUE
-        ORDER BY id DESC
-    """)
+        user_done = set()
+        if uid:
+            date_key = time.strftime("%Y-%m-%d")
+            c.execute("""
+                SELECT task_id
+                  FROM user_tasks
+                 WHERE user_id=%s AND date_key=%s
+            """, (uid, date_key))
+            for r in c.fetchall():
+                user_done.add(r[0])
 
-    rows = c.fetchall()
+        data = {"main": [], "daily": []}
+        for row in rows:
+            tid, ttype, title, rf, rv, link = row
+            entry = {
+                "id": tid,
+                "title": title,
+                "reward_feather": rf,
+                "reward_vorn": rv,
+                "link": link or "",
+                "completed": tid in user_done
+            }
+            if ttype not in data:
+                data[ttype] = []
+            data[ttype].append(entry)
 
-    # user's completed tasks
-    user_done = set()
-    if uid:
-        date_key = time.strftime("%Y-%m-%d")
-        c.execute("SELECT task_id FROM user_tasks WHERE user_id=%s AND date_key=%s", (uid, date_key))
-        for r in c.fetchall():
-            user_done.add(r[0])
+        close_conn(conn, c, commit=False)
+        return jsonify(data)
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
 
-    data = {"main": [], "daily": []}
-    for row in rows:
-        tid, ttype, title, rf, rv, link = row
-        entry = {
-            "id": tid,
-            "title": title,
-            "reward_feather": rf,
-            "reward_vorn": rv,
-            "link": link or "",
-            "completed": tid in user_done
-        }
-        if ttype not in data:
-            data[ttype] = []
-        data[ttype].append(entry)
-
-    conn.close()
-    return jsonify(data)
 
 
 @app_web.route("/api/ref_link/<int:user_id>")
@@ -792,7 +891,7 @@ def add_task_db(task_type, title, reward, link=None, description=None, verifier=
         INSERT INTO tasks (type, title, reward, link, description, verifier, required, created_at, active)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1)
     """, (task_type, title, int(reward), link, description, verifier, int(required), int(time.time())))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
 def list_tasks(task_type: str):
     conn = db(); c = conn.cursor()
@@ -802,7 +901,7 @@ def list_tasks(task_type: str):
         WHERE type=%s AND active=1
         ORDER BY id DESC
     """, (task_type,))
-    rows = c.fetchall(); conn.close()
+    rows = c.fetchall(); release_db(conn)
     return rows
 
 async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -850,7 +949,7 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
         INSERT INTO tasks (type, title, reward_feather, reward_vorn, link, created_at, active)
         VALUES (%s, %s, %s, %s, %s, %s, 1)
     """, (task_type, title, int(reward_feather), float(reward_vorn), link, int(time.time())))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
 
 
@@ -858,7 +957,7 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
     for sql in [
         "ALTER TABLE tasks ADD COLUMN reward_feather INTEGER DEFAULT 0",
         "ALTER TABLE tasks ADD COLUMN reward_vorn REAL DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0"
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0"
     ]:
         try: c.execute(sql)
         except Exception: pass
@@ -895,7 +994,7 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
             data[ttype] = []
         data[ttype].append(entry)
 
-    conn.close()
+    release_db(conn)
     return jsonify(data)
 
 
@@ -954,7 +1053,7 @@ async def deltask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tid = int(context.args[0])
     conn = db(); c = conn.cursor()
     c.execute("DELETE FROM tasks WHERE id=%s", (tid,))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
     await update.message.reply_text(f"🗑️ Task {tid} deleted.")
 
 
@@ -963,7 +1062,7 @@ async def listtasks_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("⛔ Not authorized.")
     conn = db(); c = conn.cursor()
     c.execute("SELECT id, type, title, reward_feather, reward_vorn FROM tasks WHERE active = TRUE ORDER BY id DESC")
-    rows = c.fetchall(); conn.close()
+    rows = c.fetchall(); release_db(conn)
     if not rows:
         return await update.message.reply_text("📭 No tasks.")
     msg = "\n".join([f"{tid}. [{t.upper()}] {title} 🪶{rf} 🜂{rv}" for tid, t, title, rf, rv in rows])
@@ -1005,7 +1104,7 @@ def api_task_attempt_create():
     token = f"T{user_id}_{task_id}_{int(time.time())}"
     c.execute("INSERT INTO task_attempts (user_id, task_id, token, status, created_at) VALUES (%s, %s, %s, 'pending', %s)",
               (user_id, task_id, token, int(time.time())))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
     return jsonify({"ok": True, "token": token})
 
@@ -1075,17 +1174,17 @@ def api_task_attempt_verify():
     c.execute("SELECT id, status FROM task_attempts WHERE user_id=%s AND task_id=%s AND token=%s", (user_id, task_id, token))
     row = c.fetchone()
     if not row:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "invalid attempt"}), 400
     if row[1] == "verified":
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "already verified"}), 400
 
         # ✅ Prevent multiple rewards for the same task
     date_key = time.strftime("%Y-%m-%d")
     c.execute("SELECT 1 FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s", (user_id, task_id, date_key))
     if c.fetchone():
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "already_completed"}), 400
 
     # ✅ Mark as verified
@@ -1099,14 +1198,14 @@ def api_task_attempt_verify():
     c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=%s", (task_id,))
     task = c.fetchone()
     if not task:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "task not found"}), 404
 
     reward_feather, reward_vorn = task
 
     # ✅ Add rewards to balance
     try:
-        c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
     except Exception:
         pass
 
@@ -1114,10 +1213,16 @@ def api_task_attempt_verify():
     row_user = c.fetchone()
     balance = (row_user[0] if row_user else 0) + reward_feather
     vorn = (row_user[1] if row_user else 0) + reward_vorn
-    c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (balance, vorn, user_id))
+    c.execute("""
+    UPDATE users
+       SET balance      = (COALESCE(balance,0) + %s),
+           vorn_balance = COALESCE(vorn_balance,0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+     WHERE user_id = %s
+    """, (reward_feather, reward_vorn, user_id))
+
 
     conn.commit()
-    conn.close()
+    release_db(conn)
     # 3% referral to inviter from THIS task reward (both feathers & vorn)
     add_referral_bonus(user_id, reward_feathers=reward_feather, reward_vorn=reward_vorn)
 
@@ -1151,7 +1256,7 @@ def api_verify_task():
 
     # ensure vorn_balance exists
     try:
-        c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
     except Exception:
         pass
 
@@ -1159,16 +1264,22 @@ def api_verify_task():
     c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=%s AND active = TRUE", (task_id,))
     task = c.fetchone()
     if not task:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "task not found"}), 404
 
     reward_feather, reward_vorn = task
 
     # check if already done
     date_key = time.strftime("%Y-%m-%d")
-    c.execute("SELECT completed_at FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s", (user_id, task_id, date_key))
+    c.execute("""
+    UPDATE users
+       SET balance      = (COALESCE(balance,0) + %s),
+           vorn_balance = COALESCE(vorn_balance,0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+     WHERE user_id = %s
+    """, (reward_feather, reward_vorn, user_id))
+
     if c.fetchone():
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "reason": "already_done"})
 
     # mark as done
@@ -1187,7 +1298,7 @@ def api_verify_task():
     balance = (row[0] if row else 0) + reward_feather
     vorn = (row[1] if row else 0) + reward_vorn
     c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (balance, vorn, user_id))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
     add_referral_bonus(user_id, reward_feather, reward_vorn)
 
@@ -1323,7 +1434,7 @@ async def start_bot_webhook():
     from threading import Thread
     def run_flask():
         print("🚀 Flask running in parallel with Telegram webhook.")
-        app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+        app_web.run(host="0.0.0.0", port=port, threaded=False, use_reloader=False)
     Thread(target=run_flask, daemon=True).start()
 
     # --- Proper Telegram app lifecycle ---
@@ -1352,22 +1463,20 @@ def telegram_webhook():
 
     try:
         upd = Update.de_json(update_data, application.bot)
-        loop = asyncio.get_event_loop()
-        loop.create_task(application.process_update(upd))
-        return jsonify({"ok": True}), 200
-    except RuntimeError:
-        # if no loop in this thread (rare), run it quickly in a new loop
+
         try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(application.process_update(upd))
-            return jsonify({"ok": True}), 200
-        except Exception as e:
-            print("🔥 Webhook secondary error:", e)
-            return jsonify({"ok": False, "error": str(e)}), 500
+
+        loop.create_task(application.process_update(upd))
+        return jsonify({"ok": True}), 200
+
     except Exception as e:
-        print("🔥 Webhook processing error:", e)
+        print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 # =====================================================
 # 🌐 GOOGLE AUTH (for YouTube verification & analytics)
@@ -1443,7 +1552,8 @@ def api_referrals_list():
         ORDER BY balance DESC
     """, (uid,))
     rows = c.fetchall()
-    conn.close()
+    release_db(conn)
+
 
     data = []
     for i, (rid, uname, feathers, vorn) in enumerate(rows, start=1):
@@ -1459,69 +1569,78 @@ def api_referrals_list():
 
 @app_web.route("/api/referrals/preview")
 def api_referrals_preview():
-    """Compute how much cashback user can claim now (3%)"""
     uid = int(request.args.get("uid", 0))
     if not uid:
         return jsonify({"ok": False, "error": "missing uid"}), 400
+    try:
+        conn = db(); c = conn.cursor()
+        c.execute("""
+            SELECT SUM(amount_feathers), SUM(amount_vorn)
+              FROM referral_earnings
+             WHERE inviter_id=%s
+        """, (uid,))
+        row = c.fetchone()
+        close_conn(conn, c, commit=False)
 
-    conn = db(); c = conn.cursor()
-    c.execute("SELECT SUM(amount_feathers), SUM(amount_vorn) FROM referral_earnings WHERE inviter_id=%s", (uid,))
-    row = c.fetchone()
-    conn.close()
+        total_f = int(row[0] or 0)
+        total_v = float(row[1] or 0)
 
-    total_f = int(row[0] or 0)
-    total_v = float(row[1] or 0)
+        return jsonify({"ok": True, "cashback_feathers": total_f, "cashback_vorn": total_v})
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
 
-    return jsonify({
-        "ok": True,
-        "cashback_feathers": total_f,
-        "cashback_vorn": total_v
-    })
-
-
-    # optional: archive before delete
-    c.execute("""
-        INSERT INTO referral_history (inviter_id, referred_id, amount_feathers, amount_vorn, created_at)
-        SELECT inviter_id, referred_id, amount_feathers, amount_vorn, created_at
-        FROM referral_earnings
-        WHERE inviter_id = %s
-    """, (uid,))
 
 
 
 @app_web.route("/api/referrals/claim", methods=["POST"])
 def api_referrals_claim():
-    """Give user his 3% cashback and reset referral_earnings"""
     data = request.get_json(force=True, silent=True) or {}
     uid = int(data.get("uid", 0))
     if not uid:
         return jsonify({"ok": False, "error": "missing uid"}), 400
+    try:
+        conn = db(); c = conn.cursor()
+        c.execute("""
+            SELECT SUM(amount_feathers), SUM(amount_vorn)
+              FROM referral_earnings
+             WHERE inviter_id=%s
+        """, (uid,))
+        row = c.fetchone()
+        total_f = int(row[0] or 0)
+        total_v = float(row[1] or 0)
 
-    conn = db(); c = conn.cursor()
-    c.execute("SELECT SUM(amount_feathers), SUM(amount_vorn) FROM referral_earnings WHERE inviter_id=%s", (uid,))
-    row = c.fetchone()
-    total_f = int(row[0] or 0)
-    total_v = float(row[1] or 0)
+        c.execute("DELETE FROM referral_earnings WHERE inviter_id=%s", (uid,))
 
-    # delete claimed entries
-    c.execute("DELETE FROM referral_earnings WHERE inviter_id=%s", (uid,))
+        c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
+        row2 = c.fetchone()
+        if row2:
+            new_b = (row2[0] or 0) + total_f
+            new_v = (row2[1] or 0) + total_v
+            c.execute("""
+                UPDATE users
+                SET balance = COALESCE(balance,0) + %s,
+                vorn_balance = COALESCE(vorn_balance,0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+                WHERE user_id = %s
+            """, (total_f, total_v, uid))
 
-    # update user's balances
-    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
-    row2 = c.fetchone()
-    if row2:
-        new_b = (row2[0] or 0) + total_f
-        new_v = (row2[1] or 0) + total_v
-        c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, uid))
-    conn.commit(); conn.close()
 
-    return jsonify({
-        "ok": True,
-        "cashback_feathers": total_f,
-        "cashback_vorn": total_v,
-        "new_balance": new_b,
-        "new_vorn": new_v
-    })
+        close_conn(conn, c, commit=True)
+        return jsonify({
+            "ok": True,
+            "cashback_feathers": total_f,
+            "cashback_vorn": total_v,
+            "new_balance": new_b,
+            "new_vorn": new_v
+        })
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
+
+
+
 
 
 # ==========================================
@@ -1549,7 +1668,7 @@ threading.Thread(target=keep_alive, daemon=True).start()
 def debug_referrals():
     conn = db(); c = conn.cursor()
     c.execute("SELECT inviter_id, referred_id, amount_feathers, amount_vorn FROM referral_earnings ORDER BY id DESC LIMIT 20;")
-    rows = c.fetchall(); conn.close()
+    rows = c.fetchall(); release_db(conn)
     return jsonify(rows)
 
 
@@ -1585,6 +1704,47 @@ def test_add_feathers():
     return jsonify({"ok": True, "added": amount, "new_balance": new_bal})
 
 
+@app_web.route("/api/fix_vorn_column")
+def api_fix_vorn_column():
+    """Migrate vorn_balance to NUMERIC(20,6) and fix NULLs."""
+    try:
+        conn = db(); c = conn.cursor()
+
+        # 1) ensure column exists
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
+
+        # 2) fix NULL/blank values to 0
+        c.execute("""
+            UPDATE users
+               SET vorn_balance = 0
+             WHERE vorn_balance IS NULL
+                OR trim(vorn_balance::text) = ''
+        """)
+
+        # 3) convert any wrong types to NUMERIC(20,6)
+        c.execute("""
+            ALTER TABLE users
+            ALTER COLUMN vorn_balance TYPE NUMERIC(20,6)
+            USING COALESCE(vorn_balance, 0)::NUMERIC(20,6)
+        """)
+
+        # 4) keep not null + default
+        c.execute("""
+            ALTER TABLE users
+            ALTER COLUMN vorn_balance SET DEFAULT 0,
+            ALTER COLUMN vorn_balance SET NOT NULL
+        """)
+
+        conn.commit(); release_db(conn)
+        return jsonify({"ok": True, "migrated": True})
+    except Exception as e:
+        try: release_db(conn)
+        except: pass
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+
+
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
     try:
@@ -1593,15 +1753,32 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # 🚀 Telegram bot in a background thread (async)
+    # 🧩 Render-ը տալիս է PORT փոփոխական
+    port = int(os.environ.get("PORT", "10000"))
+
+    # 🪶 Սկսում ենք Flask-ը առանձին թելով
+    def run_flask():
+        try:
+            print(f"🌍 Flask starting on port {port} ...")
+            app_web.run(host="0.0.0.0", port=port, threaded=False, use_reloader=False)
+        except Exception as e:
+            print("🔥 Flask failed to start:", e)
+
+    # 🤖 Սկսում ենք Telegram bot-ը առանձին թելով
     def run_bot():
-        asyncio.run(start_bot_webhook())
+        try:
+            print("🤖 Starting Telegram bot thread ...")
+            asyncio.run(start_bot_webhook())
+        except Exception as e:
+            print("🔥 Telegram bot failed:", e)
+
+    threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=run_bot, daemon=True).start()
 
-    # 🚀 Flask (Render needs an open port)
-    print("🌍 Starting Flask web server (Render port)...")
-    port = int(os.environ.get("PORT", "10000"))
-    app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+    # 💤 պահում ենք հիմնական process-ը կենդանի
+    while True:
+        time.sleep(60)
+
 
 
 
