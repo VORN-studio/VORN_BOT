@@ -28,6 +28,8 @@ const API = {
   attemptVerify: `${API_BASE}/api/task_attempt_verify`
 };
 
+let exchangeBusy = false; // ⚙️ արգելում է կրկնակի սեղմումը
+
 
 /* ------------ HELPERS ------------ */
 function uidFromURL() {
@@ -1010,6 +1012,7 @@ async refClaim() {
 
     this.balance = d.new_balance ?? this.balance;
     this.vornBalance = d.new_vorn ?? this.vornBalance;
+    this._exchangeBusy = false;
     const el = document.getElementById("featherCount");
 if (el) el.textContent = String(this.balance);
     const food = document.getElementById("foodCount");
@@ -1636,57 +1639,59 @@ if (pf) {
     this.paintEnergy();
   },
 
-  async onExchange() {
+  async onExchangeClick() {
+  if (this._exchangeBusy) return;
+  this._exchangeBusy = true;
+
   try {
-    // 🧠 ստուգենք՝ արդյոք uid կա
-    const uid = this.uid || USER_ID || localStorage.getItem("uid");
-    if (!uid) {
-      alert("⚠️ User ID missing!");
+    // UI lock
+    const btn = document.querySelector('#exchangeBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Exchanging…'; }
+
+    // Նախօրոք լոկալ ստուգում՝ 50,000 կա՞
+    const have = Number(this.balance || 0);
+    if (have < 50000) {
+      this.toast('Not enough Feathers (need 50,000).');
       return;
     }
 
-    console.log("💱 Starting exchange for UID:", uid);
-
-    const res = await fetch(`https://vorn-bot-nggr.onrender.com/api/vorn_exchange`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: uid })
+    const res = await fetch(`${API_BASE}/api/vorn_exchange`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ user_id: this.uid })
     });
+    const out = await res.json();
 
-    const data = await res.json();
-    console.log("🔁 Exchange response:", data);
-    console.log("🐍 Debug keys:", Object.keys(data));
-
-    if (!data.ok) {
-      this.showMessage("not_enough", "error");
+    if (!out.ok) {
+      this.toast('Exchange failed: ' + (out.error || 'unknown'));
       return;
     }
 
-    // ✅ Backend-ի տարբեր key-երի աջակցություն
-    const newFeathers = data.new_balance ?? data.balance ?? data.spent_feathers ?? this.balance;
-    const newVorn = data.new_vorn ?? data.vorn_balance ?? data.vornAdded ?? this.vornBalance;
+    // ✅ Backend returns: new_balance (feathers), new_vorn (VORN)
+    this.balance = Number(out.new_balance || 0);
+    this.vornBalance = Number(out.new_vorn || 0);
 
-    console.log("✅ Parsed new balances:", newFeathers, newVorn);
+    // թարմացնենք DOM-ը (փոխիր selector-ները՝ ըստ քո ինտերֆեյսի)
+    const balEl = document.querySelector('#feathersBalance');
+    const vornEl = document.querySelector('#vornBalance');
+    if (balEl) balEl.textContent = this.balance.toLocaleString('en-US');
+    if (vornEl) vornEl.textContent = this.vornBalance.toFixed(4);
 
-    // ✅ Թարմացնենք Vue/DOM-ը
-    this.balance = newFeathers;
-    this.vornBalance = newVorn;
+    this.toast('Exchanged 50,000 🪶 → +1.0000 🜂');
 
-    const featherEl = document.getElementById("featherCount");
-    const vornEl = document.getElementById("foodCount");
-    if (featherEl) featherEl.textContent = String(newFeathers);
-    if (vornEl) vornEl.textContent = newVorn.toFixed(2);
-
-    localStorage.setItem("feathers", newFeathers);
-    localStorage.setItem("vorn", newVorn);
-
-    this.showMessage("success_exchange", "success");
-
+    // 🔄 աբսոլյուտ սինք՝ եթե ունես ուրիշ վայրերում ավտոմատ loadUser
+    try { await this.loadUser(true); } catch(e) {}
   } catch (e) {
-    console.error("🔥 Exchange failed:", e);
-    this.showMessage("error", "error");
+    console.error('exchange error', e);
+    this.toast('Exchange failed (network).');
+  } finally {
+    // UI unlock
+    this._exchangeBusy = false;
+    const btn = document.querySelector('#exchangeBtn');
+    if (btn) { btn.disabled = false; btn.textContent = 'Exchange 50,000 → 1 🜂'; }
   }
 },
+
 
 
 

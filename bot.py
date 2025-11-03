@@ -394,6 +394,17 @@ def api_get_user(user_id):
         "vorn_balance": vorn_balance or 0
     })
 
+
+@app_web.route("/api/_debug/balances/<int:user_id>")
+def api_debug_balances(user_id):
+    conn = db(); c = conn.cursor()
+    c.execute("SELECT balance, COALESCE(vorn_balance,0) FROM users WHERE user_id=%s", (user_id,))
+    row = c.fetchone(); conn.close()
+    if not row:
+        return jsonify({"ok": False, "error": "user not found"}), 404
+    return jsonify({"ok": True, "balance": int(row[0] or 0), "vorn_balance": float(row[1] or 0)})
+
+
 @app_web.route("/api/reflevel/state")
 def api_reflevel_state():
     uid = int(request.args.get("uid", 0))
@@ -593,55 +604,76 @@ def api_vorn_exchange():
     """
     Converts Feathers (🪶) into VORN (🜂)
     50_000 Feathers = 1 🜂
+    - Single atomic update (no double spend)
+    - Returns canonical keys: ok, spent_feathers, new_balance, new_vorn
     """
     data = request.get_json(force=True, silent=True) or {}
-    try:
-        user_id = int(data.get("user_id", 0))
-    except Exception:
-        user_id = 0
-
+    user_id = int(data.get("user_id", 0))
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
-    COST = 50000
-    REWARD = 1.0
+    COST = 50000     # 🪶 required per conversion
+    GAIN = 1.0       # 🜂 gained
 
     conn = db()
     c = conn.cursor()
+
+    # ensure vorn_balance column exists
     try:
-        # եթե չկա vorn_balance սյունակը՝ ստեղծի
         c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
     except Exception:
         pass
 
-    # 🔒 մեկ գործողությամբ (atomic) հանում և գումարում
-    c.execute("""
-        UPDATE users
-           SET balance = balance - %s,
-               vorn_balance = vorn_balance + %s
-         WHERE user_id = %s AND balance >= %s
-     RETURNING balance, vorn_balance
-    """, (COST, REWARD, user_id, COST))
+    # lock user row to avoid race (optional but good)
+    try:
+        c.execute("BEGIN")
+        c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s FOR UPDATE", (user_id,))
+        row = c.fetchone()
+        if not row:
+            c.execute("ROLLBACK")
+            conn.close()
+            return jsonify({"ok": False, "error": "user not found"}), 404
 
-    row = c.fetchone()
-    if not row:
-        conn.rollback()
+        feathers, vorn = row[0] or 0, row[1] or 0.0
+        if feathers < COST:
+            c.execute("ROLLBACK")
+            conn.close()
+            return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
+
+        new_feathers = feathers - COST
+        new_vorn = vorn + GAIN
+
+        c.execute(
+            "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
+            (new_feathers, new_vorn, user_id)
+        )
+
+        # ✅ գրանցենք 3%-ը հրավիրողին՝ ԿՈՒՏԱԿՄԱՆ (claim-ով է տրվում)
+        try:
+            add_referral_bonus(user_id, reward_feathers=0, reward_vorn=GAIN)
+        except Exception as e:
+            # referral-ը չպետք ա խափանի հիմնական գործարքը
+            print("⚠️ add_referral_bonus failed:", e)
+
+        c.execute("COMMIT")
         conn.close()
-        return jsonify({"ok": False, "error": "not_enough_feathers"}), 400
 
-    new_feathers, new_vorn = row
-    conn.commit()
-    conn.close()
+        return jsonify({
+            "ok": True,
+            "spent_feathers": COST,
+            "new_balance": new_feathers,
+            "new_vorn": float(f"{new_vorn:.4f}")
+        })
+    except Exception as e:
+        try:
+            c.execute("ROLLBACK")
+        except Exception:
+            pass
+        conn.close()
+        print("🔥 /api/vorn_exchange failed:", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
 
-    # ✅ 3% բոնուս հրավիրողին (միայն գրանցվում է)
-    add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
 
-    return jsonify({
-        "ok": True,
-        "spent_feathers": COST,
-        "new_balance": int(new_feathers),
-        "new_vorn": float(new_vorn)
-    }), 200
 
 
 
