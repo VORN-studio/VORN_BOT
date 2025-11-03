@@ -1580,15 +1580,32 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # 🚀 Telegram bot in a background thread (async)
+    # 🧩 Render-ը տալիս է PORT փոփոխական
+    port = int(os.environ.get("PORT", "10000"))
+
+    # 🪶 Սկսում ենք Flask-ը առանձին թելով
+    def run_flask():
+        try:
+            print(f"🌍 Flask starting on port {port} ...")
+            app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+        except Exception as e:
+            print("🔥 Flask failed to start:", e)
+
+    # 🤖 Սկսում ենք Telegram bot-ը առանձին թելով
     def run_bot():
-        asyncio.run(start_bot_webhook())
+        try:
+            print("🤖 Starting Telegram bot thread ...")
+            asyncio.run(start_bot_webhook())
+        except Exception as e:
+            print("🔥 Telegram bot failed:", e)
+
+    threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=run_bot, daemon=True).start()
 
-    # 🚀 Flask (Render needs an open port)
-    print("🌍 Starting Flask web server (Render port)...")
-    port = int(os.environ.get("PORT", "10000"))
-    app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+    # 💤 պահում ենք հիմնական process-ը կենդանի
+    while True:
+        time.sleep(60)
+
 
 
 
