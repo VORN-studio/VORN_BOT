@@ -10,6 +10,8 @@ from typing import Optional
 from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 
+last_exchange_ts = {}
+EXCHANGE_GUARD_WINDOW = 5  # sec
 
 
 
@@ -593,63 +595,54 @@ def api_vorn_exchange():
     50_000 Feathers = 1 🜂
     """
     data = request.get_json(force=True, silent=True) or {}
-    user_id = int(data.get("user_id", 0))
+    try:
+        user_id = int(data.get("user_id", 0))
+    except Exception:
+        user_id = 0
+
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
     COST = 50000
     REWARD = 1.0
 
+    conn = db()
+    c = conn.cursor()
     try:
-        conn = db()
-        c = conn.cursor()
+        # եթե չկա vorn_balance սյունակը՝ ստեղծի
+        c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
+    except Exception:
+        pass
 
-        # make sure user exists
-        c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (user_id,))
-        row = c.fetchone()
-        if not row:
-            conn.close()
-            return jsonify({"ok": False, "error": "user not found"}), 404
+    # 🔒 մեկ գործողությամբ (atomic) հանում և գումարում
+    c.execute("""
+        UPDATE users
+           SET balance = balance - %s,
+               vorn_balance = vorn_balance + %s
+         WHERE user_id = %s AND balance >= %s
+     RETURNING balance, vorn_balance
+    """, (COST, REWARD, user_id, COST))
 
-        feathers, vorn = row
-        if feathers < COST:
-            conn.close()
-            return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
-
-        # update balances atomically
-        new_feathers = feathers - COST
-        new_vorn = (vorn or 0) + REWARD
-
-        c.execute(
-            "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
-            (new_feathers, new_vorn, user_id)
-        )
-
-        # also record inviter bonus but within the SAME connection
-        c.execute("SELECT inviter_id FROM users WHERE user_id=%s", (user_id,))
-        inviter_row = c.fetchone()
-        if inviter_row and inviter_row[0]:
-            inviter_id = inviter_row[0]
-            bonus_vorn = round(REWARD * 0.03, 4)
-            c.execute(
-                "INSERT INTO referral_earnings (inviter_id, referred_id, amount_feathers, amount_vorn, created_at) VALUES (%s, %s, %s, %s, %s)",
-                (inviter_id, user_id, 0, bonus_vorn, int(time.time()))
-            )
-
-        conn.commit()
+    row = c.fetchone()
+    if not row:
+        conn.rollback()
         conn.close()
+        return jsonify({"ok": False, "error": "not_enough_feathers"}), 400
 
-        print(f"✅ Exchange OK: {user_id} spent {COST}, +{REWARD}🜂 total now {new_vorn}")
-        return jsonify({
-            "ok": True,
-            "spent_feathers": COST,
-            "new_balance": new_feathers,
-            "new_vorn": new_vorn
-        })
+    new_feathers, new_vorn = row
+    conn.commit()
+    conn.close()
 
-    except Exception as e:
-        print("🔥 /api/vorn_exchange failed:", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
+    # ✅ 3% բոնուս հրավիրողին (միայն գրանցվում է)
+    add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
+
+    return jsonify({
+        "ok": True,
+        "spent_feathers": COST,
+        "new_balance": int(new_feathers),
+        "new_vorn": float(new_vorn)
+    }), 200
+
 
 
 @app_web.route("/api/referrals/<int:user_id>")
