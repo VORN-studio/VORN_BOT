@@ -110,33 +110,57 @@ except psycopg2.pool.PoolError:
     print("⚠️ Pool exhausted, creating temporary direct connection...")
     conn = psycopg2.connect(DATABASE_URL, sslmode="require")
 
+import psycopg2
+from psycopg2 import pool  # 👈 սա է, ինչ բաց ենք թողել
+
+_db_pool = None
 
 def db():
     """
     Efficient connection pool version — keeps a small number of reusable connections.
-    Prevents 'remaining connection slots' errors.
+    Prevents 'remaining connection slots' and 'pool exhausted' errors.
     """
     global _db_pool
-    import psycopg2.pool
 
     try:
+        # ✅ եթե pool-ը դեռ չի ստեղծվել
         if _db_pool is None:
-            _db_pool = psycopg2.pool.SimpleConnectionPool(
+            _db_pool = pool.SimpleConnectionPool(
                 minconn=1,
-                maxconn=5,  # only 5 open at once
+                maxconn=5,  # ավելացրու մինչև 10, եթե Render-ի DB-ն թույլ է տալիս
                 dsn=DATABASE_URL,
                 sslmode="require"
             )
             print("🧩 PostgreSQL pool initialized (max 5 connections).")
 
+        try:
+            conn = _db_pool.getconn()
+        except pool.PoolError:
+            print("⚠️ Pool exhausted — creating temporary direct connection...")
+            conn = psycopg2.connect(DATABASE_URL, sslmode="require")
 
-
-        conn = _db_pool.getconn()
         conn.autocommit = True
         return conn
+
     except Exception as e:
         print("🔥 DB connection failed:", e)
         raise e
+
+
+def release_db(conn):
+    """
+    Safely return connection to the pool after usage.
+    Prevents pool exhaustion and DB overload.
+    """
+    global _db_pool
+    try:
+        if _db_pool:
+            _db_pool.putconn(conn)
+        else:
+            conn.close()
+    except Exception as e:
+        print("⚠️ release_db error:", e)
+
 
 
 
