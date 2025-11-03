@@ -603,75 +603,62 @@ def get_ref_level_data(uid):
 def api_vorn_exchange():
     """
     Converts Feathers (🪶) into VORN (🜂)
-    50_000 Feathers = 1 🜂
-    - Single atomic update (no double spend)
-    - Returns canonical keys: ok, spent_feathers, new_balance, new_vorn
+    50_000 Feathers = 1.0 🜂
+    One-shot, transaction-safe.
     """
     data = request.get_json(force=True, silent=True) or {}
     user_id = int(data.get("user_id", 0))
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
-    COST = 50000     # 🪶 required per conversion
-    GAIN = 1.0       # 🜂 gained
+    COST = 50_000     # 🪶 required per conversion
+    REWARD = 1.0      # 🜂 gained
 
     conn = db()
     c = conn.cursor()
 
-    # ensure vorn_balance column exists
+    # ensure column exists (idempotent)
     try:
         c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
     except Exception:
         pass
 
-    # lock user row to avoid race (optional but good)
-    try:
-        c.execute("BEGIN")
-        c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s FOR UPDATE", (user_id,))
-        row = c.fetchone()
-        if not row:
-            c.execute("ROLLBACK")
-            conn.close()
-            return jsonify({"ok": False, "error": "user not found"}), 404
-
-        feathers, vorn = row[0] or 0, row[1] or 0.0
-        if feathers < COST:
-            c.execute("ROLLBACK")
-            conn.close()
-            return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
-
-        new_feathers = feathers - COST
-        new_vorn = vorn + GAIN
-
-        c.execute(
-            "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
-            (new_feathers, new_vorn, user_id)
-        )
-
-        # ✅ գրանցենք 3%-ը հրավիրողին՝ ԿՈՒՏԱԿՄԱՆ (claim-ով է տրվում)
-        try:
-            add_referral_bonus(user_id, reward_feathers=0, reward_vorn=GAIN)
-        except Exception as e:
-            # referral-ը չպետք ա խափանի հիմնական գործարքը
-            print("⚠️ add_referral_bonus failed:", e)
-
-        c.execute("COMMIT")
+    # 1) read current balances (coalesce to safe defaults)
+    c.execute("SELECT COALESCE(balance,0), COALESCE(vorn_balance,0) FROM users WHERE user_id=%s", (user_id,))
+    row = c.fetchone()
+    if not row:
         conn.close()
+        return jsonify({"ok": False, "error": "user not found"}), 404
 
-        return jsonify({
-            "ok": True,
-            "spent_feathers": COST,
-            "new_balance": new_feathers,
-            "new_vorn": float(f"{new_vorn:.4f}")
-        })
-    except Exception as e:
-        try:
-            c.execute("ROLLBACK")
-        except Exception:
-            pass
+    feathers, vorn = int(row[0]), float(row[1])
+
+    if feathers < COST:
         conn.close()
-        print("🔥 /api/vorn_exchange failed:", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
+
+    # 2) do exchange atomically
+    new_feathers = feathers - COST
+    new_vorn = vorn + REWARD
+
+    c.execute(
+        "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
+        (new_feathers, new_vorn, user_id)
+    )
+
+    # 3) persist + referral accrual (3% of VORN only accumulates, not credited)
+    conn.commit()
+    conn.close()
+
+    # 3% կուտակում հրավիրողին՝ REWARD չափով VORN-ից (միայն accumulation աղյուսակում)
+    add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
+
+    return jsonify({
+        "ok": True,
+        "spent_feathers": COST,
+        "new_balance": new_feathers,
+        "new_vorn": new_vorn
+    }), 200
+
 
 
 

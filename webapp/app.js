@@ -1641,58 +1641,62 @@ if (pf) {
   },
 
   async onExchangeClick() {
-    console.log("🟢 Exchange button clicked");
-  if (this._exchangeBusy) return;
-  this._exchangeBusy = true;
+  console.log("🟢 Exchange button clicked");
+
+  const uid = this.uid || UID; // քո user ID-ն
+  if (!uid) {
+    this.toast("User not loaded yet.");
+    return;
+  }
+
+  // Գտնում ենք կոճակը
+  const btn = document.getElementById("exchangeBtn");
+  if (!btn) {
+    console.warn("⚠️ Exchange button not found!");
+    return;
+  }
+
+  // Կանխում ենք կրկնակի սեղմումները
+  if (btn.disabled) return;
+  btn.disabled = true;
 
   try {
-    // UI lock
-    const btn = document.querySelector('#btnExchange'); // ✅ ճիշտ ID՝ ըստ index.html
-    if (btn) { btn.disabled = true; btn.textContent = 'Exchanging…'; }
-
-    // Նախօրոք լոկալ ստուգում՝ 50,000 կա՞
-    const have = Number(this.balance || 0);
-    if (have < 50000) {
-      this.toast('Not enough Feathers (need 50,000).');
-      return;
-    }
-
     const res = await fetch(`${API_BASE}/api/vorn_exchange`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ user_id: this.uid })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: uid })
     });
-    const out = await res.json();
 
-    if (!out.ok) {
-      this.toast('Exchange failed: ' + (out.error || 'unknown'));
+    const data = await res.json();
+    console.log("EXCHANGE RESP:", data);
+
+    if (!data.ok) {
+      this.toast("❌ " + (data.error || "Exchange failed"));
       return;
     }
 
-    // ✅ Backend returns: new_balance (feathers), new_vorn (VORN)
-    this.balance = Number(out.new_balance || 0);
-    this.vornBalance = Number(out.new_vorn || 0);
+    // Թարմացնում ենք քո թվերը
+    this.balance = Number(data.new_balance || 0);
+    this.vornBalance = Number(data.new_vorn || 0);
 
-    // թարմացնենք DOM-ը (փոխիր selector-ները՝ ըստ քո ինտերֆեյսի)
-    const balEl = document.querySelector('#feathersBalance');
-    const vornEl = document.querySelector('#vornBalance');
-    if (balEl) balEl.textContent = this.balance.toLocaleString('en-US');
+    // Թարմացնում ենք DOM-ը (քո քանակները էկրանի վրա)
+    const featherEl = document.getElementById("feathersBalance");
+    const vornEl = document.getElementById("vornBalance");
+    if (featherEl) featherEl.textContent = this.balance.toLocaleString("en-US");
     if (vornEl) vornEl.textContent = this.vornBalance.toFixed(4);
 
-    this.toast('Exchanged 50,000 🪶 → +1.0000 🜂');
+    this.toast("✅ Обмен успешен: -50 000 🪶 → +1.0000 🜂");
 
-    // 🔄 աբսոլյուտ սինք՝ եթե ունես ուրիշ վայրերում ավտոմատ loadUser
-    try { await this.loadUser(true); } catch(e) {}
-  } catch (e) {
-    console.error('exchange error', e);
-    this.toast('Exchange failed (network).');
+  } catch (err) {
+    console.error("Exchange failed:", err);
+    this.toast("⚠️ Ошибка соединения.");
   } finally {
-    // UI unlock
-    this._exchangeBusy = false;
-    const btn = document.querySelector('#btnExchange'); // ✅ ճիշտ ID՝ ըստ index.html
-    if (btn) { btn.disabled = false; btn.textContent = 'Exchange 50,000 → 1 🜂'; }
+    // միշտ բացում ենք կոճակը նորից
+    btn.disabled = false;
   }
 },
+
+
 
 
 
