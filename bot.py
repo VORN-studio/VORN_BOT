@@ -153,67 +153,6 @@ def release_db(conn):
     except Exception as e:
         print("⚠️ release_db error:", e)
 
-_db_pool = None
-
-def db():
-    """
-    Efficient connection pool — prevents 'remaining connection slots' and 'pool exhausted' errors.
-    Compatible with psycopg2-binary on Render.
-    """
-    global _db_pool
-
-    try:
-        # Ստեղծում ենք pool-ը միայն մեկ անգամ
-        if _db_pool is None:
-            _db_pool = pool.SimpleConnectionPool(
-                minconn=1,
-                maxconn=8,  # Render-ում մինչև 20 միացում կարելի է
-                dsn=DATABASE_URL,
-                sslmode="require"
-            )
-            print("🧩 PostgreSQL pool initialized (max 8 connections).")
-
-        # Փորձում ենք վերցնել կապ pool-ից
-        try:
-            conn = _db_pool.getconn()
-        except Exception as e:
-            print("⚠️ Pool exhausted, using temporary direct connection...", e)
-            conn = psycopg2.connect(DATABASE_URL, sslmode="require")
-
-        conn.autocommit = True
-        return conn
-
-    except Exception as e:
-        print("🔥 DB connection failed:", e)
-        raise e
-
-
-def release_db(conn):
-    """Safely return connection to the pool."""
-    global _db_pool
-    try:
-        if _db_pool:
-            _db_pool.putconn(conn)
-        else:
-            conn.close()
-    except Exception as e:
-        print("⚠️ release_db error:", e)
-
-
-
-def release_db(conn):
-    """
-    Safely return connection to the pool after usage.
-    Prevents pool exhaustion and DB overload.
-    """
-    global _db_pool
-    try:
-        if _db_pool:
-            _db_pool.putconn(conn)
-        else:
-            conn.close()
-    except Exception as e:
-        print("⚠️ release_db error:", e)
 
 
 
@@ -707,54 +646,44 @@ def get_ref_level_data(uid):
 @app_web.route("/api/vorn_exchange", methods=["POST"])
 def api_vorn_exchange():
     """
-    Converts Feathers (🪶) into VORN (🜂)
-    50_000 Feathers = 1.0 🜂
-    One-shot, transaction-safe.
+    50_000 🪶  ->  1.0 🜂
+    ԱՏՈՄԻԿ UPDATE ... WHERE balance >= COST RETURNING ...
+    Սա կանխում է կրկնակի հանումը և «ավելացրեց-հետ վերագրեց» էֆեկտը։
     """
     data = request.get_json(force=True, silent=True) or {}
     user_id = int(data.get("user_id", 0))
     if not user_id:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
-    COST = 50_000     # 🪶 required per conversion
-    REWARD = 1.0      # 🜂 gained
+    COST = 50_000
+    REWARD = 1.0
 
-    conn = db()
-    c = conn.cursor()
-
+    conn = db(); c = conn.cursor()
     # ensure column exists (idempotent)
     try:
         c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
     except Exception:
         pass
 
-    # 1) read current balances (coalesce to safe defaults)
-    c.execute("SELECT COALESCE(balance,0), COALESCE(vorn_balance,0) FROM users WHERE user_id=%s", (user_id,))
+    # 🔒 ԱՏՈՄԻԿ ԹԱՐՄԱՑՈՒՄ՝ մի քայլով
+    c.execute("""
+        UPDATE users
+        SET balance = balance - %s,
+            vorn_balance = COALESCE(vorn_balance,0) + %s
+        WHERE user_id = %s
+          AND COALESCE(balance,0) >= %s
+        RETURNING balance, vorn_balance
+    """, (COST, REWARD, user_id, COST))
     row = c.fetchone()
+
     if not row:
-        release_db(conn)
-        return jsonify({"ok": False, "error": "user not found"}), 404
-
-    feathers, vorn = int(row[0]), float(row[1])
-
-    if feathers < COST:
         release_db(conn)
         return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
 
-    # 2) do exchange atomically
-    new_feathers = feathers - COST
-    new_vorn = vorn + REWARD
-
-    c.execute(
-        "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
-        (new_feathers, new_vorn, user_id)
-    )
-
-    # 3) persist + referral accrual (3% of VORN only accumulates, not credited)
-    conn.commit()
+    new_feathers, new_vorn = int(row[0]), float(row[1])
     release_db(conn)
 
-    # 3% կուտակում հրավիրողին՝ REWARD չափով VORN-ից (միայն accumulation աղյուսակում)
+    # 🧮 Կուտակենք միայն referral 3%-ը (ոչ թե անմիջապես փոխանցենք)
     add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
 
     return jsonify({
@@ -763,6 +692,7 @@ def api_vorn_exchange():
         "new_balance": new_feathers,
         "new_vorn": new_vorn
     }), 200
+
 
 
 
@@ -1571,62 +1501,73 @@ def api_referrals_preview():
     })
 
 
-    # optional: archive before delete
-    c.execute("""
-        INSERT INTO referral_history (inviter_id, referred_id, amount_feathers, amount_vorn, created_at)
-        SELECT inviter_id, referred_id, amount_feathers, amount_vorn, created_at
-        FROM referral_earnings
-        WHERE inviter_id = %s
-    """, (uid,))
-
-
 
 @app_web.route("/api/referrals/claim", methods=["POST"])
 def api_referrals_claim():
-    """Give user his 3% cashback and reset referral_earnings"""
+    """Give inviter his 3% cashback and reset referral_earnings (with archive)."""
     data = request.get_json(force=True, silent=True) or {}
     uid = int(data.get("uid", 0))
     if not uid:
         return jsonify({"ok": False, "error": "missing uid"}), 400
 
     conn = db(); c = conn.cursor()
-    c.execute("SELECT SUM(amount_feathers), SUM(amount_vorn) FROM referral_earnings WHERE inviter_id=%s", (uid,))
-    row = c.fetchone()
-    total_f = int(row[0] or 0)
-    total_v = float(row[1] or 0)
 
-    # delete claimed entries
+    # 👇 COALESCE՝ միշտ ստանանք թիվ
+    c.execute("SELECT COALESCE(SUM(amount_feathers),0), COALESCE(SUM(amount_vorn),0) FROM referral_earnings WHERE inviter_id=%s", (uid,))
+    total_f, total_v = c.fetchone()
+
+    # Եթե ընդհանարպես 0 է — չպահանջենք թարմացում
+    if total_f == 0 and total_v == 0.0:
+        release_db(conn)
+        return jsonify({"ok": False, "error": "nothing_to_claim"}), 400
+
+    # 📦 Archive before delete
+    try:
+        c.execute("""
+            INSERT INTO referral_history (inviter_id, referred_id, amount_feathers, amount_vorn, created_at)
+            SELECT inviter_id, referred_id, amount_feathers, amount_vorn, created_at
+            FROM referral_earnings
+            WHERE inviter_id = %s
+        """, (uid,))
+    except Exception:
+        # եթե աղյուսակն արդեն ստեղծված չէր — ստեղծենք մեկ անգամ և նորից փորձենք
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS referral_history AS
+            SELECT * FROM referral_earnings WHERE false;
+        """)
+        c.execute("""
+            INSERT INTO referral_history (inviter_id, referred_id, amount_feathers, amount_vorn, created_at)
+            SELECT inviter_id, referred_id, amount_feathers, amount_vorn, created_at
+            FROM referral_earnings
+            WHERE inviter_id = %s
+        """, (uid,))
+
+    # 🗑️ Delete entries after archiving
     c.execute("DELETE FROM referral_earnings WHERE inviter_id=%s", (uid,))
 
-    # update user's balances
-    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
-    row2 = c.fetchone()
-    if row2:
-        new_b = (row2[0] or 0) + total_f
-        new_v = (row2[1] or 0) + total_v
+    # 🧾 Ensure user row exists and update balances (COALESCE)
+    c.execute("SELECT COALESCE(balance,0), COALESCE(vorn_balance,0) FROM users WHERE user_id=%s", (uid,))
+    row = c.fetchone()
+    if not row:
+        # user-ը դեռ չկար՝ ստեղծենք
+        c.execute("INSERT INTO users (user_id, balance, vorn_balance) VALUES (%s, %s, %s)", (uid, total_f, total_v))
+        new_b, new_v = int(total_f), float(total_v)
+    else:
+        new_b = int(row[0]) + int(total_f)
+        new_v = float(row[1]) + float(total_v)
         c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, uid))
+
     conn.commit(); release_db(conn)
 
     return jsonify({
         "ok": True,
-        "cashback_feathers": total_f,
-        "cashback_vorn": total_v,
+        "cashback_feathers": int(total_f),
+        "cashback_vorn": float(total_v),
         "new_balance": new_b,
         "new_vorn": new_v
-    })
-
-if total_referrals == 0:
-    return jsonify({"ok": False, "error": "no_referrals"}), 400
+    }), 200
 
 
-def release_db(conn):
-    """Safely return connection to the pool."""
-    global _db_pool
-    try:
-        if _db_pool:
-            _db_pool.putconn(conn)
-    except Exception as e:
-        print("⚠️ release_db error:", e)
 
 
 # ==========================================
