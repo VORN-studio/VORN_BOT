@@ -24,19 +24,43 @@
 <body>
 
 <!-- GOOGLE VERIFICATION INTRO -->
-<section id="about-vorn" style="text-align:center; padding:40px 20px; color:#ddd; font-family:sans-serif;">
+<!-- GOOGLE VERIFICATION INFO (visible only to crawlers / hidden in app) -->
+<section id="about-vorn"
+  style="text-align:center; padding:40px 20px; color:#ddd; font-family:sans-serif; background:rgba(0,0,0,0.7);">
   <h2>About VORN App</h2>
   <p style="max-width:700px; margin:auto; line-height:1.6;">
-    <strong>VORN</strong> is a gamified Telegram WebApp designed to motivate users through daily missions,
-    creative challenges, and social engagement tasks.  
-    It connects with Google services only to verify user actions on YouTube 
-    (such as likes or subscriptions) during reward missions.  
-    No personal data is stored or shared beyond the scope of these verifications.
+    <strong>VORN</strong> is a gamified Telegram WebApp where users earn in-game currency by completing
+    daily and social tasks.  
+    The app uses Google APIs only for verifying specific YouTube actions like likes, comments, and subscriptions,
+    ensuring that rewards are granted fairly.  
+    No personal data is stored or shared outside this verification process.
   </p>
   <p style="max-width:700px; margin:20px auto 0;">
     Learn more in our <a href="/privacy.html" style="color:#ffd54a;">Privacy Policy</a>.
   </p>
 </section>
+
+<script>
+  // Hide the Google info once the app starts (so it doesn’t cover intro)
+  document.addEventListener("DOMContentLoaded", () => {
+    const about = document.getElementById("about-vorn");
+    // Wait for the START button or app UI to appear
+    const observer = new MutationObserver(() => {
+      const mainUI = document.getElementById("mainUI");
+      if (mainUI && !mainUI.classList.contains("hidden")) {
+        about.style.display = "none";
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Also hide if Telegram WebApp is detected
+    if (window.Telegram?.WebApp) {
+      about.style.display = "none";
+    }
+  });
+</script>
+
 
 
   <!-- Canvas background (stars/fog/ripples) -->
