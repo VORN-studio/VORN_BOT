@@ -1645,9 +1645,10 @@ if (pf) {
       body: JSON.stringify({ user_id: this.uid })
     });
     const data = await r.json();
+    console.log("🔁 Exchange response:", data);
 
     if (data.ok) {
-      // ✅ թարմացնենք balance-ը և VORN քանակը
+      // ✅ Թարմացնենք UI առանց հետագայում loadUser() կանչելու
       this.balance = data.new_balance ?? this.balance;
       this.vornBalance = data.new_vorn ?? this.vornBalance;
 
@@ -1656,11 +1657,12 @@ if (pf) {
       if (featherEl) featherEl.textContent = String(this.balance);
       if (vornEl) vornEl.textContent = this.vornBalance.toFixed(2);
 
-      // ✅ վիզուալ toast
+      // ✅ Տեղային պահպանում
+      localStorage.setItem("feathers", this.balance);
+      localStorage.setItem("vorn", this.vornBalance);
+
       this.showMessage("success_exchange", "success");
 
-      // ✅ նաև DB-ից refresh անել user-ը՝ ամեն ինչ համընկնի
-      setTimeout(() => this.loadUser(), 1000);
     } else {
       this.showMessage("not_enough", "error");
     }
@@ -1669,6 +1671,7 @@ if (pf) {
     this.showMessage("error", "error");
   }
 },
+
 
 
 /* -------- BEAUTIFUL MULTILINGUAL TOAST -------- */
