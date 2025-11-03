@@ -1646,6 +1646,9 @@ if (pf) {
     });
     const data = await r.json();
     console.log("🔁 Exchange response:", data);
+    console.log("🐍 Debug keys:", Object.keys(data));
+    console.log("🐍 Data values:", data);
+
 
     if (data.ok) {
       // ✅ Թարմացնենք UI առանց հետագայում loadUser() կանչելու
