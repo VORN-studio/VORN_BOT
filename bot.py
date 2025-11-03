@@ -104,6 +104,13 @@ if not DATABASE_URL:
 # 🧠 GLOBAL DB POOL
 _db_pool = None
 
+try:
+    conn = _db_pool.getconn()
+except psycopg2.pool.PoolError:
+    print("⚠️ Pool exhausted, creating temporary direct connection...")
+    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+
+
 def db():
     """
     Efficient connection pool version — keeps a small number of reusable connections.
@@ -121,6 +128,8 @@ def db():
                 sslmode="require"
             )
             print("🧩 PostgreSQL pool initialized (max 5 connections).")
+
+
 
         conn = _db_pool.getconn()
         conn.autocommit = True
@@ -226,7 +235,7 @@ CREATE TABLE IF NOT EXISTS ref_progress (
         except Exception: pass
 
         conn.commit()
-    conn.close()
+    release_db(conn)
     print("✅ Tables created successfully in PostgreSQL.")
 
 
@@ -241,7 +250,7 @@ def acquire_bot_lock() -> bool:
         # Use a constant app-wide key. Any BIGINT OK; choose a stable “random” number.
         c.execute("SELECT pg_try_advisory_lock(905905905905)")
         got = c.fetchone()[0]
-        conn.commit(); conn.close()
+        conn.commit(); release_db(conn)
         return bool(got)
     except Exception as e:
         print(f"⚠️ advisory_lock error: {e}")
@@ -253,7 +262,7 @@ def release_bot_lock():
     try:
         conn = db(); c = conn.cursor()
         c.execute("SELECT pg_advisory_unlock(905905905905)")
-        conn.commit(); conn.close()
+        conn.commit(); release_db(conn)
     except Exception:
         pass
 
@@ -279,7 +288,7 @@ def ensure_user(user_id: int, username: Optional[str], inviter_id: Optional[int]
         c.execute("UPDATE users SET username=%s WHERE user_id=%s", (username, user_id))
 
     conn.commit()
-    conn.close()
+    release_db(conn)
 
 
 
@@ -287,7 +296,7 @@ def get_balance(user_id: int) -> int:
     conn = db(); c = conn.cursor()
     c.execute("SELECT balance FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
-    conn.close()
+    release_db(conn)
     return row[0] if row else 0
 
 def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: float = 0.0):
@@ -300,7 +309,7 @@ def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: 
     c.execute("SELECT inviter_id FROM users WHERE user_id=%s", (referred_id,))
     row = c.fetchone()
     if not row or not row[0]:
-        conn.close()
+        release_db(conn)
         return
     inviter_id = row[0]
 
@@ -313,7 +322,7 @@ def add_referral_bonus(referred_id: int, reward_feathers: int = 0, reward_vorn: 
         VALUES (%s, %s, %s, %s, %s)
     """, (inviter_id, referred_id, bonus_feathers, bonus_vorn, int(time.time())))
 
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
 def get_ref_level_state(uid: int):
     conn = db(); c = conn.cursor()
@@ -337,7 +346,7 @@ def get_ref_level_state(uid: int):
     # պարզ progress (եթե մնացորդային խելոքություն ուզենաս՝ կավելացնենք)
     progress = min(total_invited + carry, need)
 
-    conn.close()
+    release_db(conn)
     return {
         "level": level,
         "need": need,
@@ -357,7 +366,7 @@ def update_balance(user_id: int, delta: int) -> int:
         new_balance = int(row[0]) + int(delta)
         c.execute("UPDATE users SET balance=%s WHERE user_id=%s", (new_balance, user_id))
     conn.commit()
-    conn.close()
+    release_db(conn)
     return new_balance
 
 
@@ -372,7 +381,7 @@ def can_mine(user_id: int):
     c.execute("SELECT last_mine FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     last_mine = row[0] if row and row[0] else 0
-    conn.close()
+    release_db(conn)
 
     # 6 ժամ = 21600 վայրկյան
     diff = now - last_mine
@@ -387,7 +396,7 @@ def set_last_mine(user_id: int):
     conn = db(); c = conn.cursor()
     c.execute("UPDATE users SET last_mine=%s, last_reminder_sent=0 WHERE user_id=%s", (now, user_id))
     conn.commit()
-    conn.close()
+    release_db(conn)
 
 
 # =========================
@@ -397,7 +406,7 @@ def set_last_mine(user_id: int):
 def api_get_user(user_id):
     conn = db(); c = conn.cursor()
     c.execute("SELECT username, balance, last_mine, language, vorn_balance FROM users WHERE user_id=%s", (user_id,))
-    row = c.fetchone(); conn.close()
+    row = c.fetchone(); release_db(conn)
 
     if not row:
         return jsonify({"error": "User not found"}), 404
@@ -417,7 +426,7 @@ def api_get_user(user_id):
 def api_debug_balances(user_id):
     conn = db(); c = conn.cursor()
     c.execute("SELECT balance, COALESCE(vorn_balance,0) FROM users WHERE user_id=%s", (user_id,))
-    row = c.fetchone(); conn.close()
+    row = c.fetchone(); release_db(conn)
     if not row:
         return jsonify({"ok": False, "error": "user not found"}), 404
     return jsonify({"ok": True, "balance": int(row[0] or 0), "vorn_balance": float(row[1] or 0)})
@@ -443,13 +452,13 @@ def api_reflevel_claim():
     c.execute("SELECT level, carried_invites FROM ref_progress WHERE user_id=%s", (uid,))
     row = c.fetchone()
     if not row:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "state not initialized"}), 400
 
     level, carry = row
     idx = min(level, len(REF_LEVELS)) - 1
     if idx < 0:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "invalid level"}), 400
 
     need = REF_LEVELS[idx]["need"]
@@ -459,7 +468,7 @@ def api_reflevel_claim():
     total_invited = c.fetchone()[0] or 0
 
     if total_invited + carry < need:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "not_enough_invites", "need": need, "have": total_invited+carry}), 400
 
     feathers = REF_LEVELS[idx]["feathers"]
@@ -477,7 +486,7 @@ def api_reflevel_claim():
     c.execute("UPDATE ref_progress SET level=%s, carried_invites=%s, updated_at=%s WHERE user_id=%s",
               (new_level, 0, int(time.time()), uid))
 
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
     return jsonify({
         "ok": True,
         "level_was": level, "level_now": new_level,
@@ -503,7 +512,7 @@ def api_set_language():
 
     conn = db(); c = conn.cursor()
     c.execute("UPDATE users SET language=%s WHERE user_id=%s", (lang, user_id))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
     return jsonify({"ok": True, "language": lang})
 
 
@@ -569,7 +578,7 @@ def api_vorn_reward():
             c.execute("UPDATE users SET vorn_balance=%s WHERE user_id=%s", (vbal, user_id))
 
         conn.commit()
-        conn.close()
+        release_db(conn)
         print(f"🜂 Added {amount} VORN to {user_id}, new total = {vbal}")
         add_referral_bonus(user_id, reward_feathers=0, reward_vorn=amount)
         return jsonify({"ok": True, "vorn_added": amount, "vorn_balance": vbal})
@@ -645,13 +654,13 @@ def api_vorn_exchange():
     c.execute("SELECT COALESCE(balance,0), COALESCE(vorn_balance,0) FROM users WHERE user_id=%s", (user_id,))
     row = c.fetchone()
     if not row:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "user not found"}), 404
 
     feathers, vorn = int(row[0]), float(row[1])
 
     if feathers < COST:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
 
     # 2) do exchange atomically
@@ -665,7 +674,7 @@ def api_vorn_exchange():
 
     # 3) persist + referral accrual (3% of VORN only accumulates, not credited)
     conn.commit()
-    conn.close()
+    release_db(conn)
 
     # 3% կուտակում հրավիրողին՝ REWARD չափով VORN-ից (միայն accumulation աղյուսակում)
     add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
@@ -693,7 +702,7 @@ def api_referrals(user_id):
         ORDER BY u.balance DESC
     """, (user_id,))
     friends = [{"id": r[0], "username": r[1] or f"User{r[0]}", "balance": r[2]} for r in c.fetchall()]
-    conn.close()
+    release_db(conn)
     return jsonify({"ok": True, "friends": friends})
 
 
@@ -725,7 +734,7 @@ def api_referral_claim():
         new_b = r2[0] + total_f
         new_v = r2[1] + total_v
         c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, user_id))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
     return jsonify({"ok": True, "claimed_feathers": total_f, "claimed_vorn": total_v})
 
 
@@ -778,7 +787,7 @@ def api_tasks():
             data[ttype] = []
         data[ttype].append(entry)
 
-    conn.close()
+    release_db(conn)
     return jsonify(data)
 
 
@@ -797,7 +806,7 @@ def add_task_db(task_type, title, reward, link=None, description=None, verifier=
         INSERT INTO tasks (type, title, reward, link, description, verifier, required, created_at, active)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1)
     """, (task_type, title, int(reward), link, description, verifier, int(required), int(time.time())))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
 def list_tasks(task_type: str):
     conn = db(); c = conn.cursor()
@@ -807,7 +816,7 @@ def list_tasks(task_type: str):
         WHERE type=%s AND active=1
         ORDER BY id DESC
     """, (task_type,))
-    rows = c.fetchall(); conn.close()
+    rows = c.fetchall(); release_db(conn)
     return rows
 
 async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -855,7 +864,7 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
         INSERT INTO tasks (type, title, reward_feather, reward_vorn, link, created_at, active)
         VALUES (%s, %s, %s, %s, %s, %s, 1)
     """, (task_type, title, int(reward_feather), float(reward_vorn), link, int(time.time())))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
 
 
@@ -900,7 +909,7 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
             data[ttype] = []
         data[ttype].append(entry)
 
-    conn.close()
+    release_db(conn)
     return jsonify(data)
 
 
@@ -959,7 +968,7 @@ async def deltask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tid = int(context.args[0])
     conn = db(); c = conn.cursor()
     c.execute("DELETE FROM tasks WHERE id=%s", (tid,))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
     await update.message.reply_text(f"🗑️ Task {tid} deleted.")
 
 
@@ -968,7 +977,7 @@ async def listtasks_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("⛔ Not authorized.")
     conn = db(); c = conn.cursor()
     c.execute("SELECT id, type, title, reward_feather, reward_vorn FROM tasks WHERE active = TRUE ORDER BY id DESC")
-    rows = c.fetchall(); conn.close()
+    rows = c.fetchall(); release_db(conn)
     if not rows:
         return await update.message.reply_text("📭 No tasks.")
     msg = "\n".join([f"{tid}. [{t.upper()}] {title} 🪶{rf} 🜂{rv}" for tid, t, title, rf, rv in rows])
@@ -1010,7 +1019,7 @@ def api_task_attempt_create():
     token = f"T{user_id}_{task_id}_{int(time.time())}"
     c.execute("INSERT INTO task_attempts (user_id, task_id, token, status, created_at) VALUES (%s, %s, %s, 'pending', %s)",
               (user_id, task_id, token, int(time.time())))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
     return jsonify({"ok": True, "token": token})
 
@@ -1080,17 +1089,17 @@ def api_task_attempt_verify():
     c.execute("SELECT id, status FROM task_attempts WHERE user_id=%s AND task_id=%s AND token=%s", (user_id, task_id, token))
     row = c.fetchone()
     if not row:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "invalid attempt"}), 400
     if row[1] == "verified":
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "already verified"}), 400
 
         # ✅ Prevent multiple rewards for the same task
     date_key = time.strftime("%Y-%m-%d")
     c.execute("SELECT 1 FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s", (user_id, task_id, date_key))
     if c.fetchone():
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "already_completed"}), 400
 
     # ✅ Mark as verified
@@ -1104,7 +1113,7 @@ def api_task_attempt_verify():
     c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=%s", (task_id,))
     task = c.fetchone()
     if not task:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "task not found"}), 404
 
     reward_feather, reward_vorn = task
@@ -1122,7 +1131,7 @@ def api_task_attempt_verify():
     c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (balance, vorn, user_id))
 
     conn.commit()
-    conn.close()
+    release_db(conn)
     # 3% referral to inviter from THIS task reward (both feathers & vorn)
     add_referral_bonus(user_id, reward_feathers=reward_feather, reward_vorn=reward_vorn)
 
@@ -1164,7 +1173,7 @@ def api_verify_task():
     c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=%s AND active = TRUE", (task_id,))
     task = c.fetchone()
     if not task:
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "error": "task not found"}), 404
 
     reward_feather, reward_vorn = task
@@ -1173,7 +1182,7 @@ def api_verify_task():
     date_key = time.strftime("%Y-%m-%d")
     c.execute("SELECT completed_at FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s", (user_id, task_id, date_key))
     if c.fetchone():
-        conn.close()
+        release_db(conn)
         return jsonify({"ok": False, "reason": "already_done"})
 
     # mark as done
@@ -1192,7 +1201,7 @@ def api_verify_task():
     balance = (row[0] if row else 0) + reward_feather
     vorn = (row[1] if row else 0) + reward_vorn
     c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (balance, vorn, user_id))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
     add_referral_bonus(user_id, reward_feather, reward_vorn)
 
@@ -1328,7 +1337,7 @@ async def start_bot_webhook():
     from threading import Thread
     def run_flask():
         print("🚀 Flask running in parallel with Telegram webhook.")
-        app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+        app_web.run(host="0.0.0.0", port=port, threaded=False, use_reloader=False)
     Thread(target=run_flask, daemon=True).start()
 
     # --- Proper Telegram app lifecycle ---
@@ -1518,7 +1527,7 @@ def api_referrals_claim():
         new_b = (row2[0] or 0) + total_f
         new_v = (row2[1] or 0) + total_v
         c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, uid))
-    conn.commit(); conn.close()
+    conn.commit(); release_db(conn)
 
     return jsonify({
         "ok": True,
@@ -1563,7 +1572,7 @@ threading.Thread(target=keep_alive, daemon=True).start()
 def debug_referrals():
     conn = db(); c = conn.cursor()
     c.execute("SELECT inviter_id, referred_id, amount_feathers, amount_vorn FROM referral_earnings ORDER BY id DESC LIMIT 20;")
-    rows = c.fetchall(); conn.close()
+    rows = c.fetchall(); release_db(conn)
     return jsonify(rows)
 
 
@@ -1614,7 +1623,7 @@ if __name__ == "__main__":
     def run_flask():
         try:
             print(f"🌍 Flask starting on port {port} ...")
-            app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+            app_web.run(host="0.0.0.0", port=port, threaded=False, use_reloader=False)
         except Exception as e:
             print("🔥 Flask failed to start:", e)
 
