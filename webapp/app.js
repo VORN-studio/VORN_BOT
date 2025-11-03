@@ -1637,43 +1637,57 @@ if (pf) {
   },
 
   async onExchange() {
-  if (!this.uid) return alert("⚠️ User not found!");
   try {
-    const r = await fetch(`${API_BASE}/api/vorn_exchange`, {
+    // 🧠 ստուգենք՝ արդյոք uid կա
+    const uid = this.uid || USER_ID || localStorage.getItem("uid");
+    if (!uid) {
+      alert("⚠️ User ID missing!");
+      return;
+    }
+
+    console.log("💱 Starting exchange for UID:", uid);
+
+    const res = await fetch(`https://vorn-bot-nggr.onrender.com/api/vorn_exchange`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: this.uid })
+      body: JSON.stringify({ user_id: uid })
     });
-    const data = await r.json();
+
+    const data = await res.json();
     console.log("🔁 Exchange response:", data);
     console.log("🐍 Debug keys:", Object.keys(data));
-    console.log("🐍 Data values:", data);
 
-
-    if (data.ok) {
-      // ✅ Թարմացնենք UI առանց հետագայում loadUser() կանչելու
-      this.balance = data.new_balance ?? this.balance;
-      this.vornBalance = data.new_vorn ?? this.vornBalance;
-
-      const featherEl = document.getElementById("featherCount");
-      const vornEl = document.getElementById("foodCount");
-      if (featherEl) featherEl.textContent = String(this.balance);
-      if (vornEl) vornEl.textContent = this.vornBalance.toFixed(2);
-
-      // ✅ Տեղային պահպանում
-      localStorage.setItem("feathers", this.balance);
-      localStorage.setItem("vorn", this.vornBalance);
-
-      this.showMessage("success_exchange", "success");
-
-    } else {
+    if (!data.ok) {
       this.showMessage("not_enough", "error");
+      return;
     }
+
+    // ✅ Backend-ի տարբեր key-երի աջակցություն
+    const newFeathers = data.new_balance ?? data.balance ?? data.spent_feathers ?? this.balance;
+    const newVorn = data.new_vorn ?? data.vorn_balance ?? data.vornAdded ?? this.vornBalance;
+
+    console.log("✅ Parsed new balances:", newFeathers, newVorn);
+
+    // ✅ Թարմացնենք Vue/DOM-ը
+    this.balance = newFeathers;
+    this.vornBalance = newVorn;
+
+    const featherEl = document.getElementById("featherCount");
+    const vornEl = document.getElementById("foodCount");
+    if (featherEl) featherEl.textContent = String(newFeathers);
+    if (vornEl) vornEl.textContent = newVorn.toFixed(2);
+
+    localStorage.setItem("feathers", newFeathers);
+    localStorage.setItem("vorn", newVorn);
+
+    this.showMessage("success_exchange", "success");
+
   } catch (e) {
     console.error("🔥 Exchange failed:", e);
     this.showMessage("error", "error");
   }
 },
+
 
 
 
