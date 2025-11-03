@@ -101,17 +101,57 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is missing!")
 
+import psycopg2
+from psycopg2 import pool  # ✅ սա պետք է լինի այստեղ, ոչ թե հետո
+
 # 🧠 GLOBAL DB POOL
 _db_pool = None
 
-try:
-    conn = _db_pool.getconn()
-except psycopg2.pool.PoolError:
-    print("⚠️ Pool exhausted, creating temporary direct connection...")
-    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+def db():
+    """
+    Creates or reuses PostgreSQL connection pool.
+    Fixes psycopg2.pool.PoolError and NoneType issues.
+    """
+    global _db_pool
 
-import psycopg2
-from psycopg2 import pool  # ✅ ԱՅՍ ՏԵՂՆ Է ԳԼԽԱՎՈՐ ՓՈԽՈՒԹՅՈՒՆԸ
+    try:
+        # եթե pool-ը դեռ չկա — ստեղծում ենք
+        if _db_pool is None:
+            _db_pool = pool.SimpleConnectionPool(
+                minconn=1,
+                maxconn=8,
+                dsn=DATABASE_URL,
+                sslmode="require"
+            )
+            print("🧩 PostgreSQL pool initialized (max 8 connections).")
+
+        # փորձում ենք վերցնել կապ pool-ից
+        try:
+            conn = _db_pool.getconn()
+        except Exception as e:
+            print("⚠️ Pool exhausted, using temporary direct connection:", e)
+            conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+
+        conn.autocommit = True
+        return conn
+
+    except Exception as e:
+        print("🔥 DB connection failed:", e)
+        raise e
+
+
+def release_db(conn):
+    """
+    Safely return connection to the pool.
+    """
+    global _db_pool
+    try:
+        if _db_pool:
+            _db_pool.putconn(conn)
+        else:
+            conn.close()
+    except Exception as e:
+        print("⚠️ release_db error:", e)
 
 _db_pool = None
 
