@@ -111,32 +111,33 @@ except psycopg2.pool.PoolError:
     conn = psycopg2.connect(DATABASE_URL, sslmode="require")
 
 import psycopg2
-from psycopg2 import pool  # 👈 սա է, ինչ բաց ենք թողել
+from psycopg2 import pool  # ✅ ԱՅՍ ՏԵՂՆ Է ԳԼԽԱՎՈՐ ՓՈԽՈՒԹՅՈՒՆԸ
 
 _db_pool = None
 
 def db():
     """
-    Efficient connection pool version — keeps a small number of reusable connections.
-    Prevents 'remaining connection slots' and 'pool exhausted' errors.
+    Efficient connection pool — prevents 'remaining connection slots' and 'pool exhausted' errors.
+    Compatible with psycopg2-binary on Render.
     """
     global _db_pool
 
     try:
-        # ✅ եթե pool-ը դեռ չի ստեղծվել
+        # Ստեղծում ենք pool-ը միայն մեկ անգամ
         if _db_pool is None:
             _db_pool = pool.SimpleConnectionPool(
                 minconn=1,
-                maxconn=5,  # ավելացրու մինչև 10, եթե Render-ի DB-ն թույլ է տալիս
+                maxconn=8,  # Render-ում մինչև 20 միացում կարելի է
                 dsn=DATABASE_URL,
                 sslmode="require"
             )
-            print("🧩 PostgreSQL pool initialized (max 5 connections).")
+            print("🧩 PostgreSQL pool initialized (max 8 connections).")
 
+        # Փորձում ենք վերցնել կապ pool-ից
         try:
             conn = _db_pool.getconn()
-        except pool.PoolError:
-            print("⚠️ Pool exhausted — creating temporary direct connection...")
+        except Exception as e:
+            print("⚠️ Pool exhausted, using temporary direct connection...", e)
             conn = psycopg2.connect(DATABASE_URL, sslmode="require")
 
         conn.autocommit = True
@@ -145,6 +146,19 @@ def db():
     except Exception as e:
         print("🔥 DB connection failed:", e)
         raise e
+
+
+def release_db(conn):
+    """Safely return connection to the pool."""
+    global _db_pool
+    try:
+        if _db_pool:
+            _db_pool.putconn(conn)
+        else:
+            conn.close()
+    except Exception as e:
+        print("⚠️ release_db error:", e)
+
 
 
 def release_db(conn):
