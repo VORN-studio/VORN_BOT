@@ -809,7 +809,8 @@ if (this.els.exchangeBtn) {
   this.els.exchangeBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    this.onExchange();
+    this.onExchangeClick();
+
 
 // 💰 Wallet (connect) button — temporarily disabled notice
 this.els.btnWallet = document.getElementById("btnWallet");
@@ -1640,12 +1641,13 @@ if (pf) {
   },
 
   async onExchangeClick() {
+    console.log("🟢 Exchange button clicked");
   if (this._exchangeBusy) return;
   this._exchangeBusy = true;
 
   try {
     // UI lock
-    const btn = document.querySelector('#exchangeBtn');
+    const btn = document.querySelector('#btnExchange'); // ✅ ճիշտ ID՝ ըստ index.html
     if (btn) { btn.disabled = true; btn.textContent = 'Exchanging…'; }
 
     // Նախօրոք լոկալ ստուգում՝ 50,000 կա՞
@@ -1687,7 +1689,7 @@ if (pf) {
   } finally {
     // UI unlock
     this._exchangeBusy = false;
-    const btn = document.querySelector('#exchangeBtn');
+    const btn = document.querySelector('#btnExchange'); // ✅ ճիշտ ID՝ ըստ index.html
     if (btn) { btn.disabled = false; btn.textContent = 'Exchange 50,000 → 1 🜂'; }
   }
 },
