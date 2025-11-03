@@ -1615,6 +1615,10 @@ def api_referrals_claim():
         "new_vorn": new_v
     })
 
+if total_referrals == 0:
+    return jsonify({"ok": False, "error": "no_referrals"}), 400
+
+
 def release_db(conn):
     """Safely return connection to the pool."""
     global _db_pool

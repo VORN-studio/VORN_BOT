@@ -1680,12 +1680,12 @@ if (pf) {
     this.vornBalance = Number(data.new_vorn || 0);
 
     // Թարմացնում ենք DOM-ը (քո քանակները էկրանի վրա)
-    const featherEl = document.getElementById("feathersBalance");
-    const vornEl = document.getElementById("vornBalance");
+    const featherEl = document.getElementById("featherCount");
+    const vornEl = document.getElementById("foodCount");
     if (featherEl) featherEl.textContent = this.balance.toLocaleString("en-US");
     if (vornEl) vornEl.textContent = this.vornBalance.toFixed(4);
 
-    this.toast("✅ Обмен успешен: -50 000 🪶 → +1.0000 🜂");
+    this.showMessage("success_exchange", "success");
 
   } catch (err) {
     console.error("Exchange failed:", err);
