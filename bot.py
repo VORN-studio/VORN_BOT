@@ -174,8 +174,19 @@ CREATE TABLE IF NOT EXISTS users (
     intro_seen BOOLEAN DEFAULT FALSE,
     last_reminder_sent BIGINT DEFAULT 0,
     inviter_id BIGINT,
-    vorn_balance REAL DEFAULT 0
+    vorn_balance NUMERIC(20,6) DEFAULT 0
 )
+""")
+
+    c.execute("""
+    ALTER TABLE users
+    ALTER COLUMN vorn_balance TYPE NUMERIC(20,6)
+    USING COALESCE(vorn_balance, 0)::NUMERIC(20,6)
+""")
+
+    c.execute("""
+    ALTER TABLE users
+    ALTER COLUMN vorn_balance SET DEFAULT 0
 """)
 
 
@@ -626,8 +637,15 @@ def api_vorn_reward():
             c.execute("INSERT INTO users (user_id, vorn_balance) VALUES (%s, %s)", (user_id, amount))
             vbal = amount
         else:
-            vbal = (row[0] if row[0] else 0.0) + amount
-            c.execute("UPDATE users SET vorn_balance=%s WHERE user_id=%s", (vbal, user_id))
+            c.execute("""
+            UPDATE users
+           SET vorn_balance = COALESCE(vorn_balance, 0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+         WHERE user_id = %s
+         RETURNING vorn_balance
+        """, (amount, user_id))
+        vbal = c.fetchone()[0]
+
+
 
                 
         close_conn(conn, c, commit=True)
@@ -698,19 +716,19 @@ def api_vorn_exchange():
 
         # ensure vorn_balance exists (safe)
         try:
-            cur.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
         except Exception:
             pass
 
         # ATOMIC: one UPDATE that both subtracts feathers and adds vorn
         cur.execute("""
             UPDATE users
-               SET balance = balance - %s,
-                   vorn_balance = vorn_balance + 1.0
-             WHERE user_id = %s
-               AND balance >= %s
-         RETURNING balance, vorn_balance
-        """, (COST, uid, COST))
+                SET balance      = balance - %s,
+                vorn_balance = COALESCE(vorn_balance, 0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+             WHERE user_id = %s AND balance >= %s
+             RETURNING balance, vorn_balance
+        """, (COST, REWARD, uid, COST))
+
 
         row = cur.fetchone()
         if not row:
@@ -810,7 +828,7 @@ def api_tasks():
         for sql in [
             "ALTER TABLE tasks ADD COLUMN reward_feather INTEGER DEFAULT 0",
             "ALTER TABLE tasks ADD COLUMN reward_vorn REAL DEFAULT 0",
-            "ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0"
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0"
         ]:
             try: c.execute(sql)
             except Exception: pass
@@ -939,7 +957,7 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
     for sql in [
         "ALTER TABLE tasks ADD COLUMN reward_feather INTEGER DEFAULT 0",
         "ALTER TABLE tasks ADD COLUMN reward_vorn REAL DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0"
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0"
     ]:
         try: c.execute(sql)
         except Exception: pass
@@ -1187,7 +1205,7 @@ def api_task_attempt_verify():
 
     # ✅ Add rewards to balance
     try:
-        c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
     except Exception:
         pass
 
@@ -1195,7 +1213,13 @@ def api_task_attempt_verify():
     row_user = c.fetchone()
     balance = (row_user[0] if row_user else 0) + reward_feather
     vorn = (row_user[1] if row_user else 0) + reward_vorn
-    c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (balance, vorn, user_id))
+    c.execute("""
+    UPDATE users
+       SET balance      = (COALESCE(balance,0) + %s),
+           vorn_balance = COALESCE(vorn_balance,0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+     WHERE user_id = %s
+    """, (reward_feather, reward_vorn, user_id))
+
 
     conn.commit()
     release_db(conn)
@@ -1232,7 +1256,7 @@ def api_verify_task():
 
     # ensure vorn_balance exists
     try:
-        c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
     except Exception:
         pass
 
@@ -1247,7 +1271,13 @@ def api_verify_task():
 
     # check if already done
     date_key = time.strftime("%Y-%m-%d")
-    c.execute("SELECT completed_at FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s", (user_id, task_id, date_key))
+    c.execute("""
+    UPDATE users
+       SET balance      = (COALESCE(balance,0) + %s),
+           vorn_balance = COALESCE(vorn_balance,0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+     WHERE user_id = %s
+    """, (reward_feather, reward_vorn, user_id))
+
     if c.fetchone():
         release_db(conn)
         return jsonify({"ok": False, "reason": "already_done"})
@@ -1590,10 +1620,11 @@ def api_referrals_claim():
             new_v = (row2[1] or 0) + total_v
             c.execute("""
                 UPDATE users
-                   SET balance=%s,
-                       vorn_balance=%s
-                 WHERE user_id=%s
-            """, (new_b, new_v, uid))
+                SET balance = COALESCE(balance,0) + %s,
+                vorn_balance = COALESCE(vorn_balance,0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+                WHERE user_id = %s
+            """, (total_f, total_v, uid))
+
 
         close_conn(conn, c, commit=True)
         return jsonify({
@@ -1675,14 +1706,14 @@ def test_add_feathers():
 
 @app_web.route("/api/fix_vorn_column")
 def api_fix_vorn_column():
-    """Fixes vorn_balance column type and null values."""
+    """Migrate vorn_balance to NUMERIC(20,6) and fix NULLs."""
     try:
         conn = db(); c = conn.cursor()
 
-        # 1. Ensure column exists
-        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance REAL DEFAULT 0")
+        # 1) ensure column exists
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
 
-        # 2. Fix bad data (convert text/null to number)
+        # 2) fix NULL/blank values to 0
         c.execute("""
             UPDATE users
                SET vorn_balance = 0
@@ -1690,17 +1721,27 @@ def api_fix_vorn_column():
                 OR trim(vorn_balance::text) = ''
         """)
 
-        # 3. Force cast to numeric type if stored wrong
-        try:
-            c.execute("ALTER TABLE users ALTER COLUMN vorn_balance TYPE REAL USING vorn_balance::REAL")
-        except Exception:
-            pass
+        # 3) convert any wrong types to NUMERIC(20,6)
+        c.execute("""
+            ALTER TABLE users
+            ALTER COLUMN vorn_balance TYPE NUMERIC(20,6)
+            USING COALESCE(vorn_balance, 0)::NUMERIC(20,6)
+        """)
 
-        conn.commit()
-        conn.close()
-        return jsonify({"ok": True, "fixed": True})
+        # 4) keep not null + default
+        c.execute("""
+            ALTER TABLE users
+            ALTER COLUMN vorn_balance SET DEFAULT 0,
+            ALTER COLUMN vorn_balance SET NOT NULL
+        """)
+
+        conn.commit(); release_db(conn)
+        return jsonify({"ok": True, "migrated": True})
     except Exception as e:
-        return jsonify({"ok": False, "error": str(e)})
+        try: release_db(conn)
+        except: pass
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
