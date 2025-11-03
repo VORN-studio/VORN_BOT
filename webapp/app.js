@@ -1641,53 +1641,58 @@ if (pf) {
   },
 
   async onExchangeClick() {
-  console.log("🟢 Exchange button clicked");
-  const uid = this.uid;
-  if (!uid) {
-    this.toast("User not loaded yet.");
-    return;
-  }
+    console.log("🟢 Exchange button clicked");
+  if (this._exchangeBusy) return;
+  this._exchangeBusy = true;
 
   try {
-    // ուղարկենք հարցումը դեպի backend
-    const res = await fetch(`${API_BASE}/api/vorn_exchange`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: uid })
-    });
+    // UI lock
+    const btn = document.querySelector('#btnExchange'); // ✅ ճիշտ ID՝ ըստ index.html
+    if (btn) { btn.disabled = true; btn.textContent = 'Exchanging…'; }
 
-    const data = await res.json();
-    console.log("EXCHANGE RESP:", data);
-
-    if (!data.ok) {
-      this.toast("❌ " + (data.error || "Exchange failed"));
+    // Նախօրոք լոկալ ստուգում՝ 50,000 կա՞
+    const have = Number(this.balance || 0);
+    if (have < 50000) {
+      this.toast('Not enough Feathers (need 50,000).');
       return;
     }
 
-    // թարմացնենք քո թվերը առանց կոճակի փոփոխության
-    this.balance = Number(data.new_balance || 0);
-    this.vornBalance = Number(data.new_vorn || 0);
+    const res = await fetch(`${API_BASE}/api/vorn_exchange`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ user_id: this.uid })
+    });
+    const out = await res.json();
 
-    // թարմացնենք DOM-ը
-    const featherEl = document.getElementById("feathersBalance");
-    const vornEl = document.getElementById("vornBalance");
-    if (featherEl) featherEl.textContent = this.balance.toLocaleString("en-US");
+    if (!out.ok) {
+      this.toast('Exchange failed: ' + (out.error || 'unknown'));
+      return;
+    }
+
+    // ✅ Backend returns: new_balance (feathers), new_vorn (VORN)
+    this.balance = Number(out.new_balance || 0);
+    this.vornBalance = Number(out.new_vorn || 0);
+
+    // թարմացնենք DOM-ը (փոխիր selector-ները՝ ըստ քո ինտերֆեյսի)
+    const balEl = document.querySelector('#feathersBalance');
+    const vornEl = document.querySelector('#vornBalance');
+    if (balEl) balEl.textContent = this.balance.toLocaleString('en-US');
     if (vornEl) vornEl.textContent = this.vornBalance.toFixed(4);
 
-    this.toast("✅ Обмен успешен: -50 000 🪶 → +1.0000 🜂");
+    this.toast('Exchanged 50,000 🪶 → +1.0000 🜂');
 
-    // refresh տվյալները backend-ից ևս մեկ անգամ՝ եթե UI ուրիշ տեղ էլ օգտագործում է
-    try {
-      await this.loadUser(true);
-    } catch (e) {
-      console.warn("loadUser sync skipped:", e);
-    }
-  } catch (err) {
-    console.error("Exchange failed:", err);
-    this.toast("⚠️ Ошибка соединения.");
+    // 🔄 աբսոլյուտ սինք՝ եթե ունես ուրիշ վայրերում ավտոմատ loadUser
+    try { await this.loadUser(true); } catch(e) {}
+  } catch (e) {
+    console.error('exchange error', e);
+    this.toast('Exchange failed (network).');
+  } finally {
+    // UI unlock
+    this._exchangeBusy = false;
+    const btn = document.querySelector('#btnExchange'); // ✅ ճիշտ ID՝ ըստ index.html
+    if (btn) { btn.disabled = false; btn.textContent = 'Exchange 50,000 → 1 🜂'; }
   }
 },
-
 
 
 
