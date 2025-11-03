@@ -256,6 +256,29 @@ CREATE TABLE IF NOT EXISTS ref_progress (
     print("✅ Tables created successfully in PostgreSQL.")
 
 
+    # ---- DB helper to always return connections to the pool ----
+def close_conn(conn, cursor=None, commit=False):
+    try:
+        if cursor is not None:
+            try:
+                if commit:
+                    conn.commit()
+                else:
+                    conn.rollback()
+            except Exception:
+                pass
+            try:
+                cursor.close()
+            except Exception:
+                pass
+    finally:
+        try:
+            _db_pool.putconn(conn)
+        except Exception:
+            pass
+
+
+
 def acquire_bot_lock() -> bool:
     """
     Ensures only ONE poller runs worldwide.
@@ -421,22 +444,33 @@ def set_last_mine(user_id: int):
 # =========================
 @app_web.route("/api/user/<int:user_id>")
 def api_get_user(user_id):
-    conn = db(); c = conn.cursor()
-    c.execute("SELECT username, balance, last_mine, language, vorn_balance FROM users WHERE user_id=%s", (user_id,))
-    row = c.fetchone(); release_db(conn)
+    try:
+        conn = db(); c = conn.cursor()
+        c.execute("""
+            SELECT username, balance, last_mine, language, vorn_balance
+              FROM users
+             WHERE user_id=%s
+        """, (user_id,))
+        row = c.fetchone()
+        close_conn(conn, c, commit=False)
 
-    if not row:
-        return jsonify({"error": "User not found"}), 404
+        if not row:
+            return jsonify({"error": "User not found"}), 404
 
-    username, balance, last_mine, language, vorn_balance = row
-    return jsonify({
-        "user_id": user_id,
-        "username": username,
-        "balance": balance,
-        "last_mine": last_mine,
-        "language": language or "en",
-        "vorn_balance": vorn_balance or 0
-    })
+        username, balance, last_mine, language, vorn_balance = row
+        return jsonify({
+            "user_id": user_id,
+            "username": username,
+            "balance": balance,
+            "last_mine": last_mine,
+            "language": language or "en",
+            "vorn_balance": vorn_balance or 0
+        })
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
+
 
 
 @app_web.route("/api/_debug/balances/<int:user_id>")
@@ -529,8 +563,9 @@ def api_set_language():
 
     conn = db(); c = conn.cursor()
     c.execute("UPDATE users SET language=%s WHERE user_id=%s", (lang, user_id))
-    conn.commit(); release_db(conn)
+    close_conn(conn, c, commit=True)
     return jsonify({"ok": True, "language": lang})
+
 
 
 @app_web.route("/api/mine", methods=["POST"])
@@ -594,11 +629,12 @@ def api_vorn_reward():
             vbal = (row[0] if row[0] else 0.0) + amount
             c.execute("UPDATE users SET vorn_balance=%s WHERE user_id=%s", (vbal, user_id))
 
-        conn.commit()
-        release_db(conn)
+                
+        close_conn(conn, c, commit=True)
         print(f"🜂 Added {amount} VORN to {user_id}, new total = {vbal}")
         add_referral_bonus(user_id, reward_feathers=0, reward_vorn=amount)
         return jsonify({"ok": True, "vorn_added": amount, "vorn_balance": vbal})
+
 
     except Exception as e:
         print("🔥 /api/vorn_reward failed:", e)
@@ -646,52 +682,64 @@ def get_ref_level_data(uid):
 @app_web.route("/api/vorn_exchange", methods=["POST"])
 def api_vorn_exchange():
     """
-    50_000 🪶  ->  1.0 🜂
-    ԱՏՈՄԻԿ UPDATE ... WHERE balance >= COST RETURNING ...
-    Սա կանխում է կրկնակի հանումը և «ավելացրեց-հետ վերագրեց» էֆեկտը։
+    Converts Feathers (🪶) into VORN (🜂)
+    50_000 Feathers = 1 🜂
+    Atomic SQL + proper connection closing.
     """
     data = request.get_json(force=True, silent=True) or {}
-    user_id = int(data.get("user_id", 0))
-    if not user_id:
+    uid = int(data.get("user_id", 0))
+    if not uid:
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
-    COST = 50_000
-    REWARD = 1.0
-
-    conn = db(); c = conn.cursor()
-    # ensure column exists (idempotent)
+    COST = 50000
     try:
-        c.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
-    except Exception:
-        pass
+        conn = db()
+        cur = conn.cursor()
 
-    # 🔒 ԱՏՈՄԻԿ ԹԱՐՄԱՑՈՒՄ՝ մի քայլով
-    c.execute("""
-        UPDATE users
-        SET balance = balance - %s,
-            vorn_balance = COALESCE(vorn_balance,0) + %s
-        WHERE user_id = %s
-          AND COALESCE(balance,0) >= %s
-        RETURNING balance, vorn_balance
-    """, (COST, REWARD, user_id, COST))
-    row = c.fetchone()
+        # ensure vorn_balance exists (safe)
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0")
+        except Exception:
+            pass
 
-    if not row:
-        release_db(conn)
-        return jsonify({"ok": False, "error": f"not enough feathers (need {COST})"}), 400
+        # ATOMIC: one UPDATE that both subtracts feathers and adds vorn
+        cur.execute("""
+            UPDATE users
+               SET balance = balance - %s,
+                   vorn_balance = vorn_balance + 1.0
+             WHERE user_id = %s
+               AND balance >= %s
+         RETURNING balance, vorn_balance
+        """, (COST, uid, COST))
 
-    new_feathers, new_vorn = int(row[0]), float(row[1])
-    release_db(conn)
+        row = cur.fetchone()
+        if not row:
+            close_conn(conn, cur, commit=False)
+            return jsonify({"ok": False, "error": "not_enough_feathers"}), 400
 
-    # 🧮 Կուտակենք միայն referral 3%-ը (ոչ թե անմիջապես փոխանցենք)
-    add_referral_bonus(user_id, reward_feathers=0, reward_vorn=REWARD)
+        new_balance, new_vorn = row
+        close_conn(conn, cur, commit=True)
 
-    return jsonify({
-        "ok": True,
-        "spent_feathers": COST,
-        "new_balance": new_feathers,
-        "new_vorn": new_vorn
-    }), 200
+        # 3% referral accrual ONLY after successful exchange (non-blocking)
+        try:
+            add_referral_bonus(uid, reward_feathers=0, reward_vorn=1.0)
+        except Exception:
+            pass
+
+        return jsonify({
+            "ok": True,
+            "spent_feathers": COST,
+            "new_balance": int(new_balance),
+            "new_vorn": float(new_vorn)
+        }), 200
+
+    except Exception as e:
+        try:
+            close_conn(conn, cur, commit=False)
+        except Exception:
+            pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
+
 
 
 
@@ -702,16 +750,22 @@ def api_vorn_exchange():
 @app_web.route("/api/referrals/<int:user_id>")
 def api_referrals(user_id):
     """Բերում է հրավիրվածների ցուցակը և նրանց հավաքած ընդհանուր քոյինները"""
-    conn = db(); c = conn.cursor()
-    c.execute("""
-        SELECT u.user_id, u.username, u.balance
-        FROM users u
-        WHERE u.inviter_id = %s
-        ORDER BY u.balance DESC
-    """, (user_id,))
-    friends = [{"id": r[0], "username": r[1] or f"User{r[0]}", "balance": r[2]} for r in c.fetchall()]
-    release_db(conn)
-    return jsonify({"ok": True, "friends": friends})
+    try:
+        conn = db(); c = conn.cursor()
+        c.execute("""
+            SELECT u.user_id, u.username, u.balance
+              FROM users u
+             WHERE u.inviter_id = %s
+             ORDER BY u.balance DESC
+        """, (user_id,))
+        friends = [{"id": r[0], "username": r[1] or f"User{r[0]}", "balance": r[2]} for r in c.fetchall()]
+        close_conn(conn, c, commit=False)
+        return jsonify({"ok": True, "friends": friends})
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
+
 
 
 @app_web.route("/api/referral_claim", methods=["POST"])
@@ -750,53 +804,58 @@ def api_referral_claim():
 def api_tasks():
     """Return all active tasks grouped by type + user's completion state."""
     uid = int(request.args.get("uid", 0))
+    try:
+        conn = db(); c = conn.cursor()
 
-    conn = db(); c = conn.cursor()
+        for sql in [
+            "ALTER TABLE tasks ADD COLUMN reward_feather INTEGER DEFAULT 0",
+            "ALTER TABLE tasks ADD COLUMN reward_vorn REAL DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0"
+        ]:
+            try: c.execute(sql)
+            except Exception: pass
 
-    # ensure columns exist
-    for sql in [
-        "ALTER TABLE tasks ADD COLUMN reward_feather INTEGER DEFAULT 0",
-        "ALTER TABLE tasks ADD COLUMN reward_vorn REAL DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN vorn_balance REAL DEFAULT 0"
-    ]:
-        try: c.execute(sql)
-        except Exception: pass
+        c.execute("""
+            SELECT id, type, title, reward_feather, reward_vorn, link
+              FROM tasks
+             WHERE active = TRUE
+             ORDER BY id DESC
+        """)
+        rows = c.fetchall()
 
-    # get all tasks
-    c.execute("""
-        SELECT id, type, title, reward_feather, reward_vorn, link
-        FROM tasks
-        WHERE active = TRUE
-        ORDER BY id DESC
-    """)
+        user_done = set()
+        if uid:
+            date_key = time.strftime("%Y-%m-%d")
+            c.execute("""
+                SELECT task_id
+                  FROM user_tasks
+                 WHERE user_id=%s AND date_key=%s
+            """, (uid, date_key))
+            for r in c.fetchall():
+                user_done.add(r[0])
 
-    rows = c.fetchall()
+        data = {"main": [], "daily": []}
+        for row in rows:
+            tid, ttype, title, rf, rv, link = row
+            entry = {
+                "id": tid,
+                "title": title,
+                "reward_feather": rf,
+                "reward_vorn": rv,
+                "link": link or "",
+                "completed": tid in user_done
+            }
+            if ttype not in data:
+                data[ttype] = []
+            data[ttype].append(entry)
 
-    # user's completed tasks
-    user_done = set()
-    if uid:
-        date_key = time.strftime("%Y-%m-%d")
-        c.execute("SELECT task_id FROM user_tasks WHERE user_id=%s AND date_key=%s", (uid, date_key))
-        for r in c.fetchall():
-            user_done.add(r[0])
+        close_conn(conn, c, commit=False)
+        return jsonify(data)
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
 
-    data = {"main": [], "daily": []}
-    for row in rows:
-        tid, ttype, title, rf, rv, link = row
-        entry = {
-            "id": tid,
-            "title": title,
-            "reward_feather": rf,
-            "reward_vorn": rv,
-            "link": link or "",
-            "completed": tid in user_done
-        }
-        if ttype not in data:
-            data[ttype] = []
-        data[ttype].append(entry)
-
-    release_db(conn)
-    return jsonify(data)
 
 
 @app_web.route("/api/ref_link/<int:user_id>")
@@ -1480,92 +1539,75 @@ def api_referrals_list():
 
 @app_web.route("/api/referrals/preview")
 def api_referrals_preview():
-    """Compute how much cashback user can claim now (3%)"""
     uid = int(request.args.get("uid", 0))
     if not uid:
         return jsonify({"ok": False, "error": "missing uid"}), 400
+    try:
+        conn = db(); c = conn.cursor()
+        c.execute("""
+            SELECT SUM(amount_feathers), SUM(amount_vorn)
+              FROM referral_earnings
+             WHERE inviter_id=%s
+        """, (uid,))
+        row = c.fetchone()
+        close_conn(conn, c, commit=False)
 
-    conn = db(); c = conn.cursor()
-    c.execute("SELECT SUM(amount_feathers), SUM(amount_vorn) FROM referral_earnings WHERE inviter_id=%s", (uid,))
-    row = c.fetchone()
-    release_db(conn)
+        total_f = int(row[0] or 0)
+        total_v = float(row[1] or 0)
 
+        return jsonify({"ok": True, "cashback_feathers": total_f, "cashback_vorn": total_v})
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
 
-    total_f = int(row[0] or 0)
-    total_v = float(row[1] or 0)
-
-    return jsonify({
-        "ok": True,
-        "cashback_feathers": total_f,
-        "cashback_vorn": total_v
-    })
 
 
 
 @app_web.route("/api/referrals/claim", methods=["POST"])
 def api_referrals_claim():
-    """Give inviter his 3% cashback and reset referral_earnings (with archive)."""
     data = request.get_json(force=True, silent=True) or {}
     uid = int(data.get("uid", 0))
     if not uid:
         return jsonify({"ok": False, "error": "missing uid"}), 400
-
-    conn = db(); c = conn.cursor()
-
-    # 👇 COALESCE՝ միշտ ստանանք թիվ
-    c.execute("SELECT COALESCE(SUM(amount_feathers),0), COALESCE(SUM(amount_vorn),0) FROM referral_earnings WHERE inviter_id=%s", (uid,))
-    total_f, total_v = c.fetchone()
-
-    # Եթե ընդհանարպես 0 է — չպահանջենք թարմացում
-    if total_f == 0 and total_v == 0.0:
-        release_db(conn)
-        return jsonify({"ok": False, "error": "nothing_to_claim"}), 400
-
-    # 📦 Archive before delete
     try:
+        conn = db(); c = conn.cursor()
         c.execute("""
-            INSERT INTO referral_history (inviter_id, referred_id, amount_feathers, amount_vorn, created_at)
-            SELECT inviter_id, referred_id, amount_feathers, amount_vorn, created_at
-            FROM referral_earnings
-            WHERE inviter_id = %s
+            SELECT SUM(amount_feathers), SUM(amount_vorn)
+              FROM referral_earnings
+             WHERE inviter_id=%s
         """, (uid,))
-    except Exception:
-        # եթե աղյուսակն արդեն ստեղծված չէր — ստեղծենք մեկ անգամ և նորից փորձենք
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS referral_history AS
-            SELECT * FROM referral_earnings WHERE false;
-        """)
-        c.execute("""
-            INSERT INTO referral_history (inviter_id, referred_id, amount_feathers, amount_vorn, created_at)
-            SELECT inviter_id, referred_id, amount_feathers, amount_vorn, created_at
-            FROM referral_earnings
-            WHERE inviter_id = %s
-        """, (uid,))
+        row = c.fetchone()
+        total_f = int(row[0] or 0)
+        total_v = float(row[1] or 0)
 
-    # 🗑️ Delete entries after archiving
-    c.execute("DELETE FROM referral_earnings WHERE inviter_id=%s", (uid,))
+        c.execute("DELETE FROM referral_earnings WHERE inviter_id=%s", (uid,))
 
-    # 🧾 Ensure user row exists and update balances (COALESCE)
-    c.execute("SELECT COALESCE(balance,0), COALESCE(vorn_balance,0) FROM users WHERE user_id=%s", (uid,))
-    row = c.fetchone()
-    if not row:
-        # user-ը դեռ չկար՝ ստեղծենք
-        c.execute("INSERT INTO users (user_id, balance, vorn_balance) VALUES (%s, %s, %s)", (uid, total_f, total_v))
-        new_b, new_v = int(total_f), float(total_v)
-    else:
-        new_b = int(row[0]) + int(total_f)
-        new_v = float(row[1]) + float(total_v)
-        c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, uid))
+        c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
+        row2 = c.fetchone()
+        if row2:
+            new_b = (row2[0] or 0) + total_f
+            new_v = (row2[1] or 0) + total_v
+            c.execute("""
+                UPDATE users
+                   SET balance=%s,
+                       vorn_balance=%s
+                 WHERE user_id=%s
+            """, (new_b, new_v, uid))
 
-    conn.commit(); release_db(conn)
+        close_conn(conn, c, commit=True)
+        return jsonify({
+            "ok": True,
+            "cashback_feathers": total_f,
+            "cashback_vorn": total_v,
+            "new_balance": new_b,
+            "new_vorn": new_v
+        })
+    except Exception as e:
+        try: close_conn(conn, c, commit=False)
+        except: pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
 
-    return jsonify({
-        "ok": True,
-        "cashback_feathers": int(total_f),
-        "cashback_vorn": float(total_v),
-        "new_balance": new_b,
-        "new_vorn": new_v
-    }), 200
 
 
 
