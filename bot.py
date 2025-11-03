@@ -1673,6 +1673,37 @@ def test_add_feathers():
     return jsonify({"ok": True, "added": amount, "new_balance": new_bal})
 
 
+@app_web.route("/api/fix_vorn_column")
+def api_fix_vorn_column():
+    """Fixes vorn_balance column type and null values."""
+    try:
+        conn = db(); c = conn.cursor()
+
+        # 1. Ensure column exists
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance REAL DEFAULT 0")
+
+        # 2. Fix bad data (convert text/null to number)
+        c.execute("""
+            UPDATE users
+               SET vorn_balance = 0
+             WHERE vorn_balance IS NULL
+                OR trim(vorn_balance::text) = ''
+        """)
+
+        # 3. Force cast to numeric type if stored wrong
+        try:
+            c.execute("ALTER TABLE users ALTER COLUMN vorn_balance TYPE REAL USING vorn_balance::REAL")
+        except Exception:
+            pass
+
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": True, "fixed": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+
+
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
     try:
