@@ -1047,11 +1047,15 @@ if (food) food.textContent = this.vornBalance.toFixed(2);
 
       if (data && data.user_id) {
         this.balance = data.balance ?? 0;
-        this.lastMine = data.last_mine ?? 0;
-        this.vornBalance = data.vorn_balance ?? 0;
+        this.lastMine    = Number(data.last_mine ?? 0);
+this.vornBalance = Number(data.vorn_balance ?? 0);
+
 const vornEl = document.getElementById("foodCount");
-if (vornEl) vornEl.textContent = (this.vornBalance).toFixed(2);
-        this.vornBalance = data.vorn_balance ?? 0;
+if (vornEl) vornEl.textContent = this.vornBalance.toFixed(2);
+
+document.getElementById("featherCount").textContent = Number(data.balance ?? 0).toLocaleString("en-US");
+document.getElementById("username").textContent     = String(data.username ?? "");
+
 const foodEl = document.getElementById("foodCount");
 if (foodEl) foodEl.textContent = this.vornBalance.toFixed(2);
 

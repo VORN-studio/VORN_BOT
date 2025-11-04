@@ -475,7 +475,7 @@ def api_get_user(user_id):
             "balance": balance,
             "last_mine": last_mine,
             "language": language or "en",
-            "vorn_balance": vorn_balance or 0
+            "vorn_balance": float(vorn_balance) if vorn_balance is not None else 0.0
         })
     except Exception as e:
         try: close_conn(conn, c, commit=False)
