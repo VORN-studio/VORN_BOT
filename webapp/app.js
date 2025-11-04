@@ -803,6 +803,7 @@ const VORN = {
   bindEls() {
     this.els.mineBtn = document.getElementById("btnMine");
     // ✅ Exchange button safe rebind
+// ✅ Exchange button
 this.els.exchangeBtn = document.getElementById("btnExchange");
 if (this.els.exchangeBtn) {
   this.els.exchangeBtn.onclick = null; // remove old listeners
@@ -811,14 +812,16 @@ if (this.els.exchangeBtn) {
     e.stopPropagation();
     this.onExchangeClick();
 
-
 // 💰 Wallet (connect) button — temporarily disabled notice
 this.els.btnWallet = document.getElementById("btnWallet");
 if (this.els.btnWallet) {
   this.els.btnWallet.onclick = () => {
-    this.showMessage("wallet_disabled", "info", 3000);
+    const lang = this.lang || getSavedLang() || "en";
+    const text = walletMessages[lang] || walletMessages.en;
+    this.showMessage(text, "info", 2800);
   };
 }
+
 
 
   });
