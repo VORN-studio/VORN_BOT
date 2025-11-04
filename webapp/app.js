@@ -1931,6 +1931,8 @@ setTimeout(function() {
 },
 
 
+
+
   /* -------- CANVAS / PARALLAX -------- */
   mountCanvasBackground() {
     (function(){
@@ -1998,6 +2000,118 @@ setTimeout(function() {
           RIPPLES.push({ x: cx, y: cy, r: 10*DPR, max: Math.hypot(W,H)*0.35, a: 0.35 });
         }, {passive:true});
       }
+
+      // === 6-ժամանոց մայնի state/helpers ===
+const COOLDOWN_SEC = 6 * 60 * 60; // 21600
+function nowSec(){ return Math.floor(Date.now()/1000); }
+
+// պահենք վերջին մայնի timestamp-ը հիշողությունում
+if (!window.VORN) window.VORN = {};
+VORN.lastMine = VORN.lastMine || 0;
+
+// Քանի վայրկյան է մնում, մինչև պատրաստ լինելը
+VORN.secsUntilReady = function(){
+  const lm = Number(VORN.lastMine || 0);
+  const left = (lm + COOLDOWN_SEC) - nowSec();
+  return Math.max(0, left);
+};
+
+// % պատրաստ (UI progress-ի համար)
+VORN.pctReady = function(){
+  const lm = Number(VORN.lastMine || 0);
+  const passed = nowSec() - lm;
+  const pct = (passed / COOLDOWN_SEC) * 100;
+  return Math.max(0, Math.min(100, pct));
+};
+
+// Կոճակի ներկում (progress օղակ + enabled/disabled)
+function paintMineButton(){
+  const btn = document.getElementById('btnMine');
+  if (!btn) return;
+  const pct = VORN.pctReady();
+  btn.style.setProperty('--mine-pct', pct.toFixed(1));
+  if (VORN.secsUntilReady() === 0) {
+    btn.classList.add('ready');
+    btn.title = 'Claim 500 🪶';
+  } else {
+    btn.classList.remove('ready');
+    const left = VORN.secsUntilReady();
+    const hh = Math.floor(left/3600), mm = Math.floor((left%3600)/60);
+    btn.title = `Cooldown: ${hh}h ${mm}m`;
+  }
+}
+
+// Թայմեր՝ ամեն վայրկյան UI-ին թարմ պահելու համար
+let mineTicker = null;
+function startMineTicker(){
+  if (mineTicker) return;
+  paintMineButton();
+  mineTicker = setInterval(paintMineButton, 1000);
+}
+
+// === Կոճակի իրական գործողությունը ===
+async function onMineClick(){
+  // եթե դեռ cooldown է՝ պարզապես անտեսում ենք
+  if (VORN.secsUntilReady() > 0) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/mine`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id: VORN.uid })
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      // cooldown server-side (sync UI)
+      if (typeof data.cooldown === 'number') {
+        VORN.lastMine = nowSec() + 1 - COOLDOWN_SEC + data.cooldown; // մոտավորեցնենք
+      }
+      console.warn('⏳ Mine cooldown:', data);
+      return;
+    }
+
+    // Հաջողվել է՝ թարմացնենք հաշվեկշիռն ու lastMine-ը
+    VORN.balance = (data.balance ?? VORN.balance ?? 0);
+    VORN.lastMine = Number(data.last_mine || nowSec());
+    // Թարմացրու հաշվի ցուցադրումը, եթե ունես այդ ֆունկցիան
+    const featherEl = document.getElementById('featherCount');
+    if (featherEl) featherEl.textContent = String(VORN.balance);
+
+    paintMineButton();
+    // փոքր փայլ/feedback
+    document.getElementById('btnMine')?.classList.add('flash');
+    setTimeout(()=>document.getElementById('btnMine')?.classList.remove('flash'), 800);
+    console.log('✅ 500 feathers claimed');
+  } catch (e) {
+    console.error('🔥 /api/mine failed', e);
+  }
+}
+
+// Bind — ՍԱ՛ է պակասը քո կոդից
+const btnMine = document.getElementById('btnMine');
+if (btnMine) {
+  btnMine.addEventListener('click', onMineClick);
+}
+
+// Սկզբնական վիճակ — եթե user-ը արդեն բեռնվել է, փորձենք վերցնել last_mine-ը
+// (եթե մի ուրիշ տեղ արդեն բերում ես user json-ը, ուղղակի սրանից set արա VORN.lastMine-ը)
+(async function bootstrapMine(){
+  try {
+    // Եթե դու արդեն բերում ես user-ը ուրիշ տեղով, այստեղ հարկավոր չէ fetch անել։
+    // Ցուցադրում եմ fallback տարբերակ՝ հստակության համար.
+    if (typeof VORN.uid === 'number') {
+      const r = await fetch(`${API_BASE}/api/user/${VORN.uid}`);
+      const u = await r.json();
+      if (u && u.ok !== false) {
+        VORN.lastMine = Number(u.last_mine || 0);
+        VORN.balance  = Number(u.balance   || VORN.balance || 0);
+      }
+    }
+  } catch(e) { /* ok if missing */ }
+  startMineTicker();
+})();
+
 
       function draw(){
         requestAnimationFrame(draw);
