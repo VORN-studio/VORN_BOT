@@ -1168,9 +1168,9 @@ async onMineClick() {
     const data = await r.json();
     // ✅ Այստեղ ենք որոշում՝ հաջողվեց թե ոչ
     if (data.ok) {
-    this.showMessage("success_mine", "success", 1200);
+    VORN.showMessage("success_mine", "success", 1200);
     } else {
-    this.showMessage("wait_mine", "warning", 1500);
+    VORN.showMessage("wait_mine", "warning", 1500);;
     }
 
 
