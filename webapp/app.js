@@ -803,6 +803,7 @@ const VORN = {
   bindEls() {
     // 🜂 EXCHANGE button
 this.els.exchangeBtn = document.getElementById("btnExchange");
+this.els.mineBtn = document.getElementById("btnMine");
 if (this.els.exchangeBtn) {
   this.els.exchangeBtn.onclick = null; // հանում ենք հին listener-ները
   this.els.exchangeBtn.addEventListener("click", async (e) => {
@@ -1212,17 +1213,20 @@ async onMineClick() {
     return Math.max(0, Math.min(100, (done / COOLDOWN_SEC) * 100));
   },
  paintMineButton() {
-  const btn = this.els.mineBtn;
+  const btn = this.els.mineBtn || document.getElementById("btnMine");
   if (!btn) return;
+
   const left = this.secsUntilReady();
-  const pct = this.pctReady();
-  btn.style.setProperty("--pct", `${pct.toFixed(2)}%`);
-  if (left <= 0) {
-    btn.classList.add("ready");
-  } else {
-    btn.classList.remove("ready");
-  }
+  const pct  = this.pctReady().toFixed(2) + "%";
+
+  // 🟡 գրի՛ both, որպեսզի CSS-ի որ տարբերակն էլ լինի՝ աշխատի
+  btn.style.setProperty("--pct", pct);
+  btn.style.setProperty("--mine-pct", pct);
+
+  if (left <= 0) btn.classList.add("ready");
+  else           btn.classList.remove("ready");
 },
+
 
   startMineTicker() {
     if (this.timer) clearInterval(this.timer);
