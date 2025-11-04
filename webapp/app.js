@@ -2324,3 +2324,160 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
 
+// ====== VORN • Mine (final patch, non-destructive) ======
+(function(){
+  if (!window.VORN) window.VORN = {};
+
+  // --- Consts
+  const COOLDOWN_SEC = 6 * 60 * 60; // 21600 sec
+
+  // --- Time helpers
+  function nowSec(){ return Math.floor(Date.now()/1000); }
+
+  // --- State (safe defaults)
+  if (typeof VORN.lastMine !== 'number') VORN.lastMine = 0;
+  if (typeof VORN.balance  !== 'number') VORN.balance  = 0;
+  if (typeof VORN.lang     !== 'string') VORN.lang     = 'en';
+
+  // --- Calculations
+  VORN.secsUntilReady = function(){
+    const lm = Number(VORN.lastMine || 0);
+    const left = (lm + COOLDOWN_SEC) - nowSec();
+    return Math.max(0, left);
+  };
+
+  VORN.pctReady = function(){
+    const lm = Number(VORN.lastMine || 0);
+    const passed = nowSec() - lm;
+    const pct = (passed / COOLDOWN_SEC) * 100;
+    return Math.max(0, Math.min(100, pct));
+  };
+
+  // --- Paint mine button (progress ring + tooltip)
+  function paintMineButton(){
+    const btn = document.getElementById('btnMine');
+    if (!btn) return;
+    const pct = VORN.pctReady();
+    btn.style.setProperty('--mine-pct', pct.toFixed(1));
+
+    if (VORN.secsUntilReady() === 0) {
+      btn.classList.add('ready');
+      btn.title = (VORN.L ? VORN.L('mine_ready') : 'Claim 500 🪶');
+    } else {
+      btn.classList.remove('ready');
+      const left = VORN.secsUntilReady();
+      const hh = Math.floor(left/3600), mm = Math.floor((left%3600)/60);
+      btn.title = `Cooldown: ${hh}h ${mm}m`;
+    }
+  }
+
+  // --- Ticker (idempotent)
+  VORN.startMineTicker = function(){
+    if (VORN._mineTicker) clearInterval(VORN._mineTicker);
+    paintMineButton();
+    VORN._mineTicker = setInterval(paintMineButton, 1000);
+    console.log('⏱️ [MINE] ticker started');
+  };
+
+  // --- Messages (use your i18n showMessage if available)
+  function msgSuccess(){
+    if (typeof VORN.showMessage === 'function') return VORN.showMessage('success_mine', 'success', 1600);
+    if (typeof VORN.toast       === 'function') return VORN.toast('✅ 500 feathers received!', 'success', 1600);
+    console.log('✅ 500 feathers received!');
+  }
+  function msgCooldown(){
+    if (typeof VORN.showMessage === 'function') return VORN.showMessage('wait_mine', 'warning', 1600);
+    if (typeof VORN.toast       === 'function') return VORN.toast('⏳ Wait for the next mine', 'warning', 1600);
+    console.log('⏳ wait mine');
+  }
+
+  // --- Ensure we have lastMine once user is loaded
+  // If your app already sets VORN.lastMine from /api/user, this is harmless.
+  async function bootstrapLastMine(){
+    try {
+      if (typeof VORN.uid === 'number' && VORN.uid > 0) {
+        // Try to read current user state (safe fallback)
+        const r = await fetch(`${API_BASE}/api/user/${VORN.uid}`);
+        const u = await r.json();
+        if (u && u.ok !== false) {
+          if (typeof u.last_mine === 'number') VORN.lastMine = u.last_mine;
+          if (typeof u.balance   === 'number') VORN.balance  = u.balance;
+          console.log('👤 [MINE] state synced from /api/user');
+        }
+      }
+    } catch (e) {
+      // ignore; your app may already set lastMine elsewhere
+    }
+  }
+
+  // --- Main click handler (single source of truth)
+  async function handleMineClick(){
+    // show cooldown message if not ready
+    if (VORN.secsUntilReady() > 0) {
+      msgCooldown();
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/mine`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ user_id: VORN.uid })
+      });
+      const data = await res.json();
+
+      // Server says still cooldown → sync & notify
+      if (!data || data.ok === false) {
+        if (data && typeof data.cooldown === 'number') {
+          // align local timer if backend returns remaining seconds
+          VORN.lastMine = nowSec() + 1 - COOLDOWN_SEC + data.cooldown;
+          VORN.startMineTicker();
+        }
+        msgCooldown();
+        return;
+      }
+
+      // Success
+      if (typeof data.balance   === 'number') VORN.balance  = data.balance;
+      // Even if backend doesn't send last_mine, reset to now to keep UI moving
+      VORN.lastMine = (typeof data.last_mine === 'number') ? data.last_mine : nowSec();
+
+      // Update UI that shows feathers
+      const featherEl = document.getElementById('featherCount');
+      if (featherEl) featherEl.textContent = String(VORN.balance);
+
+      // Paint & restart ticker to force immediate visual reset
+      paintMineButton();
+      VORN.startMineTicker();
+
+      // Small visual feedback
+      const btn = document.getElementById('btnMine');
+      if (btn) { btn.classList.add('flash'); setTimeout(()=>btn.classList.remove('flash'), 700); }
+
+      msgSuccess();
+    } catch (e) {
+      console.error('🔥 /api/mine failed', e);
+      msgCooldown();
+    }
+  }
+
+  // --- Bind cleanly: remove all old listeners by cloning node
+  function bindMineButton(){
+    const old = document.getElementById('btnMine');
+    if (!old) return console.warn('⚠️ [MINE] btnMine not found');
+
+    const clone = old.cloneNode(true); // removes all previous listeners
+    old.replaceWith(clone);
+
+    clone.addEventListener('click', handleMineClick);
+    console.log('🔗 [MINE] click bound (clean)');
+  }
+
+  // === Boot: wait a tick so VORN.uid & DOM exist, then sync + bind + start
+  setTimeout(async () => {
+    await bootstrapLastMine();
+    bindMineButton();
+    VORN.startMineTicker();
+    console.log('✅ [MINE] init ok');
+  }, 0);
+})();
