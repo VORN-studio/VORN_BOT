@@ -2055,6 +2055,7 @@ function startMineTicker(){
   paintMineButton();
   mineTicker = setInterval(paintMineButton, 1000);
 }
+VORN.startMineTicker = startMineTicker;
 
 
 /* === OLD DUPLICATE MINE FUNCTION (DISABLED) ===
@@ -2120,7 +2121,7 @@ if (btnMine) {
     }
   } catch(e) { /* ok if missing */ }
   paintMineButton();
-  startMineTicker();
+  VORN.startMineTicker();
 })(); 
 
 
