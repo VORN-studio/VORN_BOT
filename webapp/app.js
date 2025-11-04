@@ -801,16 +801,60 @@ const VORN = {
 
 
   bindEls() {
-    this.els.mineBtn = document.getElementById("btnMine");
-    // ✅ Exchange button safe rebind
-// ✅ Exchange button
+    // 🜂 EXCHANGE button
 this.els.exchangeBtn = document.getElementById("btnExchange");
 if (this.els.exchangeBtn) {
-  this.els.exchangeBtn.onclick = null; // remove old listeners
-  this.els.exchangeBtn.addEventListener("click", (e) => {
+  this.els.exchangeBtn.onclick = null; // հանում ենք հին listener-ները
+  this.els.exchangeBtn.addEventListener("click", async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    this.onExchangeClick();
+
+    console.log("🟢 EXCHANGE button clicked");
+
+    try {
+      const uid = this.uid || VORN.uid;
+      if (!uid) {
+        this.showMessage("⚠️ Cannot find user ID", "error");
+        return;
+      }
+
+      // disable while processing
+      this.els.exchangeBtn.disabled = true;
+      this.els.exchangeBtn.textContent = "⏳";
+
+      const resp = await fetch(`${API_BASE}/api/vorn_exchange`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: uid })
+      });
+
+      const data = await resp.json();
+      console.log("EXCHANGE RESP:", data);
+
+      if (data.ok) {
+        this.balance = data.new_balance;
+        this.vornBalance = data.new_vorn;
+
+        document.getElementById("featherCount").textContent =
+          data.new_balance.toLocaleString("en-US");
+
+        document.getElementById("foodCount").textContent =
+          Number(data.new_vorn).toFixed(2);
+
+        this.showMessage("✅ Exchanged 50000 🪶 → +1 🜂", "success");
+      } else {
+        this.showMessage("⚠️ " + (data.error || "Exchange failed"), "error");
+      }
+
+      this.els.exchangeBtn.textContent = "🔁";
+      this.els.exchangeBtn.disabled = false;
+    } catch (err) {
+      console.error("Exchange error:", err);
+      this.showMessage("🔥 Server error", "error");
+      this.els.exchangeBtn.textContent = "🔁";
+      this.els.exchangeBtn.disabled = false;
+    }
+  
 
 // 💰 Wallet (connect) button — temporarily disabled notice
 this.els.btnWallet = document.getElementById("btnWallet");
