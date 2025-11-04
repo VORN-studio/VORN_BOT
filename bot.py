@@ -711,7 +711,7 @@ def api_vorn_exchange():
 
     COST = 50000
     REWARD = 1.0 
-
+    
     try:
         conn = db()
         cur = conn.cursor()
@@ -1745,63 +1745,6 @@ def api_fix_vorn_column():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app_web.route("/api/mine_claim", methods=["POST"])
-def api_mine_claim():
-    """
-    6-ժամյա բոնուս — եթե անցել է 6 ժամ վերջի claim-ից, տալիս ենք +500 փետուր
-    """
-    data = request.get_json(force=True, silent=True) or {}
-    uid = int(data.get("user_id", 0))
-    if not uid:
-        return jsonify({"ok": False, "error": "missing user_id"}), 400
-
-    COOLDOWN = 6 * 60 * 60  # 6 ժամ վայրկյաններով
-    REWARD_FEATHERS = 500
-
-    try:
-        conn = db()
-        c = conn.cursor()
-
-        # ապահովենք, որ last_mine սյունակը կա
-        try:
-            c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_mine BIGINT DEFAULT 0")
-        except Exception:
-            pass
-
-        # բերենք վերջին մայնի ժամանակը
-        c.execute("SELECT COALESCE(last_mine,0) FROM users WHERE user_id=%s", (uid,))
-        row = c.fetchone()
-        last_mine = int(row[0] if row and row[0] is not None else 0)
-
-        import time
-        now = int(time.time())
-        if now - last_mine < COOLDOWN:
-            remaining = COOLDOWN - (now - last_mine)
-            close_conn(conn, c, commit=False)
-            return jsonify({"ok": False, "error": "cooldown", "remaining": remaining}), 400
-
-        # Եթե անցել է 6 ժամ, ավելացնում ենք 500 փետուր
-        c.execute("""
-            UPDATE users
-               SET balance = COALESCE(balance,0) + %s,
-                   last_mine = %s
-             WHERE user_id = %s
-             RETURNING balance, last_mine
-        """, (REWARD_FEATHERS, now, uid))
-        upd = c.fetchone()
-
-        if not upd:
-            close_conn(conn, c, commit=False)
-            return jsonify({"ok": False, "error": "user_not_found"}), 404
-
-        new_balance, new_last = upd
-        close_conn(conn, c, commit=True)
-        return jsonify({"ok": True, "reward": REWARD_FEATHERS, "balance": int(new_balance)}), 200
-
-    except Exception as e:
-        try: close_conn(conn, c, commit=False)
-        except: pass
-        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
 
 
 if __name__ == "__main__":
