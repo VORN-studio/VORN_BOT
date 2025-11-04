@@ -1166,6 +1166,13 @@ async onMineClick() {
       body: JSON.stringify({ user_id: this.uid })
     });
     const data = await r.json();
+    // ✅ Այստեղ ենք որոշում՝ հաջողվեց թե ոչ
+    if (data.ok) {
+    this.showMessage("success_mine", "success", 1200);
+    } else {
+    this.showMessage("wait_mine", "warning", 1500);
+    }
+
 
     if (data.ok) {
       // ✅ Server confirmed reward
