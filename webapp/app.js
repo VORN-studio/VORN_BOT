@@ -2056,6 +2056,8 @@ function startMineTicker(){
   mineTicker = setInterval(paintMineButton, 1000);
 }
 
+
+/* === OLD DUPLICATE MINE FUNCTION (DISABLED) ===
 // === Կոճակի իրական գործողությունը ===
 async function onMineClick(){
   // եթե դեռ cooldown է՝ պարզապես անտեսում ենք
@@ -2100,6 +2102,7 @@ const btnMine = document.getElementById('btnMine');
 if (btnMine) {
   btnMine.addEventListener('click', onMineClick);
 }
+=== END OF OLD MINE === */
 
 // Սկզբնական վիճակ — եթե user-ը արդեն բեռնվել է, փորձենք վերցնել last_mine-ը
 // (եթե մի ուրիշ տեղ արդեն բերում ես user json-ը, ուղղակի սրանից set արա VORN.lastMine-ը)
@@ -2117,7 +2120,7 @@ if (btnMine) {
     }
   } catch(e) { /* ok if missing */ }
   startMineTicker();
-})();
+})(); 
 
 
       function draw(){
