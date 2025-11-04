@@ -1560,6 +1560,37 @@ bindTasksModal() {
   /* -------- CLICK-MINING (energy HUD) -------- */
   initMiningDOM() {
     console.log("⚙️ initMiningDOM called");
+
+    // 6 ժամ բոնուս կոճակ
+const bonusBtn = document.getElementById("btn6hBonus");
+if (bonusBtn) {
+  bonusBtn.onclick = async () => {
+    bonusBtn.disabled = true;
+    try {
+      const resp = await fetch(`${API_BASE}/api/mine_claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: VORN.uid }),
+      });
+      const data = await resp.json();
+      console.log("🎁 Mine claim response:", data);
+
+      if (data.ok) {
+        alert(`+${data.reward} 🪶 Added!`);
+      } else if (data.error === "cooldown") {
+        alert("⏳ Wait until next reward!");
+      } else {
+        alert("⚠️ Something went wrong.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("🔥 Server error.");
+    }
+    bonusBtn.disabled = false;
+  };
+}
+
+
     window._clickZone = document.getElementById('clickZone');
     window._featherEl = document.getElementById('featherCount');
     window._foodEl    = document.getElementById('foodCount');
