@@ -593,13 +593,17 @@ def api_mine():
     new_bal = update_balance(user_id, MINE_REWARD)
     set_last_mine(user_id)
     now_ts = int(time.time())
+# պահպանում ենք նաև վերջին մայնի timestamp-ը
+    c.execute("UPDATE users SET balance = balance + %s, last_mine = %s WHERE user_id = %s", (MINE_REWARD, now_ts, user_id))
+    conn.commit()
 
     return jsonify({
-        "ok": True,
-        "reward": MINE_REWARD,
-        "balance": new_bal,
-        "last_mine": now_ts
-    }), 200
+    "ok": True,
+    "reward": MINE_REWARD,
+    "balance": balance + MINE_REWARD,
+    "last_mine": now_ts
+})
+
 
 
 

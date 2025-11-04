@@ -2119,6 +2119,7 @@ if (btnMine) {
       }
     }
   } catch(e) { /* ok if missing */ }
+  paintMineButton();
   startMineTicker();
 })(); 
 
