@@ -710,6 +710,8 @@ def api_vorn_exchange():
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
     COST = 50000
+    REWARD = 1.0 
+    
     try:
         conn = db()
         cur = conn.cursor()
