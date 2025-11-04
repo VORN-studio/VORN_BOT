@@ -2268,6 +2268,7 @@ window.addEventListener("load", () => {
   setTimeout(() => {
     if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
       console.log("📣 VORN fully ready → emitting event");
+      startMineTicker();
       document.dispatchEvent(new Event("vorn_ready"));
       window.dispatchEvent(new Event("vorn_ready"));
     } else {
