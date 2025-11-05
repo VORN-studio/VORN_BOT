@@ -1673,24 +1673,31 @@ if __name__ == "__main__":
     def run_flask():
         try:
             print(f"🌍 Flask starting on port {port} ...")
-            app_web.run(host="0.0.0.0", port=port, threaded=False, use_reloader=False)
+            app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
         except Exception as e:
             print("🔥 Flask failed to start:", e)
 
     def run_bot():
-      """Run Telegram bot in its own event loop (sync-safe)."""
-    try:
-        print("🤖 Starting Telegram bot thread ...")
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(start_bot_webhook())
-    except Exception as e:
-        print("🔥 Telegram bot failed:", e)
+        """Run Telegram bot in its own event loop (sync-safe)."""
+        try:
+            print("🤖 Starting Telegram bot thread ...")
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(start_bot_webhook())
+        except Exception as e:
+            print("🔥 Telegram bot failed:", e)
 
+    # ✅ Սկսում ենք նախ Flask-ը (որպես հիմնական պրոցես)
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
 
-    threading.Thread(target=run_flask, daemon=True).start()
-    threading.Thread(target=run_bot, daemon=True).start()
+    # ✅ Հետո Telegram bot-ը
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
 
+    print("🚀 Both Flask and Telegram bot started successfully.")
+
+    # ✅ պահում ենք հիմնական process-ը կենդանի
     while True:
         time.sleep(60)
 
