@@ -1338,10 +1338,6 @@ async def start_bot_webhook():
     await application.bot.set_webhook(url=webhook_url)
     print(f"✅ Webhook set to {webhook_url}")
 
-    # ✅ Application needs initialization before start
-    await application.initialize()
-    await application.start()
-    print("✅ Telegram application started (Webhook Mode).")
 
     # ✅ Set default chat menu (webapp button)
     try:
