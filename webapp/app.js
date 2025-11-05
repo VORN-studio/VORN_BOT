@@ -833,19 +833,32 @@ if (this.els.exchangeBtn) {
       console.log("EXCHANGE RESP:", data);
 
       if (data.ok) {
-        this.balance = data.new_balance;
-        this.vornBalance = data.new_vorn;
+  // ✅ Հաջող փոխանակում
+  this.balance = data.new_balance;
+  this.vornBalance = data.new_vorn;
 
-        document.getElementById("featherCount").textContent =
-          data.new_balance.toLocaleString("en-US");
+  document.getElementById("featherCount").textContent =
+    data.new_balance.toLocaleString("en-US");
 
-        document.getElementById("foodCount").textContent =
-          Number(data.new_vorn).toFixed(2);
+  document.getElementById("foodCount").textContent =
+    Number(data.new_vorn).toFixed(2);
 
-        this.showMessage("✅ Exchanged 50000 🪶 → +1 🜂", "success");
-      } else {
-        this.showMessage("⚠️ " + (data.error || "Exchange failed"), "error");
-      }
+  // 🗣 օգտագործում ենք արդեն եղած թարգմանված հաղորդագրությունը
+  const msg = VORN.getText("exchange_success", VORN.lang);
+  this.showMessage(msg, "success");
+
+} else {
+  // ⚠️ Սխալ փոխանակում
+  let errKey = (data.error || "").toLowerCase();
+
+  // եթե բեքէնդից գալիս է not_enough_feathers
+  if (errKey.includes("not_enough")) errKey = "exchange_not_enough";
+  else errKey = "exchange_error"; // մնացած բոլոր սխալների համար
+
+  const msg = VORN.getText(errKey, VORN.lang);
+  this.showMessage(msg, "error");
+}
+
 
       this.els.exchangeBtn.textContent = "🔁";
       this.els.exchangeBtn.disabled = false;
