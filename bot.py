@@ -1366,32 +1366,30 @@ import asyncio
 
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
+    """Flask-compatible async-safe Telegram webhook handler."""
     global application
-    print("📩 Incoming Telegram webhook hit!")
-
     if application is None:
-        print("⚠️ Application not initialized yet!")
         return jsonify({"ok": False, "error": "bot not ready"}), 503
 
     update_data = request.get_json(force=True, silent=True)
     if not update_data:
-        print("⚠️ Empty update payload!")
         return jsonify({"ok": False, "error": "empty update"}), 400
 
     try:
         upd = Update.de_json(update_data, application.bot)
-        print("🧩 Parsed update:", upd.to_dict())
 
-        loop = asyncio.get_event_loop_policy().get_event_loop()
-        loop.create_task(application.process_update(upd))
-        print("✅ Passed to application.process_update()")
+        # ✅ Flask thread-երում asyncio loop չկա, ուստի ստեղծում ենք թարմ loop հատուկ դրա համար
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(application.process_update(upd))
+        loop.close()
 
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         import traceback
         print("🔥 Webhook error:", e)
-        traceback.print_exc()   # ← սա ավելացրու (կբերի կոնկրետ սխալի traceback-ը)
+        traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
