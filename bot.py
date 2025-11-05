@@ -1338,30 +1338,35 @@ async def start_bot_webhook():
     application.add_handler(CallbackQueryHandler(btn_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, block_text))
 
+    # ✅ Proper initialization (NEW FIX)
+    await application.initialize()
+
     # Webhook URL
     port = int(os.environ.get("PORT", "10000"))
     webhook_url = f"{PUBLIC_BASE_URL}/webhook"
 
-    # Reset webhook & set new one
     await application.bot.delete_webhook(drop_pending_updates=True)
     await application.bot.set_webhook(url=webhook_url)
     print(f"✅ Webhook set to {webhook_url}")
 
-
-    # ✅ Set default chat menu (webapp button)
     try:
         await application.bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
-                text="🌀 VORN App",
-                web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app")
+                text="🌀 VORN App", web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app")
             )
         )
         print("✅ Global menu button → WebApp")
     except Exception as e:
         print("⚠️ Failed to set menu button:", e)
 
-    # Wait forever (keep alive)
+    # ✅ Proper start
+    await application.start()
+    await application.updater.start_polling()  # not strictly required, but keeps event loop alive
+    print("✅ Telegram application fully started (Webhook mode).")
+
+    # Keep running forever
     await asyncio.Event().wait()
+
 
 
 
@@ -1372,7 +1377,6 @@ import asyncio
 
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
-    """Flask-compatible async-safe Telegram webhook handler."""
     global application
     if application is None:
         return jsonify({"ok": False, "error": "bot not ready"}), 503
@@ -1384,19 +1388,19 @@ def telegram_webhook():
     try:
         upd = Update.de_json(update_data, application.bot)
 
-        # ✅ Flask thread-երում asyncio loop չկա, ուստի ստեղծում ենք թարմ loop հատուկ դրա համար
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(application.process_update(upd))
-        loop.close()
+        loop = asyncio.get_event_loop_policy().get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
 
+        # ✅ Արդեն initialized է, ուղղակի process update
+        loop.create_task(application.process_update(upd))
         return jsonify({"ok": True}), 200
 
     except Exception as e:
-        import traceback
         print("🔥 Webhook error:", e)
-        traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
