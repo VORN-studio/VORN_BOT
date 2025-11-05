@@ -1333,12 +1333,17 @@ async def start_bot_webhook():
     port = int(os.environ.get("PORT", "10000"))
     webhook_url = f"{PUBLIC_BASE_URL}/webhook"
 
-    # Clean and set new webhook
+    # Reset webhook & set new one
     await application.bot.delete_webhook(drop_pending_updates=True)
     await application.bot.set_webhook(url=webhook_url)
     print(f"✅ Webhook set to {webhook_url}")
 
-    # Chat menu → WebApp
+    # ✅ Application needs initialization before start
+    await application.initialize()
+    await application.start()
+    print("✅ Telegram application started (Webhook Mode).")
+
+    # ✅ Set default chat menu (webapp button)
     try:
         await application.bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
@@ -1350,13 +1355,9 @@ async def start_bot_webhook():
     except Exception as e:
         print("⚠️ Failed to set menu button:", e)
 
-    # ✅ START APPLICATION (once!)
-    await application.initialize()
-    await application.start()
-    print("✅ Telegram bot started in webhook mode.")
-
-    # Keep running forever (no double start)
+    # Wait forever (keep alive)
     await asyncio.Event().wait()
+
 
 
 
