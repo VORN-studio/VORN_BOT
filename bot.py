@@ -1264,6 +1264,10 @@ from telegram import MenuButtonWebApp
 application = None  # Global
 
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("🚀 /start command triggered!")  # ← Սա պետք է երևա, եթե handler-ը աշխատում է
+
+
+async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if not user:
         return
@@ -1362,6 +1366,34 @@ async def start_bot_webhook():
 
 from flask import request
 import asyncio
+
+@app_web.route("/webhook", methods=["POST"])
+def telegram_webhook():
+    global application
+    print("📩 Incoming Telegram webhook hit!")  # ← ավելացրու այս տողը
+
+    if application is None:
+        print("⚠️ Application not initialized yet!")
+        return jsonify({"ok": False, "error": "bot not ready"}), 503
+
+    update_data = request.get_json(force=True, silent=True)
+    if not update_data:
+        print("⚠️ Empty update payload!")
+        return jsonify({"ok": False, "error": "empty update"}), 400
+
+    try:
+        upd = Update.de_json(update_data, application.bot)
+        print(f"🧩 Parsed update: {upd.to_dict()}")  # ← տեսնենք ինչ է գալիս
+
+        asyncio.get_event_loop().create_task(application.process_update(upd))
+        print("✅ Passed to application.process_update()")
+
+        return jsonify({"ok": True}), 200
+
+    except Exception as e:
+        print("🔥 Webhook error:", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
