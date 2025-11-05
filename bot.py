@@ -1333,31 +1333,31 @@ async def start_bot_webhook():
     port = int(os.environ.get("PORT", "10000"))
     webhook_url = f"{PUBLIC_BASE_URL}/webhook"
 
-    # մաքրում ենք հները և դնում նոր webhook
+    # Clean and set new webhook
     await application.bot.delete_webhook(drop_pending_updates=True)
     await application.bot.set_webhook(url=webhook_url)
     print(f"✅ Webhook set to {webhook_url}")
 
-    # Կցում ենք default chat menu-ը որպես WebApp կոճակ
+    # Chat menu → WebApp
     try:
         await application.bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(text="🌀 VORN App", web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app"))
+            menu_button=MenuButtonWebApp(
+                text="🌀 VORN App",
+                web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app")
+            )
         )
         print("✅ Global menu button → WebApp")
     except Exception as e:
         print("⚠️ Failed to set menu button:", e)
 
-    # Սկսում ենք application-ը (loop, jobs, handlers)
-    
+    # ✅ START APPLICATION (once!)
+    await application.initialize()
     await application.start()
-    print("✅ Telegram application started (webhook mode).")
+    print("✅ Telegram bot started in webhook mode.")
 
-    # ✅ Only start Telegram application (Flask already runs separately)
-    await application.start()
-    print("✅ Telegram application started (Webhook mode).")
-
-    # Wait forever
+    # Keep running forever (no double start)
     await asyncio.Event().wait()
+
 
 
 from flask import request
@@ -1375,19 +1375,13 @@ def telegram_webhook():
 
     try:
         upd = Update.de_json(update_data, application.bot)
-
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        loop.create_task(application.process_update(upd))
+        asyncio.get_event_loop().create_task(application.process_update(upd))
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 # =====================================================
