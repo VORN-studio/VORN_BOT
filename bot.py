@@ -593,12 +593,21 @@ def api_mine():
     set_last_mine(user_id)
     now_ts = int(time.time())
 
+    # Վերցնում ենք լեզուն
+    conn = db(); c = conn.cursor()
+    c.execute("SELECT language FROM users WHERE user_id=%s", (user_id,))
+    row = c.fetchone()
+    release_db(conn)
+    lang = row[0] if row and row[0] else "en"
+
     return jsonify({
         "ok": True,
         "reward": MINE_REWARD,
         "balance": new_bal,
-        "last_mine": now_ts
+        "last_mine": now_ts,
+        "language": lang
     }), 200
+
 
 
 

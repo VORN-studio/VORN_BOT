@@ -1169,8 +1169,20 @@ async onMineClick() {
     const data = await r.json();
     // ✅ Այստեղ ենք որոշում՝ հաջողվեց թե ոչ
     if (data.ok) {
-    VORN.showMessage("success_mine", "success", 1200);
-    } else {
+    // Թարմացնենք բալանսը
+    VORN.user.balance = data.balance;
+    updateBalanceDisplay(data.balance);
+
+    // Վերականգնենք մայնի progress-ը (reset)
+    resetMineProgress(); // սա պետք է վերականգնի progress-ի վիճակը
+    startMineTimer(6 * 60 * 60); // նորից սկսի 6 ժամանոց հաշվարկը
+
+    // Ցուցադրենք թարգմանված հաղորդագրությունը
+    const lang = data.language || VORN.lang || "en";
+    const msg = VORN.getText("mine_success", lang);
+    showToast(msg);
+}
+ else {
     VORN.showMessage("wait_mine", "warning", 1500);;
     }
   } catch (e) {
