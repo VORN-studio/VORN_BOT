@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="preload" as="image" href="/webapp/assets/slide1.png">
+  <link rel="preload" as="image" href="/webapp/assets/slide2.png">
+  <link rel="preload" as="image" href="/webapp/assets/slide3.png">
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VORN — Future World</title>
@@ -537,36 +541,6 @@
 
 <!-- APP LOGIC -->
 <script src="/webapp/app.js?v=4"></script>
-
-<script>
-window.addEventListener("vorn_ready", () => {
-  console.log("✅ Received vorn_ready — binding Start button now…");
-  const startBtn = document.getElementById("startBtn");
-  const langModal = document.getElementById("languageModal");
-  const introText = document.querySelector(".intro-text");
-  const startContainer = document.getElementById("startContainer");
-
-  if (!startBtn) {
-    console.error("❌ startBtn not found in DOM");
-    return;
-  }
-
-  startBtn.addEventListener("click", () => {
-    introText?.classList.add("hidden");
-    startContainer?.classList.add("hidden");
-
-    // Այստեղ արդեն վստահ ենք, որ VORN պատրաստ է
-    if (window.VORN && typeof VORN.buildLanguageGrid === "function") {
-      VORN.buildLanguageGrid();
-      console.log("✅ Language grid built via vorn_ready hook");
-    } else {
-      console.warn("⚠️ VORN.buildLanguageGrid still not ready");
-    }
-
-    langModal?.classList.remove("hidden");
-  });
-});
-</script>
 
 <footer style="position:fixed; bottom:8px; width:100%; text-align:center; font-size:0.85rem;">
   <a href="/privacy.html" style="color:#aaa;">Privacy Policy</a> |

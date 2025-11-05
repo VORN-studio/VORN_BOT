@@ -1173,21 +1173,6 @@ async onMineClick() {
     } else {
     VORN.showMessage("wait_mine", "warning", 1500);;
     }
-
-
-    if (data.ok) {
-      // ✅ Server confirmed reward
-      this.balance = data.balance ?? this.balance;
-      if (this.els.feather) this.els.feather.textContent = String(this.balance);
-      this.lastMine = data.last_mine ?? Math.floor(Date.now() / 1000);
-      this.flashMine();
-      this.paintMineButton();
-      this.showMessage("success_exchange", "success", 1200);
-    } else if (data.cooldown) {
-      this.showMessage("wait_mine", "warning");
-    } else {
-      this.showMessage("error", "error");
-    }
   } catch (e) {
     console.error("🔥 /api/mine failed:", e);
     this.showMessage("error", "error");
@@ -1212,20 +1197,27 @@ async onMineClick() {
     const done = COOLDOWN_SEC - left;
     return Math.max(0, Math.min(100, (done / COOLDOWN_SEC) * 100));
   },
- paintMineButton() {
+
+
+paintMineButton() {
   const btn = this.els.mineBtn || document.getElementById("btnMine");
   if (!btn) return;
 
   const left = this.secsUntilReady();
   const pct  = this.pctReady().toFixed(2) + "%";
 
-  // 🟡 գրի՛ both, որպեսզի CSS-ի որ տարբերակն էլ լինի՝ աշխատի
   btn.style.setProperty("--pct", pct);
   btn.style.setProperty("--mine-pct", pct);
 
-  if (left <= 0) btn.classList.add("ready");
-  else           btn.classList.remove("ready");
+  // ✅ Գույնի վիճակ — եթե progress-ը լրացել է
+  if (this.secsUntilReady() <= 0) {
+    btn.classList.add("ready");
+    btn.style.setProperty("--mine-pct", "100%");
+  } else {
+    btn.classList.remove("ready");
+  }
 },
+
 
 
   startMineTicker() {
@@ -2012,122 +2004,6 @@ setTimeout(function() {
         }, {passive:true});
       }
 
-      // === 6-ժամանոց մայնի state/helpers ===
-const COOLDOWN_SEC = 6 * 60 * 60; // 21600
-function nowSec(){ return Math.floor(Date.now()/1000); }
-
-// պահենք վերջին մայնի timestamp-ը հիշողությունում
-if (!window.VORN) window.VORN = {};
-VORN.lastMine = VORN.lastMine || 0;
-
-// Քանի վայրկյան է մնում, մինչև պատրաստ լինելը
-VORN.secsUntilReady = function(){
-  const lm = Number(VORN.lastMine || 0);
-  const left = (lm + COOLDOWN_SEC) - nowSec();
-  return Math.max(0, left);
-};
-
-// % պատրաստ (UI progress-ի համար)
-VORN.pctReady = function(){
-  const lm = Number(VORN.lastMine || 0);
-  const passed = nowSec() - lm;
-  const pct = (passed / COOLDOWN_SEC) * 100;
-  return Math.max(0, Math.min(100, pct));
-};
-
-// Կոճակի ներկում (progress օղակ + enabled/disabled)
-function paintMineButton(){
-  const btn = document.getElementById('btnMine');
-  if (!btn) return;
-  const pct = VORN.pctReady();
-  btn.style.setProperty('--mine-pct', pct.toFixed(1));
-  if (VORN.secsUntilReady() === 0) {
-    btn.classList.add('ready');
-    btn.title = 'Claim 500 🪶';
-  } else {
-    btn.classList.remove('ready');
-    const left = VORN.secsUntilReady();
-    const hh = Math.floor(left/3600), mm = Math.floor((left%3600)/60);
-    btn.title = `Cooldown: ${hh}h ${mm}m`;
-  }
-}
-
-// Թայմեր՝ ամեն վայրկյան UI-ին թարմ պահելու համար
-let mineTicker = null;
-function startMineTicker(){
-  if (mineTicker) return;
-  paintMineButton();
-  mineTicker = setInterval(paintMineButton, 1000);
-}
-VORN.startMineTicker = startMineTicker;
-
-
-/* === OLD DUPLICATE MINE FUNCTION (DISABLED) ===
-// === Կոճակի իրական գործողությունը ===
-async function onMineClick(){
-  // եթե դեռ cooldown է՝ պարզապես անտեսում ենք
-  if (VORN.secsUntilReady() > 0) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/mine`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ user_id: VORN.uid })
-    });
-    const data = await res.json();
-
-    if (!data.ok) {
-      // cooldown server-side (sync UI)
-      if (typeof data.cooldown === 'number') {
-        VORN.lastMine = nowSec() + 1 - COOLDOWN_SEC + data.cooldown; // մոտավորեցնենք
-      }
-      console.warn('⏳ Mine cooldown:', data);
-      return;
-    }
-
-    // Հաջողվել է՝ թարմացնենք հաշվեկշիռն ու lastMine-ը
-    VORN.balance = (data.balance ?? VORN.balance ?? 0);
-    VORN.lastMine = Number(data.last_mine || nowSec());
-    // Թարմացրու հաշվի ցուցադրումը, եթե ունես այդ ֆունկցիան
-    const featherEl = document.getElementById('featherCount');
-    if (featherEl) featherEl.textContent = String(VORN.balance);
-
-    paintMineButton();
-    // փոքր փայլ/feedback
-    document.getElementById('btnMine')?.classList.add('flash');
-    setTimeout(()=>document.getElementById('btnMine')?.classList.remove('flash'), 800);
-    console.log('✅ 500 feathers claimed');
-  } catch (e) {
-    console.error('🔥 /api/mine failed', e);
-  }
-}
-
-// Bind — ՍԱ՛ է պակասը քո կոդից
-const btnMine = document.getElementById('btnMine');
-if (btnMine) {
-  btnMine.addEventListener('click', onMineClick);
-}
-=== END OF OLD MINE === */
-
-// Սկզբնական վիճակ — եթե user-ը արդեն բեռնվել է, փորձենք վերցնել last_mine-ը
-// (եթե մի ուրիշ տեղ արդեն բերում ես user json-ը, ուղղակի սրանից set արա VORN.lastMine-ը)
-(async function bootstrapMine(){
-  try {
-    // Եթե դու արդեն բերում ես user-ը ուրիշ տեղով, այստեղ հարկավոր չէ fetch անել։
-    // Ցուցադրում եմ fallback տարբերակ՝ հստակության համար.
-    if (typeof VORN.uid === 'number') {
-      const r = await fetch(`${API_BASE}/api/user/${VORN.uid}`);
-      const u = await r.json();
-      if (u && u.ok !== false) {
-        VORN.lastMine = Number(u.last_mine || 0);
-        VORN.balance  = Number(u.balance   || VORN.balance || 0);
-      }
-    }
-  } catch(e) { /* ok if missing */ }
-  paintMineButton();
-  VORN.startMineTicker();
-})(); 
-
 
       function draw(){
         requestAnimationFrame(draw);
@@ -2325,163 +2201,3 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
   
-
-
-
-// ====== VORN • Mine (final patch, non-destructive) ======
-(function(){
-  if (!window.VORN) window.VORN = {};
-
-  // --- Consts
-  const COOLDOWN_SEC = 6 * 60 * 60; // 21600 sec
-
-  // --- Time helpers
-  function nowSec(){ return Math.floor(Date.now()/1000); }
-
-  // --- State (safe defaults)
-  if (typeof VORN.lastMine !== 'number') VORN.lastMine = 0;
-  if (typeof VORN.balance  !== 'number') VORN.balance  = 0;
-  if (typeof VORN.lang     !== 'string') VORN.lang     = 'en';
-
-  // --- Calculations
-  VORN.secsUntilReady = function(){
-    const lm = Number(VORN.lastMine || 0);
-    const left = (lm + COOLDOWN_SEC) - nowSec();
-    return Math.max(0, left);
-  };
-
-  VORN.pctReady = function(){
-    const lm = Number(VORN.lastMine || 0);
-    const passed = nowSec() - lm;
-    const pct = (passed / COOLDOWN_SEC) * 100;
-    return Math.max(0, Math.min(100, pct));
-  };
-
-  // --- Paint mine button (progress ring + tooltip)
-  function paintMineButton(){
-    const btn = document.getElementById('btnMine');
-    if (!btn) return;
-    const pct = VORN.pctReady();
-    btn.style.setProperty('--mine-pct', pct.toFixed(1));
-
-    if (VORN.secsUntilReady() === 0) {
-      btn.classList.add('ready');
-      btn.title = (VORN.L ? VORN.L('mine_ready') : 'Claim 500 🪶');
-    } else {
-      btn.classList.remove('ready');
-      const left = VORN.secsUntilReady();
-      const hh = Math.floor(left/3600), mm = Math.floor((left%3600)/60);
-      btn.title = `Cooldown: ${hh}h ${mm}m`;
-    }
-  }
-
-  // --- Ticker (idempotent)
-  VORN.startMineTicker = function(){
-    if (VORN._mineTicker) clearInterval(VORN._mineTicker);
-    paintMineButton();
-    VORN._mineTicker = setInterval(paintMineButton, 1000);
-    console.log('⏱️ [MINE] ticker started');
-  };
-
-  // --- Messages (use your i18n showMessage if available)
-  function msgSuccess(){
-    if (typeof VORN.showMessage === 'function') return VORN.showMessage('success_mine', 'success', 1600);
-    if (typeof VORN.toast       === 'function') return VORN.toast('✅ 500 feathers received!', 'success', 1600);
-    console.log('✅ 500 feathers received!');
-  }
-  function msgCooldown(){
-    if (typeof VORN.showMessage === 'function') return VORN.showMessage('wait_mine', 'warning', 1600);
-    if (typeof VORN.toast       === 'function') return VORN.toast('⏳ Wait for the next mine', 'warning', 1600);
-    console.log('⏳ wait mine');
-  }
-
-  // --- Ensure we have lastMine once user is loaded
-  // If your app already sets VORN.lastMine from /api/user, this is harmless.
-  async function bootstrapLastMine(){
-    try {
-      if (typeof VORN.uid === 'number' && VORN.uid > 0) {
-        // Try to read current user state (safe fallback)
-        const r = await fetch(`${API_BASE}/api/user/${VORN.uid}`);
-        const u = await r.json();
-        if (u && u.ok !== false) {
-          if (typeof u.last_mine === 'number') VORN.lastMine = u.last_mine;
-          if (typeof u.balance   === 'number') VORN.balance  = u.balance;
-          console.log('👤 [MINE] state synced from /api/user');
-        }
-      }
-    } catch (e) {
-      // ignore; your app may already set lastMine elsewhere
-    }
-  }
-
-  // --- Main click handler (single source of truth)
-  async function handleMineClick(){
-    // show cooldown message if not ready
-    if (VORN.secsUntilReady() > 0) {
-      msgCooldown();
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/api/mine`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ user_id: VORN.uid })
-      });
-      const data = await res.json();
-
-      // Server says still cooldown → sync & notify
-      if (!data || data.ok === false) {
-        if (data && typeof data.cooldown === 'number') {
-          // align local timer if backend returns remaining seconds
-          VORN.lastMine = nowSec() + 1 - COOLDOWN_SEC + data.cooldown;
-          VORN.startMineTicker();
-        }
-        msgCooldown();
-        return;
-      }
-
-      // Success
-      if (typeof data.balance   === 'number') VORN.balance  = data.balance;
-      // Even if backend doesn't send last_mine, reset to now to keep UI moving
-      VORN.lastMine = (typeof data.last_mine === 'number') ? data.last_mine : nowSec();
-
-      // Update UI that shows feathers
-      const featherEl = document.getElementById('featherCount');
-      if (featherEl) featherEl.textContent = String(VORN.balance);
-
-      // Paint & restart ticker to force immediate visual reset
-      paintMineButton();
-      VORN.startMineTicker();
-
-      // Small visual feedback
-      const btn = document.getElementById('btnMine');
-      if (btn) { btn.classList.add('flash'); setTimeout(()=>btn.classList.remove('flash'), 700); }
-
-      msgSuccess();
-    } catch (e) {
-      console.error('🔥 /api/mine failed', e);
-      msgCooldown();
-    }
-  }
-
-  // --- Bind cleanly: remove all old listeners by cloning node
-  function bindMineButton(){
-    const old = document.getElementById('btnMine');
-    if (!old) return console.warn('⚠️ [MINE] btnMine not found');
-
-    const clone = old.cloneNode(true); // removes all previous listeners
-    old.replaceWith(clone);
-
-    clone.addEventListener('click', handleMineClick);
-    console.log('🔗 [MINE] click bound (clean)');
-  }
-
-  // === Boot: wait a tick so VORN.uid & DOM exist, then sync + bind + start
-  setTimeout(async () => {
-    await bootstrapLastMine();
-    bindMineButton();
-    VORN.startMineTicker();
-    console.log('✅ [MINE] init ok');
-  }, 0);
-})();

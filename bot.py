@@ -2,7 +2,6 @@
 # Python 3.10+  |  pip install flask flask-cors python-telegram-bot==20.3
 
 import os
-import psycopg2
 import time
 import threading
 from typing import Optional
@@ -593,16 +592,13 @@ def api_mine():
     new_bal = update_balance(user_id, MINE_REWARD)
     set_last_mine(user_id)
     now_ts = int(time.time())
-# պահպանում ենք նաև վերջին մայնի timestamp-ը
-    c.execute("UPDATE users SET balance = balance + %s, last_mine = %s WHERE user_id = %s", (MINE_REWARD, now_ts, user_id))
-    conn.commit()
 
     return jsonify({
-    "ok": True,
-    "reward": MINE_REWARD,
-    "balance": balance + MINE_REWARD,
-    "last_mine": now_ts
-})
+        "ok": True,
+        "reward": MINE_REWARD,
+        "balance": new_bal,
+        "last_mine": now_ts
+    }), 200
 
 
 
@@ -958,53 +954,6 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
     conn.commit(); release_db(conn)
 
 
-
-    conn = db(); c = conn.cursor()
-    for sql in [
-        "ALTER TABLE tasks ADD COLUMN reward_feather INTEGER DEFAULT 0",
-        "ALTER TABLE tasks ADD COLUMN reward_vorn REAL DEFAULT 0",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0"
-    ]:
-        try: c.execute(sql)
-        except Exception: pass
-
-    c.execute("""
-        SELECT id, type, title, reward_feather, reward_vorn, link
-        FROM tasks
-        WHERE active = TRUE
-        ORDER BY id DESC
-    """)
-
-    rows = c.fetchall()
-
-    # 🧠 վերցնենք user-ի արդեն ավարտած տասկերը
-    user_done = set()
-    if uid:
-        date_key = time.strftime("%Y-%m-%d")
-        c.execute("SELECT task_id FROM user_tasks WHERE user_id=%s AND date_key=%s", (uid, date_key))
-        for r in c.fetchall():
-            user_done.add(r[0])
-
-    data = {"main": [], "daily": []}
-    for row in rows:
-        tid, ttype, title, rf, rv, link = row
-        entry = {
-            "id": tid,
-            "title": title,
-            "reward_feather": rf,
-            "reward_vorn": rv,
-            "link": link or "",
-            "completed": tid in user_done
-        }
-        if ttype not in data:
-            data[ttype] = []
-        data[ttype].append(entry)
-
-    release_db(conn)
-    return jsonify(data)
-
-
-
 # =========================
 # Separate Add Commands for MAIN & DAILY
 # =========================
@@ -1118,7 +1067,6 @@ def api_task_attempt_create():
 # =========================
 # Static legal pages (Terms + Privacy)
 # =========================
-from flask import send_from_directory
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1126,10 +1074,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 @app_web.route('/terms.html')
 def serve_terms():
     return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'terms.html')
-
-@app_web.route('/tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.html')
-def serve_tiktok_verification():
-    return send_from_directory(os.path.join(BASE_DIR, 'webapp'), 'tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.html')
 
 
 @app_web.route('/privacy.html')
@@ -1141,14 +1085,6 @@ def serve_privacy():
 @app_web.route("/tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt")
 def serve_tiktok_verif_standard():
     return send_from_directory(BASE_DIR, "tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt")
-
-# Եթե TikTok-ը քեզ տվել է ԱՅԼ կոնկրետ անուն (երկար token-ով),
-# օրինակ 'tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt',
-# ավելացրու նաև այս երկրորդ route-ը՝ նույն անունով.
-@app_web.route("/tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt")
-def serve_tiktok_verif_tokened():
-    return send_from_directory(BASE_DIR, "tiktokxIdyn8EdBKD9JpuXubuRGoh4vXfVZF18.txt")
-
 
 # --- TikTok URL prefix verification (serve as plain text at site root) ---
 @app_web.route("/tiktok-developers-site-verification.txt")
@@ -1369,24 +1305,6 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         pass
 
-    base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
-    wa_url = f"{base}/app?uid={user.id}"
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
-    ])
-    # Ոչ մի խոսակցություն՝ ուղարկում ենք միայն WebApp-ը
-    msg = await context.bot.send_message(
-        chat_id=user.id,
-        text="🌕 Press the button to enter VORN App 👇",
-        reply_markup=keyboard
-    )
-
-    # Փին ենք անում, որ սա մնա վերևում
-    try:
-        await context.bot.pin_chat_message(chat_id=user.id, message_id=msg.message_id)
-    except Exception as e:
-        print("⚠️ Pin failed:", e)
 
 # User-ի ուղարկած ցանկացած տեքստ ջնջում ենք, որպեսզի չատը «փակ» լինի
 async def block_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1430,27 +1348,15 @@ async def start_bot_webhook():
         print("⚠️ Failed to set menu button:", e)
 
     # Սկսում ենք application-ը (loop, jobs, handlers)
-    await application.initialize()
+    
     await application.start()
     print("✅ Telegram application started (webhook mode).")
 
-
-
-    # --- Run Flask concurrently ---
-    from threading import Thread
-    def run_flask():
-        print("🚀 Flask running in parallel with Telegram webhook.")
-        app_web.run(host="0.0.0.0", port=port, threaded=False, use_reloader=False)
-    Thread(target=run_flask, daemon=True).start()
-
-    # --- Proper Telegram app lifecycle ---
-    await application.initialize()
+    # ✅ Only start Telegram application (Flask already runs separately)
     await application.start()
-    await application.updater.start_webhook(listen="0.0.0.0", port=port, url_path="", webhook_url=webhook_url)
+    print("✅ Telegram application started (Webhook mode).")
 
-    print("✅ Telegram bot started successfully (Webhook mode active).")
-
-    # Keep alive forever
+    # Wait forever
     await asyncio.Event().wait()
 
 
@@ -1759,10 +1665,8 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # 🧩 Render-ը տալիս է PORT փոփոխական
     port = int(os.environ.get("PORT", "10000"))
 
-    # 🪶 Սկսում ենք Flask-ը առանձին թելով
     def run_flask():
         try:
             print(f"🌍 Flask starting on port {port} ...")
@@ -1770,7 +1674,6 @@ if __name__ == "__main__":
         except Exception as e:
             print("🔥 Flask failed to start:", e)
 
-    # 🤖 Սկսում ենք Telegram bot-ը առանձին թելով
     def run_bot():
         try:
             print("🤖 Starting Telegram bot thread ...")
@@ -1781,9 +1684,9 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     threading.Thread(target=run_bot, daemon=True).start()
 
-    # 💤 պահում ենք հիմնական process-ը կենդանի
     while True:
         time.sleep(60)
+
 
 
 
