@@ -40,18 +40,6 @@ function uidFromURL() {
 }
 function nowSec() { return Math.floor(Date.now() / 1000); }
 
-async function fetchRefLevelState(uid) {
-  try {
-    const res = await fetch(`${API_BASE}/api/reflevel/state?uid=${uid}`, { method: 'GET' });
-    const data = await res.json();
-    if (!data || data.ok === false) throw new Error(data?.error || 'bad_response');
-    return data;
-  } catch (e) {
-    console.warn('reflevel state fetch failed:', e);
-    return { ok:false, total_invited:0, current_level:0, next_target:3, progress_pct:0 };
-  }
-}
-
 
 /* ------------ I18N CORE ------------ */
 const texts = {
@@ -1010,8 +998,8 @@ if (this.els.btnInfo) {
       if (!d.ok) throw new Error(d.error || "referrals failed");
 
       // Top-3 trophies
-      const list = d.list || [];
-      const top3 = list.slice(0, 3);
+      const fullList = d.list || [];
+      const top3 = fullList.slice(0, 3); // միայն ցուցադրելու համար
       const trophy = (rank) => rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
       const color = (rank) => rank === 1 ? "gold" : rank === 2 ? "silver" : "#cd7f32";
 
@@ -1025,7 +1013,10 @@ if (this.els.btnInfo) {
 
         // === Referral Level calculation ===
 // 1) invite count
-const invited = (d.invited_count != null) ? d.invited_count : ((d.list && d.list.length) ? d.list.length : 0);
+const invited = (d.invited_count != null)
+  ? d.invited_count
+  : (Array.isArray(fullList) ? fullList.length : 0);
+
 
 // 2) level sizing rules (փոխես՝ եթե ունես կոնկրետ լիմիտներ)
 const LEVEL_SIZE = 5;               // քանի հրավիրյալ է պետք հաջորդ level-ին անցնելու համար
@@ -1063,14 +1054,15 @@ if (this.els.refLevelWrap) {
 }
 
 
-      // full list
-      this.els.refList.innerHTML = list.map(x => `
-        <div class="ref-row">
-          <div class="ref-rank">${x.rank}</div>
-          <div class="ref-user">${x.username}</div>
-          <div class="ref-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
-        </div>
-      `).join("") || `<div class="muted">No invited users yet.</div>`;
+     // full list
+  this.els.refList.innerHTML = fullList.map(x => `
+    <div class="ref-row">
+      <div class="ref-rank">${x.rank}</div>
+      <div class="ref-user">${x.username}</div>
+      <div class="ref-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
+    </div>
+  `).join("") || `<div class="muted">No invited users yet.</div>`;
+
 
       this.els.refResult.textContent = "";
       this.els.refClaimBtn.classList.add("hidden");
@@ -1092,59 +1084,6 @@ document.getElementById("referralTitle").textContent = refDict.title[lang] || re
 document.getElementById("refPreviewBtn").textContent = refDict.calc[lang] || refDict.calc.en;
 document.getElementById("refClaimBtn").textContent = refDict.claim[lang] || refDict.claim.en;
 document.getElementById("closeRefBtn").textContent = refDict.close[lang] || refDict.close.en;
-
-
-    // === REFERRAL LEVEL BAR ===
-setTimeout(async () => {
-  // ջնջենք հինը, որ կրկնօրինակ չլինի
-  const oldBar = document.getElementById('refLevelBox');
-  if (oldBar) oldBar.remove();
-
-  // ստեղծում ենք նոր գիծը
-  const refResult = document.getElementById('refResult');
-  const barWrap = document.createElement('div');
-  barWrap.id = 'refLevelBox';
-  barWrap.className = 'ref-level-box';
-  barWrap.innerHTML = `
-    <div class="ref-level-head">
-      <span id="refLevelTitle">Referral Level</span>
-      <span id="refLevelCounters" class="muted">Loading...</span>
-    </div>
-    <div class="ref-level-bar">
-      <div id="refLevelFill" class="ref-level-fill" style="width:0%"></div>
-    </div>
-    <div class="ref-level-meta">
-      <span id="refLevelNow" class="badge">Lv.0</span>
-      <span id="refLevelNext" class="muted">Next: 3 invites</span>
-    </div>
-  `;
-  refResult.parentNode.insertBefore(barWrap, refResult);
-
-  // բերում ենք backend-ից իրական տվյալները
-  try {
-    const res = await fetch(`${API_BASE}/api/reflevel/state?uid=${VORN.uid}`);
-    const data = await res.json();
-
-    if (data && data.ok !== false) {
-      const total = Number(data.total_invited ?? 0);
-      const lvl   = Number(data.current_level ?? 0);
-      const next  = Number(data.next_target ?? 0);
-      const pct   = Math.max(0, Math.min(100, Number(data.progress_pct ?? 0)));
-
-      const $fill = document.getElementById('refLevelFill');
-      const $cnt  = document.getElementById('refLevelCounters');
-      const $now  = document.getElementById('refLevelNow');
-      const $next = document.getElementById('refLevelNext');
-
-      if ($fill) $fill.style.width = pct + '%';
-      if ($cnt)  $cnt.textContent  = `${total} invited`;
-      if ($now)  $now.textContent  = `Lv.${lvl}`;
-      if ($next) $next.textContent = next > total ? `Next: ${next} invites` : `Max level`;
-    }
-  } catch (e) {
-    console.warn('reflevel load error:', e);
-  }
-}, 300);
 
 
   },
