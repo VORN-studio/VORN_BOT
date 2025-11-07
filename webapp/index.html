@@ -210,25 +210,8 @@
   </div>
 
 
-<!-- 🔼 REFERRAL LEVEL (progress) -->
-<div id="refLevelBox" class="ref-level-box">
-  <div class="ref-level-head">
-    <span id="refLevelTitle">🤝 Ռեֆերալ մակարդակ</span>
-    <span id="refLevelStat" class="muted">0 հրավիրված</span>
-  </div>
 
-  <div class="ref-level-bar">
-    <div id="refLevelBar" class="ref-level-fill" style="width:0%"></div>
-  </div>
-
-  <div class="ref-level-foot">
-    <span id="refLevelLabel" class="ref-level-label">Մակարդակ 0 • 0/5</span>
-    <span id="refNextReward" class="ref-next-reward">Հաջորդ պարգևը՝ 5 հրավիրվածի դեպքում</span>
-  </div>
-</div>
-<!-- 🔽 END REFERRAL LEVEL -->
-
-
+  
 <!-- 🧩 REFERRALS MODAL -->
 <div id="referralsModal" class="modal hidden">
   <div class="modal-content referral-box">
@@ -242,6 +225,40 @@
     <div id="refTop3" class="ref-top3"></div>
     <div id="refList" class="ref-list"></div>
     <div id="refResult" class="ref-result"></div>
+
+    <div id="referralsModal" class="modal hidden">
+  <div class="modal-content">
+
+    <h2>Ռեֆերալներ</h2>
+    <div id="refLinkBox">...</div>
+    <div id="refListBox">...</div>
+
+    <!-- ✅ REFERRAL LEVEL BOX — տեղադրված ճիշտ տեղում -->
+    <div id="refLevelBox" class="ref-level-box">
+      <div class="ref-level-head">
+        <span id="refLevelTitle">🤝 Ռեֆերալ մակարդակ</span>
+        <span id="refLevelStat" class="muted">0 հրավիրված</span>
+      </div>
+
+      <div class="ref-level-bar">
+        <div id="refLevelBar" class="ref-level-fill" style="width:0%"></div>
+      </div>
+
+      <div class="ref-level-foot">
+        <span id="refLevelLabel" class="ref-level-label">Մակարդակ 0 • 0/5</span>
+        <span id="refNextReward" class="ref-next-reward">Հաջորդ պարգևը՝ 5 հրավիրվածի դեպքում</span>
+      </div>
+    </div>
+    <!-- ✅ END REFERRAL LEVEL BOX -->
+
+    <div class="ref-actions">
+      <button id="refCountBtn">Հաշվել</button>
+      <button id="refCloseBtn">Փակել</button>
+    </div>
+
+  </div>
+</div>
+
 
     <div class="ref-actions">
       <button id="refPreviewBtn">🧮 Calculate</button>
