@@ -288,7 +288,6 @@ def close_conn(conn, cursor=None, commit=False):
             pass
 
 
-
 def acquire_bot_lock() -> bool:
     """
     Ensures only ONE poller runs worldwide.
@@ -1386,9 +1385,6 @@ async def run_telegram_bot():
 
 
 
-
-
-
 from flask import request
 import asyncio
 
@@ -1409,10 +1405,13 @@ def telegram_webhook():
         upd = Update.de_json(update_data, application.bot)
         print("📩 Telegram update received:", update_data)
 
-        # ✅ Always run inside a background thread, not loop
+        # ✅ Instead of asyncio.run(), reuse a persistent loop
         def handle_update():
             try:
-                asyncio.run(application.process_update(upd))
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(application.process_update(upd))
+                loop.close()
                 print("✅ Update processed successfully")
             except Exception as e:
                 print("🔥 Error while processing update:", e)
@@ -1423,11 +1422,6 @@ def telegram_webhook():
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
-
-
-
-
-
 
 
 
