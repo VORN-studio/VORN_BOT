@@ -1392,27 +1392,33 @@ import asyncio
 def telegram_webhook():
     global application
     if application is None:
+        print("❌ application is None — bot not ready")
         return jsonify({"ok": False, "error": "bot not ready"}), 503
 
     update_data = request.get_json(force=True, silent=True)
     if not update_data:
+        print("⚠️ Empty update received")
         return jsonify({"ok": False, "error": "empty update"}), 400
 
     try:
         upd = Update.de_json(update_data, application.bot)
+        print("📩 Telegram update received")
 
-        loop = asyncio.get_event_loop_policy().get_event_loop()
-        if loop.is_closed():
+        # ✅ Ensure there's an asyncio loop
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
-        # ✅ Արդեն initialized է, ուղղակի process update
-        loop.create_task(application.process_update(upd))
+        # ✅ Safe processing with ensure_future
+        asyncio.ensure_future(application.process_update(upd), loop=loop)
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
