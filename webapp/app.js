@@ -1057,8 +1057,12 @@ if (this.els.btnInfo) {
     this.els.refClaimBtn.classList.add("hidden");
 
     // === REFERRAL LEVEL RENDER ===
-    const invitedCount = Array.isArray(fullList) ? fullList.length : 0;
+    const invitedCount = (d.invited_count != null)
+    ? d.invited_count
+    : (Array.isArray(fullList) ? fullList.length : 0);
+
     renderRefLevel(invitedCount, this.lang || getSavedLang());
+
     this.els.refModal.classList.remove("hidden");
 
   } catch (e) {
