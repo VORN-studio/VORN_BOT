@@ -114,6 +114,8 @@ const langButtonsDict = {
  
 };
 
+
+
 // Wallet temporarily disabled message
 const walletMessages = {
   en: "⚠️ This function is temporarily disabled.",
@@ -142,6 +144,8 @@ const walletMessages = {
   az: "⚠️ Bu funksiya müvəqqəti olaraq deaktiv edilib.",
   ka: "⚠️ ეს ფუნქცია დროებით გათიშულია."
 };
+
+
 
 // 🌐 25 լեզվով Info բովանդակություն (լրիվ տարբերակներ)
 const infoData = {
@@ -1149,16 +1153,19 @@ applyI18N(this.lang);
 
 
 async onMineClick() {
-  if (this._mineInProgress) return; // ⛔ prevent double click
+  if (this._mineInProgress) return;
   this._mineInProgress = true;
 
+  // ⏳ client-side cooldown check
   if (this.secsUntilReady() > 0) {
-    this.showMessage("not_enough", "warning");
+    this.showMessage("wait_mine", "info", 1600);
     this._mineInProgress = false;
     return;
   }
 
-  this.els.mineBtn.disabled = true;
+  // disable кнопка, чтоб չկրկնվի
+  this.els.mineBtn && (this.els.mineBtn.disabled = true);
+
   try {
     console.log("🪶 Mine button clicked — sending /api/mine");
     const r = await fetch(API.mine, {
@@ -1167,32 +1174,44 @@ async onMineClick() {
       body: JSON.stringify({ user_id: this.uid })
     });
     const data = await r.json();
-    // ✅ Այստեղ ենք որոշում՝ հաջողվեց թե ոչ
-    if (data.ok) {
-  // ✅ Եթե user օբյեկտը դեռ չի բեռնվել
-  if (!this.user) this.user = {};
 
-  // Թարմացնենք բալանսը
-  this.user.balance = data.balance || this.user.balance || 0;
-  updateBalanceDisplay(this.user.balance);
+    if (data && data.ok) {
+      // balance
+      this.balance = Number(data.balance ?? this.balance ?? 0);
+      const fEl = document.getElementById("featherCount");
+      if (fEl) fEl.textContent = this.balance.toLocaleString("en-US");
 
-  // Վերականգնենք մայնի progress-ը (reset)
-  resetMineProgress(); // սա պետք է վերականգնի progress-ի վիճակը
-  startMineTimer(6 * 60 * 60); // նորից սկսի 6 ժամանոց հաշվարկը
+      // cooldown՝ վերցնենք սերվերից, թե չէ՝ հիմա
+      if (typeof data.last_mine === "number") {
+        this.lastMine = Number(data.last_mine);
+      } else {
+        this.lastMine = nowSec();
+      }
 
-  // Ցուցադրենք թարգմանված հաղորդագրությունը
-  const lang = data.language || this.lang || "en";
-  const msg = VORN.getText("mine_success", lang);
-  showToast(msg);
-} else {
-  const errKey = data.error || "mine_error";
-  const lang = data.language || this.lang || "en";
-  const msg = VORN.getText(errKey, lang);
-  showToast(msg);
-}
+      // repaint mine progress immediately
+      this.paintMineButton();
+      this.flashMine();
+
+      // success toast
+      this.showMessage("mine_success", "success", 1400);
+    } else {
+      // եթե սերվերը վերադարձրել է cooldown/seconds_left — UI-ն ճիշտ նկարենք
+      const left = Number(data?.seconds_left ?? 0);
+      if (left > 0) {
+        // վերականգնում ենք lastMine-ը այնպես, որ մնացած վայրկյանները երևան progress-ում
+        this.lastMine = nowSec() - (COOLDOWN_SEC - left);
+        this.paintMineButton();
+        this.showMessage("wait_mine", "info", 1600);
+      } else {
+        this.showMessage("error", "error", 1600);
+      }
+    }
+  } catch (e) {
+    console.error("🔥 /api/mine failed:", e);
+    this.showMessage("error", "error", 1600);
   } finally {
     this._mineInProgress = false;
-    this.els.mineBtn.disabled = false;
+    if (this.els.mineBtn) this.els.mineBtn.disabled = false;
   }
 },
 
@@ -1829,6 +1848,36 @@ showMessage(key, type = "info", duration = 2600) {
       az: "✅ 50000 🪶 dəyişdirildi → +1 🜂",
       ka: "✅ გადაცვლილია 50000 🪶 → +1 🜂"
     },
+
+    mine_success: {
+      en: "✅ Feathers claimed!",
+      ru: "✅ Перья получены!",
+      hy: "✅ Փետուրները վերցված են!",
+      es: "✅ ¡Plumas recogidas!",
+      fr: "✅ Plumes récupérées !",
+      de: "✅ Federn eingesammelt!",
+      it: "✅ Piume raccolte!",
+      pt: "✅ Penas coletadas!",
+      tr: "✅ Tüyler toplandı!",
+      ar: "✅ تم جمع الريش!",
+      fa: "✅ پرها دریافت شدند!",
+      zh: "✅ 羽毛已领取！",
+      ja: "✅ 羽が獲得されました！",
+      ko: "✅ 깃털을 받았습니다!",
+      hi: "✅ पंख एकत्रित किए गए!",
+      id: "✅ Bulu telah diklaim!",
+      ms: "✅ Bulu berjaya dikumpul!",
+      th: "✅ ได้รับขนนกแล้ว!",
+      vi: "✅ Lông vũ đã được nhận!",
+      pl: "✅ Pióra zebrane!",
+      uk: "✅ Пір’я отримано!",
+      cs: "✅ Peří získáno!",
+      ro: "✅ Pene colectate!",
+      el: "✅ Τα φτερά συλλέχθηκαν!",
+      hu: "✅ Tollak begyűjtve!",
+      sr: "✅ Перје је преузето!"
+    },
+
 
     wait_mine: {
       en: "⏳ Please wait before next mining.",
