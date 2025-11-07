@@ -836,20 +836,26 @@ if (this.els.exchangeBtn) {
       const data = await resp.json();
       console.log("EXCHANGE RESP:", data);
 
-      if (data.ok) {
-        this.balance = data.new_balance;
-        this.vornBalance = data.new_vorn;
+   if (data.ok) {
+  this.balance = data.new_balance;
+  this.vornBalance = data.new_vorn;
 
-        document.getElementById("featherCount").textContent =
-          data.new_balance.toLocaleString("en-US");
+  document.getElementById("featherCount").textContent =
+    Number(data.new_balance).toLocaleString("en-US");
+  document.getElementById("foodCount").textContent =
+    Number(data.new_vorn).toFixed(2);
 
-        document.getElementById("foodCount").textContent =
-          Number(data.new_vorn).toFixed(2);
+  // ✅ օգտագործում ենք թարգմանվող բանալին
+  this.showMessage("success_exchange", "success");
+} else {
+  // ✅ backend-ի կոդացված սխալի քարտեզավորում → թարգմանվող բանալու
+  if (data.error === "not_enough_feathers") {
+    this.showMessage("not_enough", "error");
+  } else {
+    this.showMessage("error", "error");
+  }
+}
 
-        this.showMessage("✅ Exchanged 50000 🪶 → +1 🜂", "success");
-      } else {
-        this.showMessage("⚠️ " + (data.error || "Exchange failed"), "error");
-      }
 
       this.els.exchangeBtn.textContent = "🔁";
       this.els.exchangeBtn.disabled = false;
