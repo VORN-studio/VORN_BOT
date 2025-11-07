@@ -998,7 +998,7 @@ if (this.els.btnInfo) {
       if (!d.ok) throw new Error(d.error || "referrals failed");
 
       // Top-3 trophies
-      const fullList = d.fullList || [];
+      const fullList = d.list || [];
       const top3 = fullList.slice(0, 3); // միայն ցուցադրելու համար
       const trophy = (rank) => rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
       const color = (rank) => rank === 1 ? "gold" : rank === 2 ? "silver" : "#cd7f32";
