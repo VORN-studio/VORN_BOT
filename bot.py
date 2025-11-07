@@ -1497,32 +1497,47 @@ def google_callback():
 
 @app_web.route("/api/referrals")
 def api_referrals_list():
-    """Return invited friends + their stats for given uid"""
+    """Return invited friends + their stats + count for given uid"""
     uid = int(request.args.get("uid", 0))
     if not uid:
         return jsonify({"ok": False, "error": "missing uid"}), 400
 
-    conn = db(); c = conn.cursor()
-    c.execute("""
-        SELECT user_id, username, balance, vorn_balance
-        FROM users
-        WHERE inviter_id = %s
-        ORDER BY balance DESC
-    """, (uid,))
-    rows = c.fetchall()
-    release_db(conn)
+    try:
+        conn = db(); c = conn.cursor()
+        # բոլոր հրավիրվածների ցուցակը
+        c.execute("""
+            SELECT user_id, username, balance, vorn_balance
+            FROM users
+            WHERE inviter_id = %s
+            ORDER BY balance DESC
+        """, (uid,))
+        rows = c.fetchall()
 
+        invited_count = len(rows)
 
-    data = []
-    for i, (rid, uname, feathers, vorn) in enumerate(rows, start=1):
-        data.append({
-            "rank": i,
-            "username": uname or f"User{rid}",
-            "feathers": feathers or 0,
-            "vorn": float(vorn or 0)
+        data = []
+        for i, (rid, uname, feathers, vorn) in enumerate(rows, start=1):
+            data.append({
+                "rank": i,
+                "username": uname or f"User{rid}",
+                "feathers": feathers or 0,
+                "vorn": float(vorn or 0)
+            })
+
+        close_conn(conn, c, commit=False)
+
+        return jsonify({
+            "ok": True,
+            "invited_count": invited_count,
+            "list": data
         })
+    except Exception as e:
+        try:
+            close_conn(conn, c, commit=False)
+        except Exception:
+            pass
+        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
 
-    return jsonify({"ok": True, "list": data})
 
 
 @app_web.route("/api/referrals/preview")

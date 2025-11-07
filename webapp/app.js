@@ -1011,7 +1011,7 @@ if (this.els.btnInfo) {
         </div>
       `).join("");
 
-        // === Referral Level calculation ===
+        
 // 1) invite count
 const invited = (d.invited_count != null)
   ? d.invited_count
@@ -1019,8 +1019,8 @@ const invited = (d.invited_count != null)
 
 
 // 2) level sizing rules (փոխես՝ եթե ունես կոնկրետ լիմիտներ)
-const LEVEL_SIZE = 5;               // քանի հրավիրյալ է պետք հաջորդ level-ին անցնելու համար
-const REWARD_PER_LEVEL = 5000;      // օրինակ՝ յուրաքանչյուր լվլի համար 5000 🪶
+const LEVEL_SIZE = 5;               
+const REWARD_PER_LEVEL = 5000;      
 
 const level = Math.floor(invited / LEVEL_SIZE);
 const inLevel = invited % LEVEL_SIZE;
