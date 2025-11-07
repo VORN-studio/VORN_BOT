@@ -958,6 +958,13 @@ if (this.els.btnInfo) {
     this.els.refPreviewBtn = document.getElementById("refPreviewBtn");
     this.els.refClaimBtn = document.getElementById("refClaimBtn");
     this.els.closeRefBtn = document.getElementById("closeRefBtn");
+    this.els.refLevelWrap = document.getElementById("refLevelWrap");
+    this.els.refLevelFill = document.getElementById("refLevelFill");
+    this.els.refLevelLabel = document.getElementById("refLevelLabel");
+    this.els.refLevelReward = document.getElementById("refLevelReward");
+    this.els.refLevelTicks = document.getElementById("refLevelTicks");
+    this.els.refLevelHint = document.getElementById("refLevelHint");
+
 
     if (this.els.btnReferral && this.els.refModal) {
     this.els.btnReferral.addEventListener("click", async () => {
@@ -1002,6 +1009,46 @@ if (this.els.btnInfo) {
           <div class="ref-trophy-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
         </div>
       `).join("");
+
+        // === Referral Level calculation ===
+// 1) invite count
+const invited = (d.invited_count != null) ? d.invited_count : ((d.list && d.list.length) ? d.list.length : 0);
+
+// 2) level sizing rules (փոխես՝ եթե ունես կոնկրետ լիմիտներ)
+const LEVEL_SIZE = 5;               // քանի հրավիրյալ է պետք հաջորդ level-ին անցնելու համար
+const REWARD_PER_LEVEL = 5000;      // օրինակ՝ յուրաքանչյուր լվլի համար 5000 🪶
+
+const level = Math.floor(invited / LEVEL_SIZE);
+const inLevel = invited % LEVEL_SIZE;
+const progress = Math.min(100, Math.round((inLevel / LEVEL_SIZE) * 100));
+const needForNext = LEVEL_SIZE - inLevel;
+
+// 3) UI fill
+if (this.els.refLevelWrap) {
+  // լցնենք progress-ը
+  if (this.els.refLevelFill) this.els.refLevelFill.style.width = `${progress}%`;
+
+  // վերնագիրը և reward-ը
+  if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
+  if (this.els.refLevelReward) this.els.refLevelReward.textContent = `+${(level * REWARD_PER_LEVEL).toLocaleString()} 🪶`;
+
+  // ticks (0..LEVEL_SIZE)
+  if (this.els.refLevelTicks) {
+    const ticks = [];
+    for (let i = 0; i <= LEVEL_SIZE; i++) {
+      ticks.push(`<span>${i}</span>`);
+    }
+    this.els.refLevelTicks.innerHTML = ticks.join("");
+  }
+
+  // Hint — քանի մարդ է պետք հաջորդ level-ին
+  if (this.els.refLevelHint) {
+    this.els.refLevelHint.textContent = needForNext === 0
+      ? "✅ Maxed for this cycle — invite more to reach the next level!"
+      : `Invite ${needForNext} more to reach Level ${level + 1}`;
+  }
+}
+
 
       // full list
       this.els.refList.innerHTML = list.map(x => `
