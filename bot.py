@@ -1406,28 +1406,27 @@ def telegram_webhook():
         upd = Update.de_json(update_data, application.bot)
         print("📩 Telegram update received")
 
-        # ✅ Պահպանված asyncio loop կամ ստեղծում
-        loop = asyncio.get_event_loop_policy().get_event_loop()
-        if loop.is_closed():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        # ✅ Թույլատրում ենք coroutine-ին վազել նույն loop-ի վրա
-        async def process():
+        # ✅ Աշխատեցնենք որպես background thread — առանց asyncio-ի բախման
+        def process_update():
             try:
-                await application.process_update(upd)
+                asyncio.run(application.process_update(upd))
                 print("✅ Update processed successfully")
+            except RuntimeError:
+                # եթե loop արդեն ակտիվ է, օգտագործում ենք run_until_complete
+                loop = asyncio.get_event_loop()
+                loop.create_task(application.process_update(upd))
+                print("✅ Update processed (existing loop)")
             except Exception as e:
-                print("⚠️ Error while processing update:", e)
+                print("🔥 Error while processing update:", e)
 
-        # ✅ Սինխրոն Flask-ից աշխատեցնում ենք coroutine-ը ճիշտ ձևով
-        loop.create_task(process())
+        threading.Thread(target=process_update, daemon=True).start()
 
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
