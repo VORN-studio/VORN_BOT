@@ -1069,7 +1069,7 @@ if (this.els.refLevelWrap) {
        // === REFERRAL LEVEL RENDER ===
       const invitedCount = Array.isArray(fullList) ? fullList.length : 0;
       renderRefLevel(invitedCount, this.lang || getSavedLang());
-      this.els.refModal.classfullList.remove("hidden");
+      this.els.refModal.classList.remove("hidden");
      
 
     } catch (e) {
