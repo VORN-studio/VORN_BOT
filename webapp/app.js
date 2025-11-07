@@ -1015,6 +1015,10 @@ if (this.els.btnInfo) {
       this.els.refResult.textContent = "";
       this.els.refClaimBtn.classList.add("hidden");
       this.els.refModal.classList.remove("hidden");
+      // Ավելացնում ենք ռեֆերալների մակարդակի progress գիծը
+      const invitedCount = Array.isArray(list) ? list.length : 0;
+      renderRefLevel(invitedCount, this.lang || getSavedLang());
+
     } catch (e) {
       console.error("referrals open failed:", e);
       this.showMessage("error", "error");
@@ -2277,3 +2281,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
   
+// === REFERRAL LEVEL LOGIC ===
+const REF_LEVELS = [0, 5, 15, 30, 60, 100]; 
+
+function computeRefLevel(invitedCount){
+  let level = 0, next = REF_LEVELS[1] || 0;
+  for (let i = 0; i < REF_LEVELS.length; i++){
+    if (invitedCount >= REF_LEVELS[i]) {
+      level = i;
+      next = REF_LEVELS[i + 1] ?? REF_LEVELS[i];
+    }
+  }
+  const curBase = REF_LEVELS[level] || 0;
+  const need = Math.max(0, next - curBase);
+  const have = Math.max(0, invitedCount - curBase);
+  const pct = need > 0 ? Math.min(100, Math.round(have / need * 100)) : 100;
+  return { level, pct, have, need, next };
+}
+
+function renderRefLevel(invitedCount, lang){
+  const bar  = document.getElementById("refLevelBar");
+  const lab  = document.getElementById("refLevelLabel");
+  const stat = document.getElementById("refLevelStat");
+  const nxt  = document.getElementById("refNextReward");
+  if (!bar || !lab || !stat || !nxt) return;
+
+  const { level, pct, have, need, next } = computeRefLevel(invitedCount);
+  bar.style.width = pct + "%";
+  stat.textContent = `${invitedCount} հրավիրված`;
+  lab.textContent = `Մակարդակ ${level} • ${have}/${need > 0 ? need : have}`;
+  nxt.textContent = next > REF_LEVELS[level]
+    ? `Հաջորդ պարգևը՝ ${next} հրավիրվածի դեպքում`
+    : `Առավելագույն մակարդակ`;
+}

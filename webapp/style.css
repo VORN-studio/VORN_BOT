@@ -753,3 +753,60 @@ button, .menu-btn, .mine-btn {
 .mine-btn.ready::before {
   background: conic-gradient(#ffd700 100%, #ffd700 100%);
 }
+
+
+/* ==== REFERRAL LEVEL PROGRESS ==== */
+.ref-level-box {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ref-level-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: gold;
+}
+
+.ref-level-bar {
+  position: relative;
+  height: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+}
+
+.ref-level-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ffcc33, #ffae00);
+  transition: width 0.35s ease;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.35) inset;
+}
+
+.ref-level-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 0.92rem;
+  color: #ffe79b;
+}
+
+.ref-next-reward {
+  color: #ffd54a;
+  font-weight: 600;
+}
+
+.ref-level-label {
+  font-weight: 700;
+}
