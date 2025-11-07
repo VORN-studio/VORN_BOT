@@ -752,7 +752,7 @@ def api_vorn_exchange():
         row = cur.fetchone()
         if not row:
             close_conn(conn, cur, commit=False)
-            return jsonify({"ok": False, "error": "not_enough_feathers"}), 400
+            return jsonify({"ok": False, "error": "not_enough_feathers"}), 200
 
         new_balance, new_vorn = row
         close_conn(conn, cur, commit=True)
