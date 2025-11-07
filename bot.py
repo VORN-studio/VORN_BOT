@@ -1370,15 +1370,20 @@ async def start_bot_webhook():
 
     # ✅ Սա ավելացրու այն տեղում, որտեղ նախկինում «Proper start» էր գրված
 
+# ✅ Proper start (FINAL FIX)
 async def run_telegram_bot():
-    await application.start()
-    print("✅ Telegram bot started and listening for updates (Webhook mode).")
+    try:
+        await application.start()
+        print("✅ Telegram bot started and listening for updates (Webhook mode).")
+    except Exception as e:
+        print("🔥 Failed to start Telegram bot:", e)
 
+# 🚀 Launch bot in background (safe task)
     asyncio.create_task(run_telegram_bot())
 
-
-    # Keep running forever
+# Keep running forever
     await asyncio.Event().wait()
+
 
 
 
