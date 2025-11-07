@@ -1153,7 +1153,7 @@ async onMineClick() {
   this._mineInProgress = true;
 
   if (this.secsUntilReady() > 0) {
-    this.showMessage("wait_mine", "warning");
+    this.showMessage("not_enough", "warning");
     this._mineInProgress = false;
     return;
   }
@@ -1183,7 +1183,7 @@ async onMineClick() {
     showToast(msg);
 }
  else {
-    VORN.showMessage("wait_mine", "warning", 1500);;
+    VORN.showMessage("not_enough", "warning", 1500);;
     }
   } catch (e) {
     console.error("🔥 /api/mine failed:", e);

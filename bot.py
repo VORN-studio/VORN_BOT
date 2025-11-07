@@ -580,33 +580,42 @@ def api_set_language():
 
 @app_web.route("/api/mine", methods=["POST"])
 def api_mine():
-    data = request.get_json(force=True, silent=True) or {}
-    user_id = int(data.get("user_id", 0))
-    if not user_id:
-        return jsonify({"ok": False, "error": "missing user_id"}), 400
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        user_id = int(data.get("user_id", 0))
+        if not user_id:
+            return jsonify({"ok": False, "error": "missing user_id"}), 400
 
-    ok, remaining = can_mine(user_id)
-    if not ok:
-        return jsonify({"ok": False, "cooldown": remaining}), 200
+        # ստուգում ենք cooldown-ը
+        ok, remaining = can_mine(user_id)
+        if not ok:
+            return jsonify({"ok": False, "error": "cooldown_active", "remaining": remaining}), 200
 
-    new_bal = update_balance(user_id, MINE_REWARD)
-    set_last_mine(user_id)
-    now_ts = int(time.time())
+        # գումարում ենք փետուրները
+        new_bal = update_balance(user_id, MINE_REWARD)
+        set_last_mine(user_id)
+        now_ts = int(time.time())
 
-    # Վերցնում ենք լեզուն
-    conn = db(); c = conn.cursor()
-    c.execute("SELECT language FROM users WHERE user_id=%s", (user_id,))
-    row = c.fetchone()
-    release_db(conn)
-    lang = row[0] if row and row[0] else "en"
+        # վերցնում ենք լեզուն
+        conn = db(); c = conn.cursor()
+        c.execute("SELECT language FROM users WHERE user_id=%s", (user_id,))
+        row = c.fetchone()
+        release_db(conn)
+        lang = row[0] if row and row[0] else "en"
 
-    return jsonify({
-        "ok": True,
-        "reward": MINE_REWARD,
-        "balance": new_bal,
-        "last_mine": now_ts,
-        "language": lang
-    }), 200
+        print(f"✅ Mined {MINE_REWARD} by user {user_id}")
+        return jsonify({
+            "ok": True,
+            "reward": MINE_REWARD,
+            "balance": new_bal,
+            "last_mine": now_ts,
+            "language": lang
+        }), 200
+
+    except Exception as e:
+        print("🔥 Error in /api/mine:", e)
+        return jsonify({"ok": False, "error": "server_error"}), 500
+
 
 
 
