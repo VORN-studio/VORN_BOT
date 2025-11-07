@@ -1368,10 +1368,14 @@ async def start_bot_webhook():
     except Exception as e:
         print("⚠️ Failed to set menu button:", e)
 
-    # ✅ Proper start
-    # await application.start()
-    # await application.updater.start_polling()  # not strictly required, but keeps event loop alive
-    # print("✅ Telegram application fully started (Webhook mode).")
+    # ✅ Սա ավելացրու այն տեղում, որտեղ նախկինում «Proper start» էր գրված
+
+async def run_telegram_bot():
+    await application.start()
+    print("✅ Telegram bot started and listening for updates (Webhook mode).")
+
+    asyncio.create_task(run_telegram_bot())
+
 
     # Keep running forever
     await asyncio.Event().wait()
