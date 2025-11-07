@@ -1370,7 +1370,7 @@ async def start_bot_webhook():
 
     # ✅ Proper start
     await application.start()
-    await application.updater.start_polling()  # not strictly required, but keeps event loop alive
+    # await application.updater.start_polling()  # not strictly required, but keeps event loop alive
     print("✅ Telegram application fully started (Webhook mode).")
 
     # Keep running forever
