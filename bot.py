@@ -1389,6 +1389,7 @@ from flask import request
 import asyncio
 
 
+# Webhook route
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
     global application
@@ -1406,28 +1407,25 @@ def telegram_webhook():
         upd = Update.de_json(update_data, application.bot)
         print("📩 Telegram update received")
 
-        # ✅ Միևնույն event loop-ի վերա ապահով մշակող ֆունկցիա
-        def process_update_safely():
+        # ✅ վերցնում ենք այն նույն լուպը, որը ստեղծվել է բոտի մեջ
+        loop = asyncio.get_event_loop_policy().get_event_loop()
+
+        async def process():
             try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+                await application.process_update(upd)
+                print("✅ Update processed successfully")
+            except Exception as e:
+                print("🔥 Error inside Telegram process:", e)
 
-            if loop.is_running():
-                # եթե loop արդեն ակտիվ է (օրինակ՝ Render-ում կամ Flask-ի մեջ)
-                loop.create_task(application.process_update(upd))
-            else:
-                loop.run_until_complete(application.process_update(upd))
+        # ✅ գործարկում ենք նույն լուպի վրա, առանց նոր լուպ բացելու
+        asyncio.run_coroutine_threadsafe(process(), loop)
 
-            print("✅ Update processed successfully")
-
-        threading.Thread(target=process_update_safely, daemon=True).start()
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
