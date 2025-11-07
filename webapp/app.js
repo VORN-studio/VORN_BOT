@@ -1169,25 +1169,27 @@ async onMineClick() {
     const data = await r.json();
     // ✅ Այստեղ ենք որոշում՝ հաջողվեց թե ոչ
     if (data.ok) {
-    // Թարմացնենք բալանսը
-    VORN.user.balance = data.balance;
-    updateBalanceDisplay(data.balance);
+  // ✅ Եթե user օբյեկտը դեռ չի բեռնվել
+  if (!this.user) this.user = {};
 
-    // Վերականգնենք մայնի progress-ը (reset)
-    resetMineProgress(); // սա պետք է վերականգնի progress-ի վիճակը
-    startMineTimer(6 * 60 * 60); // նորից սկսի 6 ժամանոց հաշվարկը
+  // Թարմացնենք բալանսը
+  this.user.balance = data.balance || this.user.balance || 0;
+  updateBalanceDisplay(this.user.balance);
 
-    // Ցուցադրենք թարգմանված հաղորդագրությունը
-    const lang = data.language || VORN.lang || "en";
-    const msg = VORN.getText("mine_success", lang);
-    showToast(msg);
+  // Վերականգնենք մայնի progress-ը (reset)
+  resetMineProgress(); // սա պետք է վերականգնի progress-ի վիճակը
+  startMineTimer(6 * 60 * 60); // նորից սկսի 6 ժամանոց հաշվարկը
+
+  // Ցուցադրենք թարգմանված հաղորդագրությունը
+  const lang = data.language || this.lang || "en";
+  const msg = VORN.getText("mine_success", lang);
+  showToast(msg);
+} else {
+  const errKey = data.error || "mine_error";
+  const lang = data.language || this.lang || "en";
+  const msg = VORN.getText(errKey, lang);
+  showToast(msg);
 }
- else {
-    VORN.showMessage("not_enough", "warning", 1500);;
-    }
-  } catch (e) {
-    console.error("🔥 /api/mine failed:", e);
-    this.showMessage("error", "error");
   } finally {
     this._mineInProgress = false;
     this.els.mineBtn.disabled = false;
