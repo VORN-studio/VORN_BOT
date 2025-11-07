@@ -1390,14 +1390,14 @@ import asyncio
 
 
 @app_web.route("/webhook", methods=["POST"])
-async def telegram_webhook():
+def telegram_webhook():
     global application
 
     if application is None:
         print("❌ application is None — bot not ready")
         return jsonify({"ok": False, "error": "bot not ready"}), 503
 
-    update_data = await request.get_json(force=True, silent=True)
+    update_data = request.get_json(force=True, silent=True)
     if not update_data:
         print("⚠️ Empty update received")
         return jsonify({"ok": False, "error": "empty update"}), 400
@@ -1406,9 +1406,22 @@ async def telegram_webhook():
         upd = Update.de_json(update_data, application.bot)
         print("📩 Telegram update received")
 
-        # ✅ Սա այժմ աշխատում է նույն asyncio event loop-ի մեջ
-        await application.process_update(upd)
-        print("✅ Update processed successfully")
+        # ✅ Պահպանված asyncio loop կամ ստեղծում
+        loop = asyncio.get_event_loop_policy().get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # ✅ Թույլատրում ենք coroutine-ին վազել նույն loop-ի վրա
+        async def process():
+            try:
+                await application.process_update(upd)
+                print("✅ Update processed successfully")
+            except Exception as e:
+                print("⚠️ Error while processing update:", e)
+
+        # ✅ Սինխրոն Flask-ից աշխատեցնում ենք coroutine-ը ճիշտ ձևով
+        loop.create_task(process())
 
         return jsonify({"ok": True}), 200
 
