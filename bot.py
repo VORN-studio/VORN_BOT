@@ -1369,9 +1369,9 @@ async def start_bot_webhook():
         print("⚠️ Failed to set menu button:", e)
 
     # ✅ Proper start
-    await application.start()
+    # await application.start()
     # await application.updater.start_polling()  # not strictly required, but keeps event loop alive
-    print("✅ Telegram application fully started (Webhook mode).")
+    # print("✅ Telegram application fully started (Webhook mode).")
 
     # Keep running forever
     await asyncio.Event().wait()
