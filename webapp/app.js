@@ -989,104 +989,92 @@ if (this.els.btnInfo) {
 
 
   async openReferrals() {
-    if (!this.uid) return;
-    try {
-      // inside openReferrals()
-        const r = await fetch(`${API_BASE}/api/referrals?uid=${this.uid}`);  // ← was /api/referrals/${this.uid}
-        const d = await r.json();
+  if (!this.uid) return;
+  try {
+    // Load referrals data from backend
+    const r = await fetch(`${API_BASE}/api/referrals?uid=${this.uid}`);
+    const d = await r.json();
 
-      if (!d.ok) throw new Error(d.error || "referrals failed");
+    if (!d.ok) throw new Error(d.error || "referrals failed");
 
-      // Top-3 trophies
-      const fullList = d.list || [];
-      const top3 = fullList.slice(0, 3); // միայն ցուցադրելու համար
-      const trophy = (rank) => rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
-      const color = (rank) => rank === 1 ? "gold" : rank === 2 ? "silver" : "#cd7f32";
+    // --- Normalize backend data ---
+    const fullList = d.list || d.fullList || d.friends || [];
+    const invited = (d.invited_count != null)
+      ? d.invited_count
+      : (Array.isArray(fullList) ? fullList.length : 0);
 
-      this.els.refTop3.innerHTML = top3.map(x => `
-        <div class="ref-trophy" style="border-color:${color(x.rank)}">
-          <div class="ref-trophy-medal">${trophy(x.rank)}</div>
-          <div class="ref-trophy-name">${x.username}</div>
-          <div class="ref-trophy-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
-        </div>
-      `).join("");
+    // === Top-3 trophies ===
+    const top3 = fullList.slice(0, 3);
+    const trophy = (rank) => rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
+    const color = (rank) => rank === 1 ? "gold" : rank === 2 ? "silver" : "#cd7f32";
 
-        
-// 1) invite count
-const invited = (d.invited_count != null)
-  ? d.invited_count
-  : (Array.isArray(fullList) ? fullList.length : 0);
+    this.els.refTop3.innerHTML = top3.map(x => `
+      <div class="ref-trophy" style="border-color:${color(x.rank)}">
+        <div class="ref-trophy-medal">${trophy(x.rank)}</div>
+        <div class="ref-trophy-name">${x.username}</div>
+        <div class="ref-trophy-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
+      </div>
+    `).join("");
 
+    // === Referral Level calculation ===
+    const LEVEL_SIZE = 5;
+    const REWARD_PER_LEVEL = 5000;
 
-// 2) level sizing rules (փոխես՝ եթե ունես կոնկրետ լիմիտներ)
-const LEVEL_SIZE = 5;               
-const REWARD_PER_LEVEL = 5000;      
+    const level = Math.floor(invited / LEVEL_SIZE);
+    const inLevel = invited % LEVEL_SIZE;
+    const progress = Math.min(100, Math.round((inLevel / LEVEL_SIZE) * 100));
+    const needForNext = LEVEL_SIZE - inLevel;
 
-const level = Math.floor(invited / LEVEL_SIZE);
-const inLevel = invited % LEVEL_SIZE;
-const progress = Math.min(100, Math.round((inLevel / LEVEL_SIZE) * 100));
-const needForNext = LEVEL_SIZE - inLevel;
+    // === Fill UI elements ===
+    if (this.els.refLevelWrap) {
+      if (this.els.refLevelFill) this.els.refLevelFill.style.width = `${progress}%`;
+      if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
+      if (this.els.refLevelReward) this.els.refLevelReward.textContent = `+${(level * REWARD_PER_LEVEL).toLocaleString()} 🪶`;
 
-// 3) UI fill
-if (this.els.refLevelWrap) {
-  // լցնենք progress-ը
-  if (this.els.refLevelFill) this.els.refLevelFill.style.width = `${progress}%`;
+      if (this.els.refLevelTicks) {
+        const ticks = [];
+        for (let i = 0; i <= LEVEL_SIZE; i++) ticks.push(`<span>${i}</span>`);
+        this.els.refLevelTicks.innerHTML = ticks.join("");
+      }
 
-  // վերնագիրը և reward-ը
-  if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
-  if (this.els.refLevelReward) this.els.refLevelReward.textContent = `+${(level * REWARD_PER_LEVEL).toLocaleString()} 🪶`;
-
-  // ticks (0..LEVEL_SIZE)
-  if (this.els.refLevelTicks) {
-    const ticks = [];
-    for (let i = 0; i <= LEVEL_SIZE; i++) {
-      ticks.push(`<span>${i}</span>`);
-    }
-    this.els.refLevelTicks.innerHTML = ticks.join("");
-  }
-
-  // Hint — քանի մարդ է պետք հաջորդ level-ին
-  if (this.els.refLevelHint) {
-    this.els.refLevelHint.textContent = needForNext === 0
-      ? "✅ Maxed for this cycle — invite more to reach the next level!"
-      : `Invite ${needForNext} more to reach Level ${level + 1}`;
-  }
-}
-
-
-     // full list
-  this.els.refList.innerHTML = fullList.map(x => `
-    <div class="ref-row">
-      <div class="ref-rank">${x.rank}</div>
-      <div class="ref-user">${x.username}</div>
-      <div class="ref-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
-    </div>
-  `).join("") || `<div class="muted">No invited users yet.</div>`;
-
-
-      this.els.refResult.textContent = "";
-      this.els.refClaimBtn.classList.add("hidden");
-       // === REFERRAL LEVEL RENDER ===
-      const invitedCount = Array.isArray(fullList) ? fullList.length : 0;
-      renderRefLevel(invitedCount, this.lang || getSavedLang());
-      this.els.refModal.classList.remove("hidden");
-     
-
-    } catch (e) {
-      console.error("referrals open failed:", e);
-      this.showMessage("error", "error");
+      if (this.els.refLevelHint) {
+        this.els.refLevelHint.textContent = needForNext === 0
+          ? "✅ Maxed for this cycle — invite more to reach the next level!"
+          : `Invite ${needForNext} more to reach Level ${level + 1}`;
+      }
     }
 
-    // ✅ Թարգմանում ենք ռեֆերալի պատուհանը ըստ լեզվի
-const lang = this.lang || getSavedLang();
-const refDict = langButtonsDict.tasksTitles.referral;
-document.getElementById("referralTitle").textContent = refDict.title[lang] || refDict.title.en;
-document.getElementById("refPreviewBtn").textContent = refDict.calc[lang] || refDict.calc.en;
-document.getElementById("refClaimBtn").textContent = refDict.claim[lang] || refDict.claim.en;
-document.getElementById("closeRefBtn").textContent = refDict.close[lang] || refDict.close.en;
+    // === Full list render ===
+    this.els.refList.innerHTML = fullList.map(x => `
+      <div class="ref-row">
+        <div class="ref-rank">${x.rank}</div>
+        <div class="ref-user">${x.username}</div>
+        <div class="ref-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
+      </div>
+    `).join("") || `<div class="muted">No invited users yet.</div>`;
 
+    this.els.refResult.textContent = "";
+    this.els.refClaimBtn.classList.add("hidden");
 
-  },
+    // === REFERRAL LEVEL RENDER ===
+    const invitedCount = Array.isArray(fullList) ? fullList.length : 0;
+    renderRefLevel(invitedCount, this.lang || getSavedLang());
+    this.els.refModal.classList.remove("hidden");
+
+  } catch (e) {
+    console.error("referrals open failed:", e);
+    this.showMessage("error", "error");
+  }
+
+  // === Localization ===
+  const lang = this.lang || getSavedLang();
+  const refDict = langButtonsDict.tasksTitles.referral;
+  document.getElementById("referralTitle").textContent = refDict.title[lang] || refDict.title.en;
+  document.getElementById("refPreviewBtn").textContent = refDict.calc[lang] || refDict.calc.en;
+  document.getElementById("refClaimBtn").textContent = refDict.claim[lang] || refDict.claim.en;
+  document.getElementById("closeRefBtn").textContent = refDict.close[lang] || refDict.close.en;
+},
+
 
 
 
