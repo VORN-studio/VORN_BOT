@@ -1014,10 +1014,11 @@ if (this.els.btnInfo) {
 
       this.els.refResult.textContent = "";
       this.els.refClaimBtn.classList.add("hidden");
-      this.els.refModal.classList.remove("hidden");
-      // Ավելացնում ենք ռեֆերալների մակարդակի progress գիծը
+       // === REFERRAL LEVEL RENDER ===
       const invitedCount = Array.isArray(list) ? list.length : 0;
       renderRefLevel(invitedCount, this.lang || getSavedLang());
+      this.els.refModal.classList.remove("hidden");
+     
 
     } catch (e) {
       console.error("referrals open failed:", e);
