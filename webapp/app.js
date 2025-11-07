@@ -1758,13 +1758,15 @@ if (pf) {
     console.log("EXCHANGE RESP:", data);
 
     if (!data.ok) {
+   console.log("⚠️ Exchange error:", data.error); // debug only
    if (data.error === "not_enough_feathers") {
-      this.showMessage("not_enough", "error");
+       this.showMessage("not_enough", "error");
    } else {
-      this.toast("❌ " + (data.error || "Exchange failed"));
+       this.toast("❌ " + (data.error || "Exchange failed"));
    }
    return;
 }
+
 
 
     // Թարմացնում ենք քո թվերը
