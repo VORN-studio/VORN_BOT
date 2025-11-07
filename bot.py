@@ -1407,22 +1407,23 @@ def telegram_webhook():
 
     try:
         upd = Update.de_json(update_data, application.bot)
-        print("📩 Telegram update received")
+        print("📩 Telegram update received:", update_data)
 
-        # ✅ Ensure there's an asyncio loop
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+        # ✅ Always run inside a background thread, not loop
+        def handle_update():
+            try:
+                asyncio.run(application.process_update(upd))
+                print("✅ Update processed successfully")
+            except Exception as e:
+                print("🔥 Error while processing update:", e)
 
-        # ✅ Safe processing with ensure_future
-        asyncio.ensure_future(application.process_update(upd), loop=loop)
+        threading.Thread(target=handle_update, daemon=True).start()
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
