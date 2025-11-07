@@ -1405,34 +1405,33 @@ def telegram_webhook():
         upd = Update.de_json(update_data, application.bot)
         print("📩 Telegram update received")
 
-        # ✅ Ներքին async task, որպեսզի pool-ը չբեռնվի
+        # ✅ async task - աշխատում է Render-ի event loop-ի հետ առանց փակելու այն
         async def process_update_safely():
             try:
                 await application.process_update(upd)
-                # փոքր դադար՝ թողնում ենք Telegram-ի connection pool-ին ազատվել
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.5)  # փոքր դադար՝ connection pool-ի համար
                 print("✅ Update processed successfully")
             except Exception as e:
                 print("⚠️ Async process_update error:", e)
 
-        # ✅ Նոր թելում բացում ենք event loop-ը՝ առանց asyncio.run()-ի
+        # ✅ այստեղ REMOVE ենք անում loop.close(), որպեսզի չփակի հիմնական event loop-ը
         def handle_update():
             try:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 loop.run_until_complete(process_update_safely())
-                loop.close()
+                # ❌ մի փակի loop-ը — սա է հիմնական սխալի պատճառը
+                # loop.close()
             except Exception as e:
                 print("🔥 Error while processing update:", e)
 
-        # Թելային գործարկում (Render-ի համար անվտանգ)
         threading.Thread(target=handle_update, daemon=True).start()
-
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
