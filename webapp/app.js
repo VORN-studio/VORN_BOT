@@ -998,7 +998,7 @@ if (this.els.btnInfo) {
       if (!d.ok) throw new Error(d.error || "referrals failed");
 
       // Top-3 trophies
-      const fullList = d.list || [];
+      const fullList = d.fullList || [];
       const top3 = fullList.slice(0, 3); // միայն ցուցադրելու համար
       const trophy = (rank) => rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
       const color = (rank) => rank === 1 ? "gold" : rank === 2 ? "silver" : "#cd7f32";
@@ -1067,9 +1067,9 @@ if (this.els.refLevelWrap) {
       this.els.refResult.textContent = "";
       this.els.refClaimBtn.classList.add("hidden");
        // === REFERRAL LEVEL RENDER ===
-      const invitedCount = Array.isArray(list) ? list.length : 0;
+      const invitedCount = Array.isArray(fullList) ? fullList.length : 0;
       renderRefLevel(invitedCount, this.lang || getSavedLang());
-      this.els.refModal.classList.remove("hidden");
+      this.els.refModal.classfullList.remove("hidden");
      
 
     } catch (e) {
