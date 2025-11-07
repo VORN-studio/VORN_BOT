@@ -1392,6 +1392,7 @@ import asyncio
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
     global application
+
     if application is None:
         print("❌ application is None — bot not ready")
         return jsonify({"ok": False, "error": "bot not ready"}), 503
@@ -1405,28 +1406,34 @@ def telegram_webhook():
         upd = Update.de_json(update_data, application.bot)
         print("📩 Telegram update received")
 
-        # ✅ instead of new loop per thread — reuse a single global loop
-        loop = asyncio.get_event_loop_policy().get_event_loop()
-        if loop.is_closed():
+        # ✅ 1) Ստանում ենք ընդհանուր loop-ը կամ ստեղծում, եթե չկա
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
+        # ✅ 2) Սարքենք async task՝ ապահով ձևով
         async def process_update_safely():
             try:
                 await application.process_update(upd)
-                await asyncio.sleep(0.5)
                 print("✅ Update processed successfully")
             except Exception as e:
-                print("⚠️ Async process_update error:", e)
+                print("⚠️ Error inside async process_update:", e)
 
-        # ✅ աշխատեցնում ենք coroutine-ը Render-ի հիմնական asyncio loop-ի վրա
-        asyncio.run_coroutine_threadsafe(process_update_safely(), loop)
+        # ✅ 3) Թելում ենք աշխատեցնում, բայց ճիշտ ձևով
+        def run_update_in_thread(loop):
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(process_update_safely())
+
+        threading.Thread(target=run_update_in_thread, args=(loop,), daemon=True).start()
 
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
