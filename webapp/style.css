@@ -592,8 +592,34 @@ button, .menu-btn, .mine-btn {
 .ref-user { font-weight: 600; }
 .ref-stats { color: #ffd; font-size: 0.95rem; }
 
-.ref-actions { display:flex; gap:10px; margin-top: 12px; justify-content:center; }
-.ref-result { margin-top: 8px; }
+/* === FIX REFERRAL BUTTON LAYOUT === */
+.ref-actions {
+  display: flex;
+  flex-direction: column;       /* բոլոր կոճակները վերևից ներքև */
+  align-items: center;          /* կենտրոնանում են հորիզոնական */
+  gap: 10px;                    /* բացվածք կոճակների միջև */
+  margin-top: 15px;
+}
+
+.ref-actions button {
+  width: 80%;                   /* կոճակների հավասար լայնություն */
+  max-width: 250px;
+  background: linear-gradient(135deg, #ffae00, #ffcc33);
+  color: #26004d;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 22px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(255,215,0,0.4);
+}
+
+.ref-actions button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255,215,0,0.6);
+}
+
 
 .hidden { display: none !important; }
 
