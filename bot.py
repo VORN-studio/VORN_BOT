@@ -371,8 +371,12 @@ def check_ref_level_progress(inviter_id: int):
             current_level = row[0]
 
         # Հաջորդ մակարդակի շեմը
-        next_idx = min(current_level, len(REF_LEVELS) - 1)
+        next_idx = current_level  # 👉 վերցնում ենք հաջորդ լեվլի ինդեքսը
+        if next_idx >= len(REF_LEVELS):
+            return  # արդեն հասել է առավելագույն մակարդակին
+
         need = REF_LEVELS[next_idx]["need"]
+
 
         # Եթե հավաքել է բավարար հրավիրվածներ՝ անցնում է հաջորդ մակարդակ
         if total_invited >= need:
