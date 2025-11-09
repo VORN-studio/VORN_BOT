@@ -611,9 +611,13 @@ def api_reflevel_claim():
 
         # վերցնում ենք օգտագործողի ընթացիկ բալանսները
         c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
-        ub = c.fetchone() or (0, 0.0)
-        new_b = (ub[0] or 0) + feathers
-        new_v = (ub[1] or 0.0) + vorn
+        from decimal import Decimal
+
+        ub = c.fetchone() or (0, Decimal("0.0"))
+        vorn_val = Decimal(str(vorn))
+        new_b = int(ub[0] or 0) + int(feathers)
+        new_v = Decimal(ub[1] or 0) + vorn_val
+
 
         # թարմացնում ենք բազան
         c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, uid))
