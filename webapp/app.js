@@ -1065,32 +1065,37 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
       // վերնագիրը և reward-ը (նոր տարբերակ՝ ըստ REF_LEVELS)
     if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
 
-        // === Reward (display next level bonus correctly with VORN) ===
+// === Reward (display next level bonus correctly with VORN) ===
 let nextRewardFeathers = 0;
 let nextRewardVorn = 0;
 let isMaxLevel = false;
 let currentLvl = 0;
 
-if (typeof REF_LEVELS !== "undefined" && Array.isArray(REF_LEVELS)) {
-  // որոշում ենք՝ օգտատերը որ լվլի վրա է՝ ըստ հրավիրածների քանակի
+// 🧠 Ճիշտ հաշվարկ՝ ըստ հրավիրածների քանակի REF_LEVELS աղյուսակից
+if (typeof REF_LEVELS !== "undefined" && Array.isArray(REF_LEVELS) && REF_LEVELS.length > 0) {
+  // գտնում ենք, թե որ լվլին է համապատասխանում հրավիրածների քանակը
   for (let i = 0; i < REF_LEVELS.length; i++) {
     const lvl = REF_LEVELS[i];
     if (invited >= lvl.need) currentLvl = lvl.lvl;
   }
 
-  // գտնում ենք հաջորդ լվլի տվյալը
-  const nextData = REF_LEVELS.find(x => x.lvl === currentLvl + 1);
-
-  if (nextData) {
-    nextRewardFeathers = nextData.feathers || 0;
-    nextRewardVorn = nextData.vorn || 0;
-  } else {
+  // ստուգում ենք՝ արդյոք արդեն հասել ենք առավելագույնին
+  const maxDefinedLevel = REF_LEVELS[REF_LEVELS.length - 1].lvl;
+  if (currentLvl >= maxDefinedLevel) {
     isMaxLevel = true;
+  }
+
+  // եթե դեռ կա հաջորդ մակարդակ — վերցնում ենք դրա բոնուսը
+  if (!isMaxLevel) {
+    const nextData = REF_LEVELS.find(x => x.lvl === currentLvl + 1);
+    if (nextData) {
+      nextRewardFeathers = nextData.feathers || 0;
+      nextRewardVorn = nextData.vorn || 0;
+    }
   }
 }
 
-
-// UI rendering
+// === UI rendering ===
 if (this.els.refLevelReward) {
   if (isMaxLevel) {
     this.els.refLevelReward.textContent = "🏁 Max level reached";
@@ -1100,6 +1105,7 @@ if (this.els.refLevelReward) {
     this.els.refLevelReward.textContent = `🎁 ${f} 🪶 + ${v} 🜂 reward`;
   }
 }
+
 
 
 
