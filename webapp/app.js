@@ -984,6 +984,40 @@ if (this.els.btnInfo) {
   this.els.refClaimBtn.addEventListener("click", () => this.refClaim());
   }
 
+  // ✅ Referral Cashback Claim — թարմացնում է բալանսը claim-ից հետո
+if (this.els.refClaimBtn && !this._bindedRefClaim) {
+  this._bindedRefClaim = true;
+  this.els.refClaimBtn.addEventListener("click", async () => {
+    try {
+      this.els.refClaimBtn.disabled = true;
+      const r = await fetch(`${API_BASE}/api/referrals/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: this.uid })
+      });
+      const d = await r.json();
+      if (!d.ok) return this.showMessage("error", d.error || "claim failed");
+
+      // 🪶 թարմացնենք բալանսը ու 🜂 VORN-ը
+      this.balance = d.new_balance;
+      this.vornBalance = d.new_vorn;
+      document.getElementById("featherCount").textContent = String(d.new_balance);
+      document.getElementById("foodCount").textContent = Number(d.new_vorn).toFixed(2);
+
+      // 📦 վերաբացում ենք referrals պատուհանը
+      await this.openReferrals();
+
+      this.showMessage("success", `+${(d.cashback_feathers||0).toLocaleString()} 🪶  +${(d.cashback_vorn||0)} 🜂`);
+    } catch (e) {
+      console.error("referrals claim failed", e);
+      this.showMessage("error", "server_error");
+    } finally {
+      this.els.refClaimBtn.disabled = false;
+    }
+  });
+}
+
+
 },
 
 
@@ -1028,20 +1062,20 @@ if (this.els.btnInfo) {
     // === Fill UI elements ===
     if (this.els.refLevelWrap) {
       if (this.els.refLevelFill) this.els.refLevelFill.style.width = `${progress}%`;
-      if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
-      if (this.els.refLevelReward) this.els.refLevelReward.textContent = `+${(level * REWARD_PER_LEVEL).toLocaleString()} 🪶`;
+      // if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
+      // if (this.els.refLevelReward) this.els.refLevelReward.textContent = `+${(level * REWARD_PER_LEVEL).toLocaleString()} 🪶`;
 
-      if (this.els.refLevelTicks) {
-        const ticks = [];
-        for (let i = 0; i <= LEVEL_SIZE; i++) ticks.push(`<span>${i}</span>`);
-        this.els.refLevelTicks.innerHTML = ticks.join("");
-      }
+      // if (this.els.refLevelTicks) {
+        // const ticks = [];
+        // for (let i = 0; i <= LEVEL_SIZE; i++) ticks.push(`<span>${i}</span>`);
+        // this.els.refLevelTicks.innerHTML = ticks.join("");
+      // }
 
-      if (this.els.refLevelHint) {
-        this.els.refLevelHint.textContent = needForNext === 0
-          ? "✅ Maxed for this cycle — invite more to reach the next level!"
-          : `Invite ${needForNext} more to reach Level ${level + 1}`;
-      }
+      // if (this.els.refLevelHint) {
+        // this.els.refLevelHint.textContent = needForNext === 0
+          // ? "✅ Maxed for this cycle — invite more to reach the next level!"
+          // : `Invite ${needForNext} more to reach Level ${level + 1}`;
+      // }
     }
 
     // === Full list render ===
