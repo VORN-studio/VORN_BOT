@@ -1680,6 +1680,22 @@ def api_referrals_claim():
 
 
 
+@app_web.route("/api/reflevel/check", methods=["POST"])
+def api_reflevel_check():
+    """
+    Called from frontend to re-check if user reached a new level
+    and give the corresponding bonus automatically.
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    uid = int(data.get("uid", 0))
+    if not uid:
+        return jsonify({"ok": False, "error": "missing uid"}), 400
+
+    try:
+        check_ref_level_progress(uid)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 # ==========================================

@@ -1026,6 +1026,18 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
   async openReferrals() {
   if (!this.uid) return;
   try {
+
+    // Ստուգում ենք՝ արդյոք պետք է լվլի բոնուս տրվի backend-ի կողմից
+    try {
+        await fetch(`${API_BASE}/api/reflevel/check`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({uid: this.uid})
+    });
+    } catch (err) {
+      console.warn("Level check request failed:", err);
+    }
+
     // 1) Backend-ից բերում ենք ռեֆերալների տվյալները
     const r = await fetch(`${API_BASE}/api/referrals?uid=${this.uid}`);
     const d = await r.json();
