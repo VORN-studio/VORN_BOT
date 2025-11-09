@@ -1116,8 +1116,11 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
         if (isMaxLevel) {
           this.els.refLevelReward.textContent = "🏁 Max level reached";
         } else {
+          const lang = this.lang || getSavedLang();
+          const rw = refTexts.rewardWord[lang] || refTexts.rewardWord.en;
           this.els.refLevelReward.textContent =
-            `🎁 ${nextRewardFeathers.toLocaleString()} 🪶 + ${nextRewardVorn.toFixed(2)} 🜂 reward`;
+         `🎁 ${nextRewardFeathers.toLocaleString()} 🪶 + ${nextRewardVorn.toFixed(2)} 🜂 ${rw}`;
+
         }
       }
 
@@ -1130,11 +1133,18 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
       }
 
       if (this.els.refLevelHint) {
-        this.els.refLevelHint.textContent =
-          nextNeed === null
-            ? "✅ Max level reached"
-            : `Invite ${needForNext} more to reach Level ${currentLvl + 1}`;
+        const lang = this.lang || getSavedLang();
+      if (nextNeed === null) {
+         this.els.refLevelHint.textContent =
+      (refTexts.maxLevel && refTexts.maxLevel[lang]) || "✅ Max level reached";
+      } else {
+        const t = refTexts.inviteMore[lang] || refTexts.inviteMore.en;
+        this.els.refLevelHint.textContent = t
+        .replace("{count}", needForNext)
+        .replace("{next}", currentLvl + 1);
       }
+    }
+
     }
 
     // 7) Լիքը ցուցակ
@@ -2459,3 +2469,91 @@ function renderRefLevel(invitedCount, lang){
     ? `Հաջորդ պարգևը՝ ${next} հրավիրվածի դեպքում`
     : `Առավելագույն մակարդակ`;
 }
+
+
+const refTexts = {
+  inviteMore: {
+    en: "Invite {count} more to reach Level {next}",
+    ru: "Пригласи ещё {count}, чтобы достичь уровня {next}",
+    hy: "Հրավիրիր ևս {count} հոգի՝ հասնելու համար {next}-րդ մակարդակին",
+    fr: "Invite encore {count} pour atteindre le niveau {next}",
+    es: "Invita a {count} más para alcanzar el nivel {next}",
+    de: "Lade noch {count} ein, um Level {next} zu erreichen",
+    it: "Invita altri {count} per raggiungere il livello {next}",
+    tr: "{count} kişi daha davet et, {next}. seviyeye ulaş",
+    fa: "برای رسیدن به سطح {next}، {count} نفر دیگر دعوت کنید",
+    ar: "ادعُ {count} آخرين للوصول إلى المستوى {next}",
+    zh: "再邀请 {count} 人即可到达第 {next} 级",
+    ja: "{count} 人を招待してレベル {next} に到達",
+    ko: "{count}명을 더 초대하여 레벨 {next}에 도달하세요",
+    hi: "{next} स्तर तक पहुँचने के लिए {count} और आमंत्रित करें",
+    pt: "Convide mais {count} para alcançar o nível {next}",
+    el: "Προσκάλεσε άλλους {count} για να φτάσεις το επίπεδο {next}",
+    pl: "Zaproś jeszcze {count}, aby osiągnąć poziom {next}",
+    nl: "Nodig nog {count} uit om niveau {next} te bereiken",
+    sv: "Bjud in {count} till för att nå nivå {next}",
+    ro: "Invită încă {count} pentru a ajunge la nivelul {next}",
+    hu: "Hívj meg még {count} embert, hogy elérd a(z) {next}. szintet",
+    cs: "Pozvi ještě {count}, abys dosáhl úrovně {next}",
+    uk: "Запроси ще {count}, щоб досягти рівня {next}",
+    az: "{next} səviyyəyə çatmaq üçün {count} nəfər dəvət et",
+    ka: "მოიწვიე კიდევ {count} ადამიანი, რომ მიაღწიო {next}-ე დონეს"
+  },
+  rewardWord: {
+    en: "reward",
+    ru: "награда",
+    hy: "պարգև",
+    fr: "récompense",
+    es: "recompensa",
+    de: "Belohnung",
+    it: "ricompensa",
+    tr: "ödül",
+    fa: "پاداش",
+    ar: "مكافأة",
+    zh: "奖励",
+    ja: "報酬",
+    ko: "보상",
+    hi: "इनाम",
+    pt: "recompensa",
+    el: "ανταμοιβή",
+    pl: "nagroda",
+    nl: "beloning",
+    sv: "belöning",
+    ro: "recompensă",
+    hu: "jutalom",
+    cs: "odměna",
+    uk: "нагорода",
+    az: "mükafat",
+    ka: "დაჯილდოება"
+  },
+
+  maxLevel: {
+  en: "✅ Max level reached",
+  ru: "✅ Достигнут максимальный уровень",
+  hy: "✅ Հասել ես առավելագույն մակարդակին",
+  fr: "✅ Niveau maximum atteint",
+  es: "✅ Nivel máximo alcanzado",
+  de: "✅ Maximales Level erreicht",
+  it: "✅ Livello massimo raggiunto",
+  tr: "✅ Maksimum seviye ulaşıldı",
+  fa: "✅ حداکثر سطح رسیده است",
+  ar: "✅ تم الوصول إلى الحد الأقصى من المستوى",
+  zh: "✅ 达到最高等级",
+  ja: "✅ 最大レベルに到達",
+  ko: "✅ 최대 레벨에 도달했습니다",
+  hi: "✅ अधिकतम स्तर तक पहुँच गए हैं",
+  pt: "✅ Nível máximo alcançado",
+  el: "✅ Έχεις φτάσει το μέγιστο επίπεδο",
+  pl: "✅ Osiągnięto maksymalny poziom",
+  nl: "✅ Maximum niveau bereikt",
+  sv: "✅ Maxnivå uppnådd",
+  ro: "✅ Nivelul maxim atins",
+  hu: "✅ Elérted a legmagasabb szintet",
+  cs: "✅ Dosažena maximální úroveň",
+  uk: "✅ Досягнуто максимального рівня",
+  az: "✅ Maksimum səviyyəyə çatıldı",
+  ka: "✅ მიღწეულია მაქსიმალური დონე"
+}
+
+
+};
