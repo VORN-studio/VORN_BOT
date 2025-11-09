@@ -1062,20 +1062,20 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
     // === Fill UI elements ===
     if (this.els.refLevelWrap) {
       if (this.els.refLevelFill) this.els.refLevelFill.style.width = `${progress}%`;
-      // if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
-      // if (this.els.refLevelReward) this.els.refLevelReward.textContent = `+${(level * REWARD_PER_LEVEL).toLocaleString()} 🪶`;
+      if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
+      if (this.els.refLevelReward) this.els.refLevelReward.textContent = `+${(level * REWARD_PER_LEVEL).toLocaleString()} 🪶`;
 
-      // if (this.els.refLevelTicks) {
-        // const ticks = [];
-        // for (let i = 0; i <= LEVEL_SIZE; i++) ticks.push(`<span>${i}</span>`);
-        // this.els.refLevelTicks.innerHTML = ticks.join("");
-      // }
+      if (this.els.refLevelTicks) {
+        const ticks = [];
+        for (let i = 0; i <= LEVEL_SIZE; i++) ticks.push(`<span>${i}</span>`);
+        this.els.refLevelTicks.innerHTML = ticks.join("");
+      }
 
-      // if (this.els.refLevelHint) {
-        // this.els.refLevelHint.textContent = needForNext === 0
-          // ? "✅ Maxed for this cycle — invite more to reach the next level!"
-          // : `Invite ${needForNext} more to reach Level ${level + 1}`;
-      // }
+      if (this.els.refLevelHint) {
+        this.els.refLevelHint.textContent = needForNext === 0
+          ? "✅ Maxed for this cycle — invite more to reach the next level!"
+          : `Invite ${needForNext} more to reach Level ${level + 1}`;
+      }
     }
 
     // === Full list render ===
