@@ -868,32 +868,6 @@ def api_vorn_exchange():
 
 
 
-
-
-
-
-
-@app_web.route("/api/referrals/<int:user_id>")
-def api_referrals(user_id):
-    """Բերում է հրավիրվածների ցուցակը և նրանց հավաքած ընդհանուր քոյինները"""
-    try:
-        conn = db(); c = conn.cursor()
-        c.execute("""
-            SELECT u.user_id, u.username, u.balance
-              FROM users u
-             WHERE u.inviter_id = %s
-             ORDER BY u.balance DESC
-        """, (user_id,))
-        friends = [{"id": r[0], "username": r[1] or f"User{r[0]}", "balance": r[2]} for r in c.fetchall()]
-        close_conn(conn, c, commit=False)
-        return jsonify({"ok": True, "friends": friends})
-    except Exception as e:
-        try: close_conn(conn, c, commit=False)
-        except: pass
-        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
-
-
-
 @app_web.route("/api/referral_claim", methods=["POST"])
 def api_referral_claim():
     """Հաշվում և տալիս է հրավիրողի 3% բոնուսը բոլոր նոր եկամուտներից"""
