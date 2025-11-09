@@ -794,6 +794,7 @@ REF_LEVELS = [
     {"lvl": 15, "need": 300, "feathers": 300000, "vorn": 40.0},
 ]
 
+
 def get_ref_level_data(uid):
     invited = len(user_referrals.get(uid, []))
     cur_lvl = user_levels.get(uid, 1)
