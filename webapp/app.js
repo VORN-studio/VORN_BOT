@@ -1066,12 +1066,16 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
     if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
 
         let nextReward = 0;
-    if (typeof REF_LEVELS !== "undefined" && REF_LEVELS[level]) {
-        nextReward = REF_LEVELS[level]["feathers"];
-      }
+
+// ապահով ստուգում, որ REF_LEVELS[level] գոյություն ունի
+    if (typeof REF_LEVELS !== "undefined") {
+      const found = REF_LEVELS.find(x => x.lvl === level + 1);
+    if (found) nextReward = found.feathers || 0;
+}
+
     if (this.els.refLevelReward) {
-        this.els.refLevelReward.textContent = `🎁 ${nextReward.toLocaleString()} 🪶 reward`;
-    }
+      this.els.refLevelReward.textContent = `🎁 ${nextReward.toLocaleString()} 🪶 reward`;
+  }
 
 
       if (this.els.refLevelTicks) {
