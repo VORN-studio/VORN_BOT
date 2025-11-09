@@ -1020,9 +1020,11 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
 
 },
 
+  
 
 
   async openReferrals() {
+    console.log("🔍 REF_LEVELS:", typeof REF_LEVELS, REF_LEVELS);
   if (!this.uid) return;
   try {
     // Load referrals data from backend
