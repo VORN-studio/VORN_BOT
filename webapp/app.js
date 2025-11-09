@@ -1030,6 +1030,12 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
     // Load referrals data from backend
     const r = await fetch(`${API_BASE}/api/referrals?uid=${this.uid}`);
     const d = await r.json();
+    // ✅ ensure REF_LEVELS is loaded from backend
+  if (d.levels && Array.isArray(d.levels)) {
+    window.REF_LEVELS = d.levels;
+    console.log("✅ Loaded REF_LEVELS from backend:", REF_LEVELS);
+  }
+
 
     if (!d.ok) throw new Error(d.error || "referrals failed");
 

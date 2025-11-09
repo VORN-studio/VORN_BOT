@@ -1618,8 +1618,10 @@ def api_referrals_list():
         return jsonify({
             "ok": True,
             "invited_count": invited_count,
-            "list": data
+            "list": data,
+            "levels": REF_LEVELS   # 👈 Ավելացրու այս տողը
         })
+
     except Exception as e:
         try:
             close_conn(conn, c, commit=False)
