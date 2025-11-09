@@ -1029,11 +1029,22 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
 
     // Ստուգում ենք՝ արդյոք պետք է լվլի բոնուս տրվի backend-ի կողմից
     try {
-        await fetch(`${API_BASE}/api/reflevel/check`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({uid: this.uid})
-    });
+        await // ✅ Instead of just "check", use "claim" to actually give bonus
+        fetch(`${API_BASE}/api/reflevel/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: this.uid })
+      })
+        .then(r => r.json())
+        .then(d => {
+    if (d.ok) {
+        console.log(`🎉 Level-up reward given: +${d.reward_feathers} 🪶 +${d.reward_vorn} 🜂`);
+    } else {
+      console.warn("⚠️ Level-up claim failed:", d.error);
+    }
+    })
+      .catch(err => console.error("🔥 Level-up claim error:", err));
+
     } catch (err) {
       console.warn("Level check request failed:", err);
     }
