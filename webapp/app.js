@@ -1065,17 +1065,30 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
       // վերնագիրը և reward-ը (նոր տարբերակ՝ ըստ REF_LEVELS)
     if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
 
-        let nextReward = 0;
+        // === Reward (display next level bonus correctly) ===
+let nextReward = 0;
 
-// ապահով ստուգում, որ REF_LEVELS[level] գոյություն ունի
-    if (typeof REF_LEVELS !== "undefined") {
-      const found = REF_LEVELS.find(x => x.lvl === level + 1);
-    if (found) nextReward = found.feathers || 0;
+if (typeof REF_LEVELS !== "undefined") {
+  // եթե դեռ չես հասել վերջին մակարդակին՝ վերցնում ենք հաջորդ լվլի reward-ը
+  const currentLvl = Math.max(1, level); // նվազագույնը 1
+  const nextData = REF_LEVELS.find(x => x.lvl === currentLvl + 1);
+
+  if (nextData) {
+    nextReward = nextData.feathers || 0;
+  } else {
+    // եթե արդեն անցել է վերջինը, գրում ենք Maxed
+    nextReward = null;
+  }
 }
 
-    if (this.els.refLevelReward) {
-      this.els.refLevelReward.textContent = `🎁 ${nextReward.toLocaleString()} 🪶 reward`;
+// UI rendering
+if (this.els.refLevelReward) {
+  if (nextReward === null) {
+    this.els.refLevelReward.textContent = "🏁 Max level reached";
+  } else {
+    this.els.refLevelReward.textContent = `🎁 ${nextReward.toLocaleString()} 🪶 reward`;
   }
+}
 
 
       if (this.els.refLevelTicks) {
