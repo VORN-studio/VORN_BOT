@@ -336,9 +336,75 @@ def ensure_user(user_id: int, username: Optional[str], inviter_id: Optional[int]
         # Already known user → NEVER change inviter_id (one-time rule)
         c.execute("UPDATE users SET username=%s WHERE user_id=%s", (username, user_id))
 
+    # ✅ Ստուգում ենք՝ արդյոք inviter-ը անցել է նոր լվլ
+    if inviter_id:
+        check_ref_level_progress(inviter_id)
+
     conn.commit()
     release_db(conn)
 
+def check_ref_level_progress(inviter_id: int):
+    """
+    Ստուգում է՝ արդյոք inviter-ը անցել է նոր level, և եթե այո՝ տալիս է համապատասխան բոնուսը։
+    """
+    if not inviter_id:
+        return
+
+    try:
+        conn = db()
+        c = conn.cursor()
+
+        # Հրավիրածների ընդհանուր քանակը
+        c.execute("SELECT COUNT(*) FROM users WHERE inviter_id=%s", (inviter_id,))
+        total_invited = c.fetchone()[0] or 0
+
+        # Նախորդ մակարդակը ref_progress աղյուսակից
+        c.execute("SELECT level FROM ref_progress WHERE user_id=%s", (inviter_id,))
+        row = c.fetchone()
+        if not row:
+            c.execute(
+                "INSERT INTO ref_progress (user_id, level, carried_invites, updated_at) VALUES (%s, %s, %s, %s)",
+                (inviter_id, 1, 0, int(time.time()))
+            )
+            current_level = 1
+        else:
+            current_level = row[0]
+
+        # Հաջորդ մակարդակի շեմը
+        next_idx = min(current_level, len(REF_LEVELS) - 1)
+        need = REF_LEVELS[next_idx]["need"]
+
+        # Եթե հավաքել է բավարար հրավիրվածներ՝ անցնում է հաջորդ մակարդակ
+        if total_invited >= need:
+            new_level = current_level + 1
+            feathers = REF_LEVELS[next_idx]["feathers"]
+            vorn = REF_LEVELS[next_idx]["vorn"]
+
+            # Թարմացնում ենք օգտատիրոջ բալանսը
+            c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (inviter_id,))
+            row_u = c.fetchone() or (0, 0.0)
+            new_balance = (row_u[0] or 0) + feathers
+            new_vorn = (row_u[1] or 0.0) + vorn
+            c.execute(
+                "UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s",
+                (new_balance, new_vorn, inviter_id)
+            )
+
+            # Թարմացնում ենք ref_progress աղյուսակը
+            c.execute(
+                "UPDATE ref_progress SET level=%s, carried_invites=0, updated_at=%s WHERE user_id=%s",
+                (new_level, int(time.time()), inviter_id)
+            )
+
+            conn.commit()
+            print(f"🎉 Referral Level Up → User {inviter_id} reached level {new_level} and earned {feathers}🪶 + {vorn}🜂")
+        release_db(conn)
+    except Exception as e:
+        print("🔥 check_ref_level_progress error:", e)
+        try:
+            release_db(conn)
+        except Exception:
+            pass
 
 
 def get_balance(user_id: int) -> int:
