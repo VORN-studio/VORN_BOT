@@ -1062,8 +1062,17 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
     // === Fill UI elements ===
     if (this.els.refLevelWrap) {
       if (this.els.refLevelFill) this.els.refLevelFill.style.width = `${progress}%`;
-      if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
-      if (this.els.refLevelReward) this.els.refLevelReward.textContent = `+${(level * REWARD_PER_LEVEL).toLocaleString()} 🪶`;
+      // վերնագիրը և reward-ը (նոր տարբերակ՝ ըստ REF_LEVELS)
+    if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
+
+        let nextReward = 0;
+    if (typeof REF_LEVELS !== "undefined" && REF_LEVELS[level]) {
+        nextReward = REF_LEVELS[level]["feathers"];
+      }
+    if (this.els.refLevelReward) {
+        this.els.refLevelReward.textContent = `🎁 ${nextReward.toLocaleString()} 🪶 reward`;
+    }
+
 
       if (this.els.refLevelTicks) {
         const ticks = [];
