@@ -1024,133 +1024,130 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
 
 
   async openReferrals() {
-    console.log("🔍 REF_LEVELS:", typeof REF_LEVELS, REF_LEVELS);
   if (!this.uid) return;
   try {
-    // Load referrals data from backend
+    // 1) Backend-ից բերում ենք ռեֆերալների տվյալները
     const r = await fetch(`${API_BASE}/api/referrals?uid=${this.uid}`);
     const d = await r.json();
-    // ✅ ensure REF_LEVELS is loaded from backend
-  if (d.levels && Array.isArray(d.levels)) {
-    window.REF_LEVELS = d.levels;
-    console.log("✅ Loaded REF_LEVELS from backend:", REF_LEVELS);
-  }
-
-
     if (!d.ok) throw new Error(d.error || "referrals failed");
 
-    // --- Normalize backend data ---
+    // 2) Նորմալացում
     const fullList = d.list || d.fullList || d.friends || [];
+    // invited_count-ը եթե գալիս է backend-ից՝ օգտագործում ենք, այլապես՝ length-ը
     const invited = (d.invited_count != null)
-      ? d.invited_count
+      ? Number(d.invited_count)
       : (Array.isArray(fullList) ? fullList.length : 0);
 
-    // === Top-3 trophies ===
+    // 3) REF_LEVELS-ը պահում ենք օբյեկտների աղյուսակով [{lvl,need,feathers,vorn}]
+    if (Array.isArray(d.levels) && d.levels.length > 0) {
+      window.REF_LEVELS = d.levels;
+    } else if (!Array.isArray(window.REF_LEVELS) || typeof window.REF_LEVELS[0] !== "object") {
+      window.REF_LEVELS = []; // fallback, բայց իրականում backend-ը տալիս ա
+    }
+    console.log("🔍 REF_LEVELS (objects):", window.REF_LEVELS);
+
+    // 4) Վերևի Top-3 ցուցակը
     const top3 = fullList.slice(0, 3);
     const trophy = (rank) => rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
     const color = (rank) => rank === 1 ? "gold" : rank === 2 ? "silver" : "#cd7f32";
+    if (this.els.refTop3) {
+      this.els.refTop3.innerHTML = top3.map(x => `
+        <div class="ref-trophy" style="border-color:${color(x.rank)}">
+          <div class="ref-trophy-medal">${trophy(x.rank)}</div>
+          <div class="ref-trophy-name">${x.username}</div>
+          <div class="ref-trophy-stats">🪶 ${Number(x.feathers||0).toLocaleString()} &nbsp; 🜂 ${(Number(x.vorn||0)).toFixed(2)}</div>
+        </div>
+      `).join("");
+    }
 
-    this.els.refTop3.innerHTML = top3.map(x => `
-      <div class="ref-trophy" style="border-color:${color(x.rank)}">
-        <div class="ref-trophy-medal">${trophy(x.rank)}</div>
-        <div class="ref-trophy-name">${x.username}</div>
-        <div class="ref-trophy-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
-      </div>
-    `).join("");
+    // 5) Մակարդակի հաշվարկը՝ ՍԱՐՍՈւՄ ԵՆՔ ԱՅՍՏԵՂ (ոչ մի LEVEL_SIZE, ոչ մի REWARD_PER_LEVEL)
+    const table = Array.isArray(window.REF_LEVELS) ? window.REF_LEVELS : [];
+    // ensure sort by lvl ascending (եթե backend-ը արդեն սորված է՝ սա չի խանգարում)
+    table.sort((a,b) => (a.lvl||0) - (b.lvl||0));
 
-    // === Referral Level calculation ===
-    const LEVEL_SIZE = 5;
-    const REWARD_PER_LEVEL = 5000;
+    let currentLvl = 0;
+    let prevNeed = 0;
+    let nextNeed = null;
 
-    const level = Math.floor(invited / LEVEL_SIZE);
-    const inLevel = invited % LEVEL_SIZE;
-    const progress = Math.min(100, Math.round((inLevel / LEVEL_SIZE) * 100));
-    const needForNext = LEVEL_SIZE - inLevel;
+    for (const row of table) {
+      const need = Number(row.need || 0);
+      if (invited >= need) {
+        currentLvl = Number(row.lvl || 0);
+        prevNeed = need;
+      } else if (nextNeed === null) {
+        nextNeed = need;
+      }
+    }
 
-    // === Fill UI elements ===
+    const span = (nextNeed === null ? 1 : (nextNeed - prevNeed)) || 1;
+    const inLevel = Math.max(0, invited - prevNeed);
+    const progress = Math.max(0, Math.min(100, Math.round((inLevel / span) * 100)));
+    const needForNext = nextNeed === null ? 0 : (nextNeed - invited);
+
+    // 6) UI լրացում
     if (this.els.refLevelWrap) {
       if (this.els.refLevelFill) this.els.refLevelFill.style.width = `${progress}%`;
-      // վերնագիրը և reward-ը (նոր տարբերակ՝ ըստ REF_LEVELS)
-    if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${level}`;
+      if (this.els.refLevelLabel) this.els.refLevelLabel.textContent = `Level ${currentLvl}`;
 
-// === Reward (display next level bonus correctly with VORN) ===
-let nextRewardFeathers = 0;
-let nextRewardVorn = 0;
-let isMaxLevel = false;
-let currentLvl = 0;
+      // reward — ցույց ենք տալիս ՀԱՋՈՐԴ լվլի բոնուսը
+      let isMaxLevel = (nextNeed === null);
+      let nextRewardFeathers = 0;
+      let nextRewardVorn = 0;
+      if (!isMaxLevel) {
+        const nextRow = table.find(x => Number(x.lvl) === currentLvl + 1);
+        if (nextRow) {
+          nextRewardFeathers = Number(nextRow.feathers || 0);
+          nextRewardVorn = Number(nextRow.vorn || 0);
+        }
+      }
+      if (this.els.refLevelReward) {
+        if (isMaxLevel) {
+          this.els.refLevelReward.textContent = "🏁 Max level reached";
+        } else {
+          this.els.refLevelReward.textContent =
+            `🎁 ${nextRewardFeathers.toLocaleString()} 🪶 + ${nextRewardVorn.toFixed(2)} 🜂 reward`;
+        }
+      }
 
-// 🧠 Ճիշտ հաշվարկ՝ ըստ հրավիրածների քանակի REF_LEVELS աղյուսակից
-if (typeof REF_LEVELS !== "undefined" && Array.isArray(REF_LEVELS) && REF_LEVELS.length > 0) {
-  // գտնում ենք, թե որ լվլին է համապատասխանում հրավիրածների քանակը
-  for (let i = 0; i < REF_LEVELS.length; i++) {
-    const lvl = REF_LEVELS[i];
-    if (invited >= lvl.need) currentLvl = lvl.lvl;
-  }
-
-  // ստուգում ենք՝ արդյոք արդեն հասել ենք առավելագույնին
-  const maxDefinedLevel = REF_LEVELS[REF_LEVELS.length - 1].lvl;
-  if (currentLvl >= maxDefinedLevel) {
-    isMaxLevel = true;
-  }
-
-  // եթե դեռ կա հաջորդ մակարդակ — վերցնում ենք դրա բոնուսը
-  if (!isMaxLevel) {
-    const nextData = REF_LEVELS.find(x => x.lvl === currentLvl + 1);
-    if (nextData) {
-      nextRewardFeathers = nextData.feathers || 0;
-      nextRewardVorn = nextData.vorn || 0;
-    }
-  }
-}
-
-// === UI rendering ===
-if (this.els.refLevelReward) {
-  if (isMaxLevel) {
-    this.els.refLevelReward.textContent = "🏁 Max level reached";
-  } else {
-    const f = nextRewardFeathers.toLocaleString();
-    const v = nextRewardVorn.toFixed(2);
-    this.els.refLevelReward.textContent = `🎁 ${f} 🪶 + ${v} 🜂 reward`;
-  }
-}
-
-
-
-
-
+      // նշագծեր՝ 0..(span) (ցանկանաս՝ կջնջենք)
       if (this.els.refLevelTicks) {
         const ticks = [];
-        for (let i = 0; i <= LEVEL_SIZE; i++) ticks.push(`<span>${i}</span>`);
+        const tickCount = 6; // գեղեցիկ հավասար բաժանում, ոչ թե՝ LEVEL_SIZE
+        for (let i = 0; i < tickCount; i++) ticks.push(`<span></span>`);
         this.els.refLevelTicks.innerHTML = ticks.join("");
       }
 
       if (this.els.refLevelHint) {
-        this.els.refLevelHint.textContent = needForNext === 0
-          ? "✅ Maxed for this cycle — invite more to reach the next level!"
-          : `Invite ${needForNext} more to reach Level ${level + 1}`;
+        this.els.refLevelHint.textContent =
+          nextNeed === null
+            ? "✅ Max level reached"
+            : `Invite ${needForNext} more to reach Level ${currentLvl + 1}`;
       }
     }
 
-    // === Full list render ===
-    this.els.refList.innerHTML = fullList.map(x => `
-      <div class="ref-row">
-        <div class="ref-rank">${x.rank}</div>
-        <div class="ref-user">${x.username}</div>
-        <div class="ref-stats">🪶 ${x.feathers} &nbsp; 🜂 ${x.vorn.toFixed(2)}</div>
-      </div>
-    `).join("") || `<div class="muted">No invited users yet.</div>`;
+    // 7) Լիքը ցուցակ
+    if (this.els.refList) {
+      this.els.refList.innerHTML = fullList.map(x => `
+        <div class="ref-row">
+          <div class="ref-rank">${x.rank}</div>
+          <div class="ref-user">${x.username}</div>
+          <div class="ref-stats">🪶 ${Number(x.feathers||0).toLocaleString()} &nbsp; 🜂 ${(Number(x.vorn||0)).toFixed(2)}</div>
+        </div>
+      `).join("") || `<div class="muted">No invited users yet.</div>`;
+    }
 
-    this.els.refResult.textContent = "";
-    this.els.refClaimBtn.classList.add("hidden");
+    // 8) Հին claim կոճակն անտեսում ենք (քեշբեքի հոսքն այլ տեղ է)
+    if (this.els.refResult) this.els.refResult.textContent = "";
+    if (this.els.refClaimBtn) this.els.refClaimBtn.classList.add("hidden");
 
-    // === REFERRAL LEVEL RENDER ===
-    const invitedCount = (d.invited_count != null)
-    ? d.invited_count
-    : (Array.isArray(fullList) ? fullList.length : 0);
+    // 9) Քո renderRefLevel helper-ը եթե ունես՝ թող մնա (ոչ պարտադիր)
+    const invitedCount = invited;
+    if (typeof renderRefLevel === "function") {
+      renderRefLevel(invitedCount, this.lang || getSavedLang());
+    }
 
-    renderRefLevel(invitedCount, this.lang || getSavedLang());
-
-    this.els.refModal.classList.remove("hidden");
+    // 10) Բացում ենք մոդալը
+    if (this.els.refModal) this.els.refModal.classList.remove("hidden");
 
   } catch (e) {
     console.error("referrals open failed:", e);
@@ -1165,6 +1162,7 @@ if (this.els.refLevelReward) {
   document.getElementById("refClaimBtn").textContent = refDict.claim[lang] || refDict.claim.en;
   document.getElementById("closeRefBtn").textContent = refDict.close[lang] || refDict.close.en;
 },
+
 
 
 
