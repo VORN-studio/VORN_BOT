@@ -508,51 +508,74 @@ def api_reflevel_claim():
     if not uid:
         return jsonify({"ok": False, "error": "missing uid"}), 400
 
-    conn = db(); c = conn.cursor()
-    c.execute("SELECT level, carried_invites FROM ref_progress WHERE user_id=%s", (uid,))
-    row = c.fetchone()
-    if not row:
+    try:
+        conn = db()
+        c = conn.cursor()
+
+        # բերում ենք օգտագործողի ընթացիկ լվլը և carry-ն
+        c.execute("SELECT level, carried_invites FROM ref_progress WHERE user_id=%s", (uid,))
+        row = c.fetchone()
+        if not row:
+            release_db(conn)
+            return jsonify({"ok": False, "error": "state not initialized"}), 400
+
+        level, carry = row
+        idx = min(level, len(REF_LEVELS)) - 1
+        if idx < 0:
+            release_db(conn)
+            return jsonify({"ok": False, "error": "invalid level"}), 400
+
+        need = REF_LEVELS[idx]["need"]
+
+        # հաշվում ենք քանի հոգի է հրավիրել
+        c.execute("SELECT COUNT(*) FROM users WHERE inviter_id=%s", (uid,))
+        total_invited = c.fetchone()[0] or 0
+
+        if total_invited + carry < need:
+            release_db(conn)
+            return jsonify({"ok": False, "error": "not_enough_invites", "need": need, "have": total_invited+carry}), 400
+
+        # Reward տվյալներ
+        feathers = REF_LEVELS[idx]["feathers"]
+        vorn = REF_LEVELS[idx]["vorn"]
+
+        # վերցնում ենք օգտագործողի ընթացիկ բալանսները
+        c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
+        ub = c.fetchone() or (0, 0.0)
+        new_b = (ub[0] or 0) + feathers
+        new_v = (ub[1] or 0.0) + vorn
+
+        # թարմացնում ենք բազան
+        c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, uid))
+
+        # advance level, reset carry
+        new_level = level + 1
+        c.execute(
+            "UPDATE ref_progress SET level=%s, carried_invites=%s, updated_at=%s WHERE user_id=%s",
+            (new_level, 0, int(time.time()), uid)
+        )
+
+        conn.commit()
         release_db(conn)
-        return jsonify({"ok": False, "error": "state not initialized"}), 400
 
-    level, carry = row
-    idx = min(level, len(REF_LEVELS)) - 1
-    if idx < 0:
-        release_db(conn)
-        return jsonify({"ok": False, "error": "invalid level"}), 400
+        # վերադարձնում ենք JSON պատասխանը
+        return jsonify({
+            "ok": True,
+            "level_was": level,
+            "level_now": new_level,
+            "reward_feathers": feathers,
+            "reward_vorn": vorn,
+            "new_balance": new_b,
+            "new_vorn": new_v
+        })
 
-    need = REF_LEVELS[idx]["need"]
+    except Exception as e:
+        try:
+            release_db(conn)
+        except Exception:
+            pass
+        return jsonify({"ok": False, "error": str(e)}), 500
 
-    # recompute total invited
-    c.execute("SELECT COUNT(*) FROM users WHERE inviter_id=%s", (uid,))
-    total_invited = c.fetchone()[0] or 0
-
-    if total_invited + carry < need:
-        release_db(conn)
-        return jsonify({"ok": False, "error": "not_enough_invites", "need": need, "have": total_invited+carry}), 400
-
-    feathers = REF_LEVELS[idx]["feathers"]
-    vorn = REF_LEVELS[idx]["vorn"]
-
-    # reward
-    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
-    ub = c.fetchone() or (0, 0.0)
-    new_b = (ub[0] or 0) + feathers
-    new_v = (ub[1] or 0.0) + vorn
-    c.execute("UPDATE users SET balance=%s, vorn_balance=%s WHERE user_id=%s", (new_b, new_v, uid))
-
-    # advance level, reset carry (պարզ տարբերակ)
-    new_level = level + 1
-    c.execute("UPDATE ref_progress SET level=%s, carried_invites=%s, updated_at=%s WHERE user_id=%s",
-              (new_level, 0, int(time.time()), uid))
-
-    conn.commit(); release_db(conn)
-    return jsonify({
-        "ok": True,
-        "level_was": level, "level_now": new_level,
-        "reward_feathers": feathers, "reward_vorn": vorn,
-        "new_balance": new_b, "new_vorn": new_v
-    })
 
 
 @app_web.route("/api/set_language", methods=["POST"])

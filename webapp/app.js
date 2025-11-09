@@ -1169,6 +1169,9 @@ if (food) food.textContent = this.vornBalance.toFixed(2);
 
     this.els.refClaimBtn.classList.add("hidden");
     this.showMessage("success_exchange","success");
+    document.getElementById("featherCount").textContent = d.new_balance;
+    document.getElementById("foodCount").textContent = d.new_vorn.toFixed(2);
+
   } catch (e) {
     console.error("ref claim failed:", e);
     this.showMessage("error","error");
