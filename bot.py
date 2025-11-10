@@ -1662,15 +1662,23 @@ def api_referrals_claim():
 
         c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (uid,))
         row2 = c.fetchone()
+        from decimal import Decimal
+
         if row2:
-            new_b = (row2[0] or 0) + total_f
-            new_v = (row2[1] or 0) + total_v
+            old_balance = int(row2[0] or 0)
+            old_vorn = Decimal(str(row2[1] or 0))
+            total_v_dec = Decimal(str(total_v))
+
+            new_b = old_balance + int(total_f or 0)
+            new_v = old_vorn + total_v_dec
+
             c.execute("""
                 UPDATE users
-                SET balance = COALESCE(balance,0) + %s,
-                vorn_balance = COALESCE(vorn_balance,0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+                SET balance = %s,
+                vorn_balance = %s
                 WHERE user_id = %s
-            """, (total_f, total_v, uid))
+            """, (new_b, new_v, uid))
+
 
 
         close_conn(conn, c, commit=True)
