@@ -1252,7 +1252,7 @@ if (food) food.textContent = (parseFloat(this.vornBalance || 0)).toFixed(2);
     this.els.refResult.textContent = msg;
 
     this.els.refClaimBtn.classList.add("hidden");
-    this.showMessage("success_exchange","success");
+    this.showMessage("success_ref_claim","success");
     document.getElementById("featherCount").textContent = d.new_balance;
     document.getElementById("foodCount").textContent = d.new_vorn.toFixed(2);
 
@@ -2005,6 +2005,91 @@ showMessage(key, type = "info", duration = 2600) {
       az: "⚠️ Dəyişmək üçün kifayət qədər lələk yoxdur!",
       ka: "⚠️ საკმარისი ბუმბული არ არის გასაცვლელად!"
     },
+
+    success_ref_claim: {
+      en: "✅ Referral reward received!",
+      ru: "✅ Реферальная награда получена!",
+      hy: "✅ Ռեֆերալի պարգևը ստացված է!",
+      fr: "✅ Récompense de parrainage reçue !",
+      es: "✅ ¡Recompensa de referencia recibida!",
+      de: "✅ Empfehlungsbelohnung erhalten!",
+      it: "✅ Ricompensa di riferimento ricevuta!",
+      tr: "✅ Referans ödülü alındı!",
+      fa: "✅ پاداش ارجاع دریافت شد!",
+      ar: "✅ تمت استلام مكافأة الإحالة!",
+      zh: "✅ 推荐奖励已领取！",
+      ja: "✅ 紹介報酬を受け取りました！",
+      ko: "✅ 추천 보상을 받았습니다!",
+      hi: "✅ रेफरल इनाम प्राप्त हुआ!",
+      pt: "✅ Recompensa de indicação recebida!",
+      el: "✅ Ελήφθη ανταμοιβή παραπομπής!",
+      pl: "✅ Odebrano nagrodę za polecenie!",
+      nl: "✅ Verwijzingsbeloning ontvangen!",
+      sv: "✅ Hänvisningsbelöning mottagen!",
+      ro: "✅ Recompensă de recomandare primită!",
+      hu: "✅ Meghívási jutalom megkapva!",
+      cs: "✅ Získána odměna za doporučení!",
+      uk: "✅ Реферальна нагорода отримана!",
+      az: "✅ Referal mükafatı alındı!",
+      ka: "✅ მოწვევის ჯილდო მიღებულია!"
+  },
+
+  success_mine_claim: {
+    en: "✅ Feathers successfully added!",
+    ru: "✅ Перья успешно добавлены!",
+    hy: "✅ Փետուրները հաջողությամբ ավելացվեցին!",
+    fr: "✅ Plumes ajoutées avec succès !",
+    es: "✅ ¡Plumas añadidas con éxito!",
+    de: "✅ Federn erfolgreich hinzugefügt!",
+    it: "✅ Piume aggiunte con successo!",
+    tr: "✅ Tüyler başarıyla eklendi!",
+    fa: "✅ پرها با موفقیت اضافه شدند!",
+    ar: "✅ تمت إضافة الريش بنجاح!",
+    zh: "✅ 羽毛已成功添加！",
+    ja: "✅ 羽が正常に追加されました！",
+    ko: "✅ 깃털이 성공적으로 추가되었습니다!",
+    hi: "✅ पंख सफलतापूर्वक जोड़े गए!",
+    pt: "✅ Penas adicionadas com sucesso!",
+    el: "✅ Τα φτερά προστέθηκαν με επιτυχία!",
+    pl: "✅ Pióra zostały pomyślnie dodane!",
+    nl: "✅ Veren succesvol toegevoegd!",
+    sv: "✅ Fjädrar har lagts till!",
+    ro: "✅ Pene adăugate cu succes!",
+    hu: "✅ Tollak sikeresen hozzáadva!",
+    cs: "✅ Peří úspěšně přidáno!",
+    uk: "✅ Пір’я успішно додано!",
+    az: "✅ Lələklər uğurla əlavə edildi!",
+    ka: "✅ ბუმბულები წარმატებით დაემატა!"
+},
+
+  success_exchange_generic: {
+    en: "✅ Exchange successful!",
+    ru: "✅ Обмен прошёл успешно!",
+    hy: "✅ Փոխանակումը հաջող է անցել!",
+    fr: "✅ Échange réussi !",
+    es: "✅ Intercambio exitoso !",
+    de: "✅ Austausch erfolgreich!",
+    it: "✅ Scambio riuscito!",
+    tr: "✅ Takas başarılı!",
+    fa: "✅ مبادله با موفقیت انجام شد!",
+    ar: "✅ تم التبادل بنجاح!",
+    zh: "✅ 兑换成功！",
+    ja: "✅ 交換が成功しました！",
+    ko: "✅ 교환이 완료되었습니다!",
+    hi: "✅ विनिमय सफल रहा!",
+    pt: "✅ Troca bem-sucedida!",
+    el: "✅ Η ανταλλαγή ήταν επιτυχής!",
+    pl: "✅ Wymiana zakończona sukcesem!",
+    nl: "✅ Uitwisseling geslaagd!",
+    sv: "✅ Växlingen lyckades!",
+    ro: "✅ Schimb efectuat cu succes!",
+    hu: "✅ Csere sikeres!",
+    cs: "✅ Výměna úspěšná!",
+    uk: "✅ Обмін успішний!",
+    az: "✅ Mübadilə uğurla başa çatdı!",
+    ka: "✅ გაცვლა წარმატებით შესრულდა!"
+},
+
 
     success_exchange: {
       en: "✅ Exchanged 50000 🪶 → +1 🜂",
