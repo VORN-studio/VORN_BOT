@@ -911,59 +911,41 @@ def api_referral_claim():
 
 @app_web.route("/api/tasks")
 def api_tasks():
-    """Return all active tasks grouped by type + user's completion state."""
+    import time
     uid = int(request.args.get("uid", 0))
-    try:
-        conn = db(); c = conn.cursor()
+    conn = db(); c = conn.cursor()
 
-        for sql in [
-            "ALTER TABLE tasks ADD COLUMN reward_feather INTEGER DEFAULT 0",
-            "ALTER TABLE tasks ADD COLUMN reward_vorn REAL DEFAULT 0",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0"
-        ]:
-            try: c.execute(sql)
-            except Exception: pass
+    c.execute("""
+        SELECT id, type, title, reward_feather, reward_vorn, link
+          FROM tasks
+         WHERE active=TRUE
+         ORDER BY id DESC
+    """)
+    rows = c.fetchall()
 
-        c.execute("""
-            SELECT id, type, title, reward_feather, reward_vorn, link
-              FROM tasks
-             WHERE active = TRUE
-             ORDER BY id DESC
-        """)
-        rows = c.fetchall()
+    today = time.strftime("%Y-%m-%d")
+    done_main, done_daily = set(), set()
+    if uid:
+        c.execute("SELECT task_id FROM user_tasks WHERE user_id=%s AND date_key='ALL_TIME'", (uid,))
+        done_main = {r[0] for r in c.fetchall()}
+        c.execute("SELECT task_id FROM user_tasks WHERE user_id=%s AND date_key=%s", (uid, today))
+        done_daily = {r[0] for r in c.fetchall()}
 
-        user_done = set()
-        if uid:
-            date_key = time.strftime("%Y-%m-%d")
-            c.execute("""
-                SELECT task_id
-                  FROM user_tasks
-                 WHERE user_id=%s AND date_key=%s
-            """, (uid, date_key))
-            for r in c.fetchall():
-                user_done.add(r[0])
+    data = {"main": [], "daily": []}
+    for tid, ttype, title, rf, rv, link in rows:
+        completed = tid in (done_daily if ttype == "daily" else done_main)
+        data[ttype].append({
+            "id": tid,
+            "title": title,
+            "reward_feather": rf or 0,
+            "reward_vorn": rv or 0.0,
+            "link": link or "",
+            "completed": completed
+        })
 
-        data = {"main": [], "daily": []}
-        for row in rows:
-            tid, ttype, title, rf, rv, link = row
-            entry = {
-                "id": tid,
-                "title": title,
-                "reward_feather": rf,
-                "reward_vorn": rv,
-                "link": link or "",
-                "completed": tid in user_done
-            }
-            if ttype not in data:
-                data[ttype] = []
-            data[ttype].append(entry)
+    release_db(conn)
+    return jsonify(data)
 
-        close_conn(conn, c, commit=False)
-        return jsonify(data)
-    except Exception as e:
-        try: close_conn(conn, c, commit=False)
-        except: pass
-        return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
 
 
 
@@ -1187,83 +1169,82 @@ def tiktok_verification_file():
 
 @app_web.route("/api/task_attempt_verify", methods=["POST"])
 def api_task_attempt_verify():
-    """
-    Check if user truly completed the task.
-    For now: auto-approve for all, later will integrate real checks.
-    """
-    data = request.get_json(force=True, silent=True) or {}
-    user_id = int(data.get("user_id", 0))
-    task_id = int(data.get("task_id", 0))
-    token = data.get("token", "")
+    import time
+    user_id = int(request.json.get("user_id", 0))
+    task_id = int(request.json.get("task_id", 0))
+    token   = str(request.json.get("token", ""))
 
     if not user_id or not task_id or not token:
-        return jsonify({"ok": False, "error": "missing fields"}), 400
+        return jsonify({"ok": False, "error": "missing_fields"}), 400
 
     conn = db(); c = conn.cursor()
 
-    # Check token validity
-    c.execute("SELECT id, status FROM task_attempts WHERE user_id=%s AND task_id=%s AND token=%s", (user_id, task_id, token))
+    # --- ստուգում ենք token-ը ---
+    c.execute("SELECT id, status FROM task_attempts WHERE user_id=%s AND task_id=%s AND token=%s",
+              (user_id, task_id, token))
     row = c.fetchone()
     if not row:
         release_db(conn)
-        return jsonify({"ok": False, "error": "invalid attempt"}), 400
+        return jsonify({"ok": False, "error": "invalid_token"}), 400
     if row[1] == "verified":
         release_db(conn)
-        return jsonify({"ok": False, "error": "already verified"}), 400
+        return jsonify({"ok": False, "error": "already_verified"}), 400
 
-        # ✅ Prevent multiple rewards for the same task
-    date_key = time.strftime("%Y-%m-%d")
-    c.execute("SELECT 1 FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s", (user_id, task_id, date_key))
+    # --- վերցնում ենք task-ի տեսակը ու պարգևները ---
+    c.execute("SELECT type, reward_feather, reward_vorn FROM tasks WHERE id=%s AND active=TRUE", (task_id,))
+    trow = c.fetchone()
+    if not trow:
+        release_db(conn)
+        return jsonify({"ok": False, "error": "task_not_found"}), 404
+
+    task_type, reward_feather, reward_vorn = trow
+
+    # --- date_key = daily → այսօր, main → ALL_TIME ---
+    date_key = time.strftime("%Y-%m-%d") if task_type == "daily" else "ALL_TIME"
+
+    # --- եթե արդեն արված է՝ չհաշվենք նորից ---
+    c.execute("SELECT 1 FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s",
+              (user_id, task_id, date_key))
     if c.fetchone():
         release_db(conn)
         return jsonify({"ok": False, "error": "already_completed"}), 400
 
-    # ✅ Mark as verified
+    # --- նշում ենք verify արված ---
     c.execute("UPDATE task_attempts SET status='verified', verified_at=%s WHERE id=%s", (int(time.time()), row[0]))
-
-    # ✅ Save to user_tasks table (for progress memory)
-    c.execute("INSERT INTO user_tasks (user_id, task_id, date_key, completed_at) VALUES (%s, %s, %s, %s)",
+    c.execute("INSERT INTO user_tasks (user_id, task_id, date_key, completed_at) VALUES (%s,%s,%s,%s)",
               (user_id, task_id, date_key, int(time.time())))
 
-    # ✅ Fetch reward data
-    c.execute("SELECT reward_feather, reward_vorn FROM tasks WHERE id=%s", (task_id,))
-    task = c.fetchone()
-    if not task:
-        release_db(conn)
-        return jsonify({"ok": False, "error": "task not found"}), 404
+    # --- գումարում ենք պարգևը ---
+    c.execute("SELECT balance, COALESCE(vorn_balance,0) FROM users WHERE user_id=%s", (user_id,))
+    ub = c.fetchone() or (0, 0)
+    new_balance = ub[0] + int(reward_feather or 0)
+    new_vorn = float(ub[1]) + float(reward_vorn or 0)
 
-    reward_feather, reward_vorn = task
-
-    # ✅ Add rewards to balance
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
-    except Exception:
-        pass
-
-    c.execute("SELECT balance, vorn_balance FROM users WHERE user_id=%s", (user_id,))
-    row_user = c.fetchone()
-    balance = (row_user[0] if row_user else 0) + reward_feather
-    vorn = (row_user[1] if row_user else 0) + reward_vorn
     c.execute("""
-    UPDATE users
-       SET balance      = (COALESCE(balance,0) + %s),
-           vorn_balance = COALESCE(vorn_balance,0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
-     WHERE user_id = %s
-    """, (reward_feather, reward_vorn, user_id))
-
-
+        UPDATE users
+           SET balance = %s,
+               vorn_balance = %s
+         WHERE user_id = %s
+    """, (new_balance, new_vorn, user_id))
     conn.commit()
     release_db(conn)
-    # 3% referral to inviter from THIS task reward (both feathers & vorn)
-    add_referral_bonus(user_id, reward_feathers=reward_feather, reward_vorn=reward_vorn)
+
+    # --- optional referral bonus ---
+    try:
+        add_referral_bonus(user_id,
+                           reward_feathers=int(reward_feather or 0),
+                           reward_vorn=float(reward_vorn or 0.0))
+    except Exception as e:
+        print("ref bonus error:", e)
 
     return jsonify({
         "ok": True,
-        "reward_feather": reward_feather,
-        "reward_vorn": reward_vorn,
-        "new_balance": balance,
-        "new_vorn": vorn
+        "reward_feather": int(reward_feather or 0),
+        "reward_vorn": float(reward_vorn or 0.0),
+        "new_balance": new_balance,
+        "new_vorn": new_vorn
     })
+
 
 
 # =========================
@@ -1272,6 +1253,7 @@ def api_task_attempt_verify():
 
 @app_web.route("/api/verify_task", methods=["POST"])
 def api_verify_task():
+    return jsonify({"ok": False, "error": "deprecated"}), 410
     """
     Verify if user completed the task (basic version).
     For now: auto-approve all tasks.
