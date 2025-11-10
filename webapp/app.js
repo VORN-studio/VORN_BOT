@@ -1228,10 +1228,10 @@ if (this.els.refClaimBtn && !this._bindedRefClaim) {
 
 async refClaim() {
   try {
-    const r = await fetch(`${API_BASE}/api/referrals/claim`, { // ← was /api/referral_claim
+    const r = await fetch(`${API_BASE}/api/referrals/claim`, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ uid: this.uid })                   // ← key is uid
+      body: JSON.stringify({ uid: this.uid })
     });
     const d = await r.json();
     if (!d.ok) { this.showMessage("error","error"); return; }
@@ -1239,23 +1239,24 @@ async refClaim() {
     this.balance = d.new_balance ?? this.balance;
     this.vornBalance = d.new_vorn ?? this.vornBalance;
     this._exchangeBusy = false;
+
     const el = document.getElementById("featherCount");
-if (el) el.textContent = String(this.balance);
+    if (el) el.textContent = String(this.balance);
+
     const food = document.getElementById("foodCount");
-if (food) food.textContent = (parseFloat(this.vornBalance || 0)).toFixed(2);
+    if (food) food.textContent = Number(this.vornBalance || 0).toFixed(2);
 
-// ✅ Լեզվաբաց detail՝ միշտ ճիշտ է
-if (this.els.refResult) {
-  this.els.refResult.textContent =
-    `+${(d.cashback_feathers||0).toLocaleString()} 🪶  +${Number(d.cashback_vorn||0).toFixed(4)} 🜂`;
-}
+    // ✅ Լեզվաբաց detail՝ միշտ ճիշտ է
+    if (this.els.refResult) {
+      this.els.refResult.textContent =
+        `+${(d.cashback_feathers||0).toLocaleString()} 🪶  +${Number(d.cashback_vorn||0).toFixed(4)} 🜂`;
+    }
 
-// ✅ Իսկ toast-ը թող լինի քո թարգմանված բանալուց
-this.showMessage("success_ref_claim", "success", 2500);
-
+    // ✅ Միայն մեկ toast՝ 25 լեզվով թարգմանված
+    this.showMessage("success_ref_claim", "success", 2500);
 
     this.els.refClaimBtn.classList.add("hidden");
-    this.showMessage("success_ref_claim","success");
+
     document.getElementById("featherCount").textContent = d.new_balance;
     document.getElementById("foodCount").textContent = Number(d.new_vorn || 0).toFixed(2);
 
@@ -1264,6 +1265,7 @@ this.showMessage("success_ref_claim", "success", 2500);
     this.showMessage("error","error");
   }
 },
+
 
 
 
