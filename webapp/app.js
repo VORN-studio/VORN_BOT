@@ -1242,7 +1242,7 @@ async refClaim() {
     const el = document.getElementById("featherCount");
 if (el) el.textContent = String(this.balance);
     const food = document.getElementById("foodCount");
-if (food) food.textContent = this.vornBalance.toFixed(2);
+if (food) food.textContent = (parseFloat(this.vornBalance || 0)).toFixed(2);
 
 
     const msg =
@@ -1285,7 +1285,8 @@ document.getElementById("featherCount").textContent = Number(data.balance ?? 0).
 document.getElementById("username").textContent     = String(data.username ?? "");
 
 const foodEl = document.getElementById("foodCount");
-if (foodEl) foodEl.textContent = this.vornBalance.toFixed(2);
+if (foodEl) foodEl.textContent = (parseFloat(this.vornBalance || 0)).toFixed(2);
+
 
         const serverLang = (data.language || "").toLowerCase();
         if (serverLang && texts[serverLang]) {
@@ -1793,7 +1794,8 @@ bindTasksModal() {
   },
   updateHUD() {
   if (window._featherEl) window._featherEl.textContent = String(this.balance);
-  if (window._foodEl) window._foodEl.textContent = this.vornBalance.toFixed(2);
+  if (window._foodEl) window._foodEl.textContent = (parseFloat(this.vornBalance || 0)).toFixed(2);
+
 },
 
   paintEnergy() {
