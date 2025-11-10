@@ -2237,7 +2237,17 @@ showMessage(key, type = "info", duration = 2600) {
 
 
   
- const lang = (this.lang && messages[key] && messages[key][this.lang]) ? this.lang : getSavedLang();
+ // ✅ Լեզվի ստացում (ավելի խելացի տարբերակ)
+let lang = this.lang || getSavedLang();
+if (!lang || !messages[key] || !messages[key][lang]) {
+  // եթե this.lang-ը դեռ չի հասցրել բեռնվել՝ fallback-ը վերցնում ենք localStorage-ից
+  try { 
+    lang = localStorage.getItem("vorn_lang") || "en"; 
+  } catch { 
+    lang = "en"; 
+  }
+}
+
 let text = key;
 
 if (messages[key]) {
