@@ -1367,11 +1367,25 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
     ])
-    await context.bot.send_message(
+    import asyncio
+
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    send_task = context.bot.send_message(
         chat_id=user.id,
         text="🌕 Press the button to enter VORN App 👇",
         reply_markup=keyboard
-    )
+)
+
+    if loop.is_running():
+        loop.create_task(send_task)
+    else:
+        loop.run_until_complete(send_task)
+
 
     try:
         await context.bot.pin_chat_message(chat_id=user.id, message_id=update.message.message_id)
