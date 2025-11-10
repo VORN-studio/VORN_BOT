@@ -1244,17 +1244,20 @@ if (el) el.textContent = String(this.balance);
     const food = document.getElementById("foodCount");
 if (food) food.textContent = (parseFloat(this.vornBalance || 0)).toFixed(2);
 
+// ✅ Լեզվաբաց detail՝ միշտ ճիշտ է
+if (this.els.refResult) {
+  this.els.refResult.textContent =
+    `+${(d.cashback_feathers||0).toLocaleString()} 🪶  +${Number(d.cashback_vorn||0).toFixed(4)} 🜂`;
+}
 
-    const msg =
-      (this.lang === "ru") ? `✅ Получено ${d.cashback_feathers} 🪶 и ${Number(d.cashback_vorn).toFixed(4)} 🜂`
-      : (this.lang === "hy") ? `✅ Վերցրեցիր ${d.cashback_feathers} 🪶 և ${Number(d.cashback_vorn).toFixed(4)} 🜂`
-      : `✅ Claimed ${d.cashback_feathers} 🪶 and ${Number(d.cashback_vorn).toFixed(4)} 🜂`;
-    this.els.refResult.textContent = msg;
+// ✅ Իսկ toast-ը թող լինի քո թարգմանված բանալուց
+this.showMessage("success_ref_claim", "success", 2500);
+
 
     this.els.refClaimBtn.classList.add("hidden");
     this.showMessage("success_ref_claim","success");
     document.getElementById("featherCount").textContent = d.new_balance;
-    document.getElementById("foodCount").textContent = d.new_vorn.toFixed(2);
+    document.getElementById("foodCount").textContent = Number(d.new_vorn || 0).toFixed(2);
 
   } catch (e) {
     console.error("ref claim failed:", e);
