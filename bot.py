@@ -1020,8 +1020,10 @@ def add_task_advanced(task_type, title, reward_feather, reward_vorn, link=None):
 
     c.execute("""
         INSERT INTO tasks (type, title, reward_feather, reward_vorn, link, created_at, active)
-        VALUES (%s, %s, %s, %s, %s, %s, 1)
+        VALUES (%s, %s, %s, %s, %s, %s, TRUE)
     """, (task_type, title, int(reward_feather), float(reward_vorn), link, int(time.time())))
+
+
     conn.commit(); release_db(conn)
 
 
