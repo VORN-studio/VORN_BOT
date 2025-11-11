@@ -1873,27 +1873,20 @@ import threading
 import asyncio
 
 def start_support_bot_in_thread():
-    from support_bot import build_support_app
+    from support_bot import start_support_webhook
     import asyncio
 
     def _runner():
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            app = build_support_app()
-
-            print("✅ Support bot polling started (safe async mode)...")
-
-            # Run polling inside the loop without closing it
-            loop.create_task(app.run_polling(stop_signals=None))
-            loop.run_forever()
-
+            loop.run_until_complete(start_support_webhook())
         except Exception as e:
             print(f"🔥 Support bot failed: {e}")
 
     t = threading.Thread(target=_runner, name="support-bot", daemon=True)
     t.start()
-    print("🤖 VORN Support bot started in background thread.")
+    print("🤖 VORN Support bot started via webhook.")
 
 
 

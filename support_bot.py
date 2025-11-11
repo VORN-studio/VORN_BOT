@@ -68,3 +68,9 @@ def build_support_app() -> Application:
     app.add_handler(CommandHandler("reply", admin_reply))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     return app
+
+async def start_support_webhook():
+    app = build_support_app()
+    await app.bot.delete_webhook()
+    await app.bot.set_webhook("https://vorn-bot-nggr.onrender.com/support")
+    print("✅ Support bot webhook set successfully")
