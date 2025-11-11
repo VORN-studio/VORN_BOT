@@ -46,9 +46,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💬 {text}"
     )
 
-    # ուղարկում ենք ադմինին և պատասխանում ենք օգտվողին
-    await context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML")
-    await update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!")
+    try:
+        # ուղարկում ենք ադմինին
+        await context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML")
+        # փոքր դադար Telegram-ի սահմանափակումներից խուսափելու համար
+        await asyncio.sleep(0.5)
+        # պատասխանում ենք օգտվողին
+        await update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!")
+    except Exception as e:
+        logging.error(f"❌ Support send error: {e}")
+
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != SUPPORT_ADMIN_ID:
@@ -63,16 +70,30 @@ async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid = int(context.args[0])
         msg = " ".join(context.args[1:])
         await context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML")
+        await asyncio.sleep(0.5)
         await update.message.reply_text("✅ Sent successfully.")
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send՝ {e}")
 
+
+from telegram.request import HTTPXRequest
+
 def build_support_app() -> Application:
-    app = Application.builder().token(SUPPORT_BOT_TOKEN).build()
+    # ⚙️ կայուն կապերի համար ավելացնենք request configuration
+    request = HTTPXRequest(
+        connect_timeout=10.0,
+        read_timeout=20.0,
+        write_timeout=20.0,
+        pool_timeout=15.0,
+        pool_limits=(50, 10)  # 50 միաժամանակյա կապ, 10 պահվող կապ
+    )
+
+    app = Application.builder().token(SUPPORT_BOT_TOKEN).request(request).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("reply", admin_reply))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     return app
+
 
 async def start_support_webhook():
     # 🟢 Global հայտարարումը միայն այստեղ ենք անում
