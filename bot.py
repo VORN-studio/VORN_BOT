@@ -1812,6 +1812,61 @@ def api_fix_vorn_column():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+# =========================================================
+# 🤖 SUPPORT BOT — second bot inside same server
+# =========================================================
+import threading
+import asyncio
+from telegram.ext import ApplicationBuilder, MessageHandler, filters
+
+SUPPORT_BOT_TOKEN = os.getenv("SUPPORT_BOT_TOKEN")
+SUPPORT_ADMIN_ID = int(os.getenv("SUPPORT_ADMIN_ID", "0"))
+
+# async support handler
+async def support_handle(update, context):
+    if not update.message:
+        return
+    user = update.effective_user
+    msg = update.message.text
+
+    # ուղարկում ենք ադմինին
+    await context.bot.send_message(
+        chat_id=SUPPORT_ADMIN_ID,
+        text=f"📩 <b>Message from</b> @{user.username or user.id}\n\n{msg}",
+        parse_mode="HTML"
+    )
+    await update.message.reply_text("✅ Message sent to support!")
+
+# async reply from admin to user
+async def admin_reply(update, context):
+    if update.effective_user.id != SUPPORT_ADMIN_ID:
+        return
+    try:
+        parts = update.message.text.split(" ", 2)
+        if len(parts) < 3:
+            await update.message.reply_text("❗ Format: /reply user_id text")
+            return
+        user_id = int(parts[1])
+        text = parts[2]
+        await context.bot.send_message(chat_id=user_id, text=f"💬 Admin: {text}")
+        await update.message.reply_text("✅ Sent!")
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Error: {e}")
+
+async def run_support_bot():
+    app = ApplicationBuilder().token(SUPPORT_BOT_TOKEN).build()
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, support_handle))
+    app.add_handler(MessageHandler(filters.COMMAND, admin_reply))
+    print("🤖 Support bot started.")
+    await app.run_polling()
+
+def start_support_bot_thread():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_support_bot())
+
+    support_thread = threading.Thread(target=start_support_bot_thread, daemon=True)
+    support_thread.start()
 
 
 if __name__ == "__main__":

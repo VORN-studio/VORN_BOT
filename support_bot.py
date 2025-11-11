@@ -82,6 +82,5 @@ def main():
     print(f"✅ {BOT_NAME} is running...")
     app.run_polling()
 
-if __name__ == "__main__":
-    main()
-ս
+# if __name__ == "__main__":
+ #   main()
