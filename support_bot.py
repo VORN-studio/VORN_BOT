@@ -2,10 +2,9 @@
 
 import os
 import logging
+import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-import asyncio
-
 
 # === CONFIG ===
 SUPPORT_BOT_TOKEN = os.getenv("SUPPORT_BOT_TOKEN", "").strip()
@@ -47,12 +46,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💬 {text}"
     )
 
-    # ուղարկում ենք ադմինին (ողջը նույն event loop-ի մեջ)
+    # ուղարկում ենք ադմինին և պատասխանում ենք օգտվողին
     await context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML")
-    # պատասխանում ենք օգտվողին
     await update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!")
-
-
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != SUPPORT_ADMIN_ID:
@@ -71,7 +67,6 @@ async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send՝ {e}")
 
-
 def build_support_app() -> Application:
     app = Application.builder().token(SUPPORT_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -80,8 +75,8 @@ def build_support_app() -> Application:
     return app
 
 async def start_support_webhook():
-    global support_app_global  # ✅ նախ հայտարարում ենք global-ը հենց սկզբում
-
+    # 🟢 Global հայտարարումը միայն այստեղ ենք անում
+    global support_app_global
     support_app_global = build_support_app()
 
     await support_app_global.initialize()
@@ -89,9 +84,3 @@ async def start_support_webhook():
     await support_app_global.bot.set_webhook("https://vorn-bot-nggr.onrender.com/support")
 
     print("✅ Support bot webhook set successfully")
-
-
-
-    global support_app_global, support_loop_global
-    support_app_global = app
-    support_loop_global = asyncio.get_running_loop()
