@@ -105,24 +105,31 @@ async def start_support_webhook():
     except Exception as e:
         print(f"⚠️ Failed to set webhook: {e}")
 
-    import multiprocessing
+    # 🧠 Այստեղ multiprocessing այլևս չի օգտագործվում.
+    # Փոխարենը՝ asyncio.create_task պահում ենք ֆոնում, առանց loop conflict-ի.
+    import threading
     import asyncio
 
     def run_support_bot():
-        async def run_async():
-            await support_app_global.initialize()
-            await support_app_global.start()
-            print("🤖 Support bot is running (Render safe mode)")
-            await asyncio.Event().wait()  # պահում է loop-ը բաց վիճակում
+        async def main():
+            try:
+                await support_app_global.initialize()
+                await support_app_global.start()
+                print("🤖 Support bot running in background thread safely")
+                await asyncio.Event().wait()
+            except Exception as e:
+                print(f"🔥 Support bot error: {e}")
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.create_task(run_async())
+        loop.create_task(main())
         loop.run_forever()
 
-    p = multiprocessing.Process(target=run_support_bot, name="support-bot-process", daemon=True)
-    p.start()
-    print("🚀 Support bot process started safely (Render)")
+    # Բացել ֆոնային թել՝ առանց multiprocessing-ի (loop isolation)
+    t = threading.Thread(target=run_support_bot, name="support-bot-thread", daemon=True)
+    t.start()
+    print("🚀 Support bot thread started safely")
+
 
 
 
