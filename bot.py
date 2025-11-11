@@ -8,6 +8,8 @@ from typing import Optional
 
 from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
+from support_bot import start_support_runtime, enqueue_support_update
+
 
 last_exchange_ts = {}
 EXCHANGE_GUARD_WINDOW = 5  # sec
