@@ -80,16 +80,16 @@ def build_support_app() -> Application:
     return app
 
 async def start_support_webhook():
-    # կառուցում ենք application-ը մեկ տեղում և պահում գլոբալում
-    global support_app_global
+    global support_app_global  # ✅ նախ հայտարարում ենք global-ը հենց սկզբում
+
     support_app_global = build_support_app()
 
-    # նախ initialize, հետո webhook
     await support_app_global.initialize()
     await support_app_global.bot.delete_webhook()
     await support_app_global.bot.set_webhook("https://vorn-bot-nggr.onrender.com/support")
 
     print("✅ Support bot webhook set successfully")
+
 
 
     global support_app_global, support_loop_global
