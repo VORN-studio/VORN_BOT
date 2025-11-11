@@ -32,6 +32,22 @@ let exchangeBusy = false; // ⚙️ արգելում է կրկնակի սեղմ�
 
 
 /* ------------ HELPERS ------------ */
+
+// === One-time language lock ===
+const LANG_LOCK_KEY = "vorn_lang_lock";
+
+function isLangLocked() {
+  try { return localStorage.getItem(LANG_LOCK_KEY) === "1"; } catch { return false; }
+}
+
+function lockLang(lang) {
+  try {
+    if (lang) localStorage.setItem("vorn_lang", lang);
+    localStorage.setItem(LANG_LOCK_KEY, "1");
+  } catch {}
+}
+
+
 function uidFromURL() {
   try {
     const s = new URLSearchParams(window.location.search);
@@ -1623,7 +1639,7 @@ paintMineButton() {
       });
     } catch (e) { console.warn("set_language failed:", e); }
   }
-
+  lockLang(this.lang);  // ✅ permanently remember language choice
   this.startSlidesFlow(this.lang);
 });
 
@@ -1759,9 +1775,16 @@ paintMineButton() {
         introText && (introText.style.display = "none");
         startCtr && (startCtr.style.display = "none");
 
-        // 🟢 Ահա սա է հիմնական տողը, որ բացում է լեզուների մենյուն
-        langModal.classList.remove("hidden");
-        console.log("✅ START → languageModal opened");
+        // 🟢 Language menu appears only first time
+if (isLangLocked()) {
+  console.log("✅ START → skipping language modal, already chosen");
+  VORN.openMainInterface();     // անմիջապես բացում է խաղը
+  applyI18N(VORN.lang || getSavedLang());
+} else {
+  langModal.classList.remove("hidden"); // առաջին անգամ միայն բացում ենք
+  console.log("✅ START → languageModal opened");
+}
+
       });
       return true;
     }
