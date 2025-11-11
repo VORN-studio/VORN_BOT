@@ -1505,6 +1505,13 @@ def telegram_webhook():
 from support_bot import build_support_app
 support_app = build_support_app()
 
+import asyncio
+from support_bot import start_support_webhook
+
+# 🧩 Initialize Support Bot webhook once when app starts
+asyncio.run(start_support_webhook())
+
+
 @app_web.route("/support", methods=["POST"])
 def support_webhook():
     from flask import request, jsonify
