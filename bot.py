@@ -1505,11 +1505,6 @@ def telegram_webhook():
 from support_bot import build_support_app
 support_app = build_support_app()
 
-import asyncio
-from support_bot import start_support_webhook
-
-# 🧩 Initialize Support Bot webhook once when app starts
-asyncio.run(start_support_webhook())
 
 
 @app_web.route("/support", methods=["POST"])
@@ -1522,13 +1517,14 @@ def support_webhook():
         update = Update.de_json(update_data, support_app.bot)
 
         def process_support_update():
+            # Ստանում կամ ստեղծում ենք event loop
             try:
                 loop = asyncio.get_event_loop()
             except RuntimeError:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
 
-            # optional: one-time initialize (safe-guard)
+            # Եթե դեռ initialize չի արվել՝ անում ենք
             try:
                 if not getattr(support_app, "_vorn_inited", False):
                     if loop.is_running():
@@ -1539,6 +1535,7 @@ def support_webhook():
             except Exception:
                 pass
 
+            # Արդեն հիմա քշում ենք support bot-ի update-ը
             if loop.is_running():
                 loop.create_task(support_app.process_update(update))
             else:
@@ -1551,6 +1548,7 @@ def support_webhook():
         print(f"🔥 Support webhook error: {e}")
         import traceback; print(traceback.format_exc())
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
@@ -1940,10 +1938,18 @@ def start_support_bot_in_thread():
     t.start()
     print("🤖 VORN Support bot started via webhook.")
 
+import asyncio
+
+async def init_support_webhook():
+    await support_app.initialize()
+    await support_app.bot.delete_webhook()
+    await support_app.bot.set_webhook("https://vorn-bot-nggr.onrender.com/support")
+    print("✅ Support bot webhook set successfully")
 
 
 
 if __name__ == "__main__":
+    asyncio.run(init_support_webhook())
     print("✅ Bot script loaded successfully.")
     try:
         init_db()
