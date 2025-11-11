@@ -1877,14 +1877,22 @@ def start_support_bot_in_thread():
     import asyncio
 
     def _runner():
-        app = build_support_app()
+        async def _start():
+            app = build_support_app()
+            print("✅ Support bot polling started...")
+            await app.initialize()
+            await app.start()
+            await app.updater.start_polling()
+            await app.updater.wait_for_stop()
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(app.run_polling(stop_signals=None))
+        loop.run_until_complete(_start())
 
     t = threading.Thread(target=_runner, name="support-bot", daemon=True)
     t.start()
     print("🤖 VORN Support bot started in background thread.")
+
 
 
 if __name__ == "__main__":
