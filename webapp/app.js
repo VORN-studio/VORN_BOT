@@ -111,8 +111,135 @@ const langButtonsDict = {
     }
   }
 
-  }
+  },
  
+    en: {
+      task_perform: "Perform",
+      task_claimed: "Claimed",
+      task_completed: "Completed"
+    },
+    ru: {
+      task_perform: "Выполнить",
+      task_claimed: "Получено",
+      task_completed: "Завершено"
+    },
+    hy: {
+      task_perform: "Կատարել",
+      task_claimed: "Ստացված է",
+        task_completed: "Ավարտված է"
+    },
+    fr: {
+      task_perform: "Effectuer",
+      task_claimed: "Réclamé",
+      task_completed: "Terminé"
+    },
+    de: {
+      task_perform: "Ausführen",
+      task_claimed: "Erhalten",
+      task_completed: "Abgeschlossen"
+    },
+    it: {
+      task_perform: "Esegui",
+      task_claimed: "Riscattato",
+      task_completed: "Completato"
+    },
+    es: {
+      task_perform: "Realizar",
+      task_claimed: "Reclamado",
+      task_completed: "Completado"
+    },
+    pt: {
+      task_perform: "Executar",
+      task_claimed: "Recebido",
+      task_completed: "Concluído"
+    },
+    tr: {
+      task_perform: "Yap",
+      task_claimed: "Alındı",
+      task_completed: "Tamamlandı"
+    },
+    fa: {
+      task_perform: "انجام",
+      task_claimed: "دریافت شد",
+      task_completed: "تکمیل شد"
+    },
+    ar: {
+      task_perform: "تنفيذ",
+      task_claimed: "تم الاستلام",
+      task_completed: "مكتمل"
+    },
+    zh: {
+      task_perform: "执行",
+      task_claimed: "已领取",
+      task_completed: "已完成"
+    },
+    ja: {
+      task_perform: "実行",
+      task_claimed: "受け取った",
+      task_completed: "完了した"
+    },
+    ko: {
+      task_perform: "수행",
+      task_claimed: "받음",
+      task_completed: "완료됨"
+    },
+    hi: {
+      task_perform: "करना",
+      task_claimed: "प्राप्त",
+      task_completed: "पूरा"
+    },
+    el: {
+      task_perform: "Εκτέλεση",
+      task_claimed: "Ελήφθη",
+      task_completed: "Ολοκληρώθηκε"
+    },
+    pl: {
+      task_perform: "Wykonaj",
+      task_claimed: "Odebrane",
+      task_completed: "Zakończone"
+    },
+    nl: {
+      task_perform: "Uitvoeren",
+      task_claimed: "Ontvangen",
+      task_completed: "Voltooid"
+    },
+    sv: {
+      task_perform: "Utför",
+      task_claimed: "Mottaget",
+      task_completed: "Slutfört"
+    },
+    ro: {
+      task_perform: "Execută",
+      task_claimed: "Revendicat",
+      task_completed: "Finalizat"
+    },
+    hu: {
+      task_perform: "Végrehajt",
+      task_claimed: "Megkapva",
+      task_completed: "Befejezve"
+    },
+    cs: {
+      task_perform: "Provést",
+      task_claimed: "Získáno",
+      task_completed: "Dokončeno"
+    },
+    uk: {
+      task_perform: "Виконати",
+      task_claimed: "Отримано",
+      task_completed: "Завершено"
+    },
+    az: {
+      task_perform: "Yerinə yetir",
+      task_claimed: "Alındı",
+      task_completed: "Tamamlandı"
+    },
+    ka: {
+      task_perform: "შესრულება",
+      task_claimed: "მიღებულია",
+      task_completed: "დასრულებულია"
+    }
+
+
 };
 
 
@@ -798,6 +925,18 @@ const VORN = {
     btn.onclick = () => VORN.showConfirmLang(code);
     grid.appendChild(btn);
   });
+
+  // 🔹 Translate task buttons (Perform / Claimed)
+  document.querySelectorAll(".task-btn").forEach(btn => {
+  if (btn.classList.contains("claimed")) {
+    btn.textContent = VORN.i18n?.[lang]?.task_claimed || "Claimed";
+  } else if (btn.classList.contains("completed")) {
+    btn.textContent = VORN.i18n?.[lang]?.task_completed || "Completed";
+  } else {
+    btn.textContent = VORN.i18n?.[lang]?.task_perform || "Perform";
+  }
+});
+
 
   console.log(`✅ Language grid filled with ${Object.keys(LANGS).length} buttons`);
 },
