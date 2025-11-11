@@ -105,20 +105,25 @@ async def start_support_webhook():
     except Exception as e:
         print(f"⚠️ Failed to set webhook: {e}")
 
-    # 🔹 Render compatibility mode: run in a fresh isolated process
     import multiprocessing
     import asyncio
 
     def run_support_bot():
+        async def run_async():
+            await support_app_global.initialize()
+            await support_app_global.start()
+            print("🤖 Support bot is running (Render safe mode)")
+            await asyncio.Event().wait()  # պահում է loop-ը բաց վիճակում
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(support_app_global.initialize())
-        loop.run_until_complete(support_app_global.start())
+        loop.create_task(run_async())
         loop.run_forever()
 
     p = multiprocessing.Process(target=run_support_bot, name="support-bot-process", daemon=True)
     p.start()
-    print("🤖 Support bot started in separate process (Render safe mode)")
+    print("🚀 Support bot process started safely (Render)")
+
 
 
 
