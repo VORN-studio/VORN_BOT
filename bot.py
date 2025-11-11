@@ -1507,25 +1507,44 @@ support_app = build_support_app()
 
 @app_web.route("/support", methods=["POST"])
 def support_webhook():
-    from flask import request
-    import asyncio
+    from flask import request, jsonify
+    import asyncio, threading
     try:
         update_data = request.get_json(force=True)
-
-        # Թույլ ենք տալիս Application-ը վերականգնել Update object
         from telegram import Update
         update = Update.de_json(update_data, support_app.bot)
 
-        # Աշխատեցնում ենք async dispatcher-ը՝ առանց event loop փակելու
-        asyncio.get_event_loop().create_task(support_app.process_update(update))
+        def process_support_update():
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
 
-        return "OK", 200
+            # optional: one-time initialize (safe-guard)
+            try:
+                if not getattr(support_app, "_vorn_inited", False):
+                    if loop.is_running():
+                        loop.create_task(support_app.initialize())
+                    else:
+                        loop.run_until_complete(support_app.initialize())
+                    setattr(support_app, "_vorn_inited", True)
+            except Exception:
+                pass
+
+            if loop.is_running():
+                loop.create_task(support_app.process_update(update))
+            else:
+                loop.run_until_complete(support_app.process_update(update))
+
+        threading.Thread(target=process_support_update, daemon=True).start()
+        return jsonify({"ok": True}), 200
 
     except Exception as e:
         print(f"🔥 Support webhook error: {e}")
-        import traceback
-        print(traceback.format_exc())
-        return "ERROR", 500
+        import traceback; print(traceback.format_exc())
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
