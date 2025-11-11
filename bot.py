@@ -1916,6 +1916,8 @@ if __name__ == "__main__":
     # ✅ Հետո Telegram bot-ը
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
+     
+    start_support_bot_in_thread()
 
     print("🚀 Both Flask and Telegram bot started successfully.")
 
@@ -1923,7 +1925,7 @@ if __name__ == "__main__":
     while True:
         time.sleep(60)
 
-start_support_bot_in_thread()
+
 
 
 
