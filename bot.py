@@ -1507,15 +1507,26 @@ support_app = build_support_app()
 
 @app_web.route("/support", methods=["POST"])
 def support_webhook():
+    from flask import request
+    import asyncio
     try:
-        from flask import request
-        data = request.get_json(force=True)
-        # Telegram-ի update-ը փոխանցում ենք support bot-ին
-        asyncio.run(support_app.process_update_json(data))
+        update_data = request.get_json(force=True)
+
+        # Թույլ ենք տալիս Application-ը վերականգնել Update object
+        from telegram import Update
+        update = Update.de_json(update_data, support_app.bot)
+
+        # Աշխատեցնում ենք async dispatcher-ը՝ առանց event loop փակելու
+        asyncio.get_event_loop().create_task(support_app.process_update(update))
+
         return "OK", 200
+
     except Exception as e:
         print(f"🔥 Support webhook error: {e}")
+        import traceback
+        print(traceback.format_exc())
         return "ERROR", 500
+
 
 
 
