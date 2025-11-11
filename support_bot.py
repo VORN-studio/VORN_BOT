@@ -85,7 +85,6 @@ def build_support_app() -> Application:
         read_timeout=20.0,
         write_timeout=20.0,
         pool_timeout=15.0,
-        pool_limits=(50, 10)  # 50 միաժամանակյա կապ, 10 պահվող կապ
     )
 
     app = Application.builder().token(SUPPORT_BOT_TOKEN).request(request).build()
