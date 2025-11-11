@@ -1501,6 +1501,21 @@ def telegram_webhook():
 
 
 
+# === SUPPORT BOT WEBHOOK ===
+from support_bot import build_support_app
+support_app = build_support_app()
+
+@app.route("/support", methods=["POST"])
+def support_webhook():
+    try:
+        from flask import request
+        data = request.get_json(force=True)
+        # Telegram-ի update-ը փոխանցում ենք support bot-ին
+        asyncio.run(support_app.process_update_json(data))
+        return "OK", 200
+    except Exception as e:
+        print(f"🔥 Support webhook error: {e}")
+        return "ERROR", 500
 
 
 
