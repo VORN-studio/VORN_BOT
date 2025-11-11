@@ -4,6 +4,8 @@ import os
 import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+import asyncio
+
 
 # === CONFIG ===
 SUPPORT_BOT_TOKEN = os.getenv("SUPPORT_BOT_TOKEN", "").strip()
@@ -45,22 +47,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💬 {text}"
     )
     # Ուղարկում ենք ադմինին
-    await context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML")
-    # Պատասխանում ենք օգտվողին
-    await update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!")
+    loop = asyncio.get_running_loop()
+    loop.create_task(context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML"))
+    loop.create_task(update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!"))
+
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != SUPPORT_ADMIN_ID:
-        return await update.message.reply_text("⛔ You are not authorized to use this command.")
+        loop = asyncio.get_running_loop()
+        loop.create_task(update.message.reply_text("⛔ You are not authorized to use this command."))
+        return
     if len(context.args) < 2:
-        return await update.message.reply_text("Usage՝\n/reply <user_id> <message>")
+        loop = asyncio.get_running_loop()
+        loop.create_task(update.message.reply_text("Usage՝\n/reply <user_id> <message>"))
+        return
     try:
         uid = int(context.args[0])
         msg = " ".join(context.args[1:])
-        await context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML")
-        await update.message.reply_text("✅ Sent successfully.")
+        loop = asyncio.get_running_loop()
+        loop.create_task(context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML"))
+        loop.create_task(update.message.reply_text("✅ Sent successfully."))
+
     except Exception as e:
-        await update.message.reply_text(f"❌ Failed to send՝ {e}")
+        loop = asyncio.get_running_loop()
+        loop.create_task(update.message.reply_text(f"❌ Failed to send՝ {e}"))
 
 def build_support_app() -> Application:
     app = Application.builder().token(SUPPORT_BOT_TOKEN).build()
@@ -77,4 +87,4 @@ async def start_support_webhook():
 
     global support_app_global, support_loop_global
     support_app_global = app
-    support_loop_global = loop
+    support_loop_global = asyncio.get_running_loop()
