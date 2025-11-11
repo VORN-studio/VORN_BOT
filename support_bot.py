@@ -1,16 +1,18 @@
-# support_bot.py — minimal Telegram support bot
-# pip install python-telegram-bot==20.3
+# support_bot.py — VORN Support bot (python-telegram-bot v20+)
 
+import os
 import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-import os
 
 # === CONFIG ===
 SUPPORT_BOT_TOKEN = os.getenv("SUPPORT_BOT_TOKEN", "").strip()
 SUPPORT_ADMIN_ID = int(os.getenv("SUPPORT_ADMIN_ID", "0"))
+
 if not SUPPORT_BOT_TOKEN:
     raise RuntimeError("SUPPORT_BOT_TOKEN env var is missing")
+if not SUPPORT_ADMIN_ID:
+    raise RuntimeError("SUPPORT_ADMIN_ID env var is missing or zero")
 
 BOT_NAME = "VORN Support"
 
@@ -20,23 +22,19 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# === START ===
+# === HANDLERS ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     msg = (
-        f"👋 Hello {user.first_name or 'there'}!\n\n"
-        f"This is the official {BOT_NAME} assistant.\n"
-        f"Please describe your issue or question below.\n"
-        f"Our team will get back to you soon. 🕊"
+        f"👋 Բարև {user.first_name or 'ընկեր'}!\n\n"
+        f"Սա {BOT_NAME} օգնականն է.\n"
+        f"Գրի՛ր խնդիրը կամ հարցը, և մենք շուտով կպատասխանենք 🕊"
     )
     await update.message.reply_text(msg)
 
-# === FORWARD USER MESSAGES TO ADMIN ===
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     text = update.message.text or "(no text)"
-    print(f"📨 Message received from {user.id}: {text}")
-
     user_link = f"https://t.me/{user.username}" if user.username else f"tg://user?id={user.id}"
 
     admin_text = (
@@ -46,38 +44,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🔗 {user_link}\n\n"
         f"💬 {text}"
     )
+    # Ուղարկում ենք ադմինին
+    await context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML")
+    # Պատասխանում ենք օգտվողին
+    await update.message.reply_text("✅ Ձեր նամակն ընդունվեց.\nԿպատասխանենք մոտ ժամանակում!")
 
-    await context.bot.send_message(
-        chat_id=SUPPORT_ADMIN_ID,
-        text=admin_text,
-        parse_mode="HTML"
-    )
-
-    await update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!")
-
-# === ADMIN CAN REPLY ===
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != SUPPORT_ADMIN_ID:
-        return await update.message.reply_text("⛔ You are not authorized.")
+        return await update.message.reply_text("⛔ Դուք իրավասու չեք այս հրամանի համար.")
     if len(context.args) < 2:
-        return await update.message.reply_text("Usage:\n/reply <user_id> <message>")
+        return await update.message.reply_text("Օգտագործում՝\n/reply <user_id> <message>")
     try:
         uid = int(context.args[0])
         msg = " ".join(context.args[1:])
         await context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML")
-        await update.message.reply_text("✅ Sent.")
+        await update.message.reply_text("✅ Ուղարկվեց.")
     except Exception as e:
-        await update.message.reply_text(f"❌ Failed: {e}")
+        await update.message.reply_text(f"❌ Չհաջողվեց՝ {e}")
 
-# === MAIN ===
-def main():
+def build_support_app() -> Application:
     app = Application.builder().token(SUPPORT_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("reply", admin_reply))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    print(f"✅ {BOT_NAME} is running...")
-    app.run_polling()
-
-# if __name__ == "__main__":
-#     main()
+    return app
