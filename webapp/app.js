@@ -1822,9 +1822,10 @@ bindTasksModal() {
       ? `<a href="${t.link}" target="_blank">${t.title}</a>`
       : t.title;
     const lang = this.lang || getSavedLang();
-    const performTxt  = texts[lang]?.task_perform  || texts.en.task_perform;
-    const claimedTxt  = texts[lang]?.task_claimed  || texts.en.task_claimed;
-    const completedTxt= texts[lang]?.task_completed|| texts.en.task_completed;
+    const performTxt   = (langButtonsDict[lang]?.task_perform)   || (texts[lang]?.task_perform)   || "Perform";
+    const claimedTxt   = (langButtonsDict[lang]?.task_claimed)   || (texts[lang]?.task_claimed)   || "Claimed";
+    const completedTxt = (langButtonsDict[lang]?.task_completed) || (texts[lang]?.task_completed) || "Completed";
+
 
     const btn = t.completed
     ? `<button class="task-btn done" disabled>✅ ${completedTxt}</button>`
