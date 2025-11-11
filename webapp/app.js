@@ -1821,9 +1821,15 @@ bindTasksModal() {
     const title = t.link
       ? `<a href="${t.link}" target="_blank">${t.title}</a>`
       : t.title;
+    const lang = this.lang || getSavedLang();
+    const performTxt  = texts[lang]?.task_perform  || texts.en.task_perform;
+    const claimedTxt  = texts[lang]?.task_claimed  || texts.en.task_claimed;
+    const completedTxt= texts[lang]?.task_completed|| texts.en.task_completed;
+
     const btn = t.completed
-      ? `<button class="task-btn done" disabled>✅ Done</button>`
-      : `<button class="task-perform-btn" data-task-id="${t.id}" data-link="${t.link || ""}">🚀 Perform</button>`;
+    ? `<button class="task-btn done" disabled>✅ ${completedTxt}</button>`
+    : `<button class="task-perform-btn" data-task-id="${t.id}" data-link="${t.link || ""}">🚀 ${performTxt}</button>`;
+
 
     div.innerHTML = `
       <div class="task-left">
@@ -1895,10 +1901,38 @@ bindTasksModal() {
           this.vornBalance = d2.new_vorn;
           document.getElementById("featherCount").textContent = d2.new_balance;
           document.getElementById("foodCount").textContent = d2.new_vorn.toFixed(2);
-          btn.textContent = "✅ Claimed";
+          const lang = this.lang || getSavedLang();
+          btn.textContent = `✅ ${texts[lang]?.task_claimed || texts.en.task_claimed}`;
           btn.classList.add("done");
         } else {
-          btn.textContent = "⚠️ Try again";
+          const tryAgainTxt = {
+  en: "⚠️ Try again",
+  ru: "⚠️ Повторить",
+  hy: "⚠️ Կրկնել",
+  fr: "⚠️ Réessayer",
+  es: "⚠️ Intentar de nuevo",
+  de: "⚠️ Erneut versuchen",
+  it: "⚠️ Riprova",
+  tr: "⚠️ Tekrar dene",
+  fa: "⚠️ دوباره تلاش کنید",
+  ar: "⚠️ حاول مرة أخرى",
+  zh: "⚠️ 再试一次",
+  ja: "⚠️ もう一度試す",
+  ko: "⚠️ 다시 시도하세요",
+  hi: "⚠️ पुनः प्रयास करें",
+  pt: "⚠️ Tentar novamente",
+  el: "⚠️ Δοκιμάστε ξανά",
+  pl: "⚠️ Spróbuj ponownie",
+  nl: "⚠️ Probeer opnieuw",
+  sv: "⚠️ Försök igen",
+  ro: "⚠️ Încearcă din nou",
+  hu: "⚠️ Próbáld újra",
+  cs: "⚠️ Zkusit znovu",
+  uk: "⚠️ Спробуй ще раз",
+  az: "⚠️ Yenidən cəhd et",
+  ka: "⚠️ სცადე თავიდან"
+}[this.lang || getSavedLang()] || "⚠️ Try again";
+btn.textContent = tryAgainTxt;
           btn.disabled = false;
         }
       }, 4000);
