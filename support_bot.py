@@ -46,31 +46,31 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🔗 {user_link}\n\n"
         f"💬 {text}"
     )
-    # Ուղարկում ենք ադմինին
-    loop = asyncio.get_running_loop()
-    loop.create_task(context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML"))
-    loop.create_task(update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!"))
+
+    # ուղարկում ենք ադմինին (ողջը նույն event loop-ի մեջ)
+    await context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML")
+    # պատասխանում ենք օգտվողին
+    await update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!")
+
 
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != SUPPORT_ADMIN_ID:
-        loop = asyncio.get_running_loop()
-        loop.create_task(update.message.reply_text("⛔ You are not authorized to use this command."))
+        await update.message.reply_text("⛔ You are not authorized to use this command.")
         return
+
     if len(context.args) < 2:
-        loop = asyncio.get_running_loop()
-        loop.create_task(update.message.reply_text("Usage՝\n/reply <user_id> <message>"))
+        await update.message.reply_text("Usage՝\n/reply <user_id> <message>")
         return
+
     try:
         uid = int(context.args[0])
         msg = " ".join(context.args[1:])
-        loop = asyncio.get_running_loop()
-        loop.create_task(context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML"))
-        loop.create_task(update.message.reply_text("✅ Sent successfully."))
-
+        await context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML")
+        await update.message.reply_text("✅ Sent successfully.")
     except Exception as e:
-        loop = asyncio.get_running_loop()
-        loop.create_task(update.message.reply_text(f"❌ Failed to send՝ {e}"))
+        await update.message.reply_text(f"❌ Failed to send՝ {e}")
+
 
 def build_support_app() -> Application:
     app = Application.builder().token(SUPPORT_BOT_TOKEN).build()
@@ -80,10 +80,17 @@ def build_support_app() -> Application:
     return app
 
 async def start_support_webhook():
-    app = build_support_app()
-    await app.bot.delete_webhook()
-    await app.bot.set_webhook("https://vorn-bot-nggr.onrender.com/support")
+    # կառուցում ենք application-ը մեկ տեղում և պահում գլոբալում
+    global support_app_global
+    support_app_global = build_support_app()
+
+    # նախ initialize, հետո webhook
+    await support_app_global.initialize()
+    await support_app_global.bot.delete_webhook()
+    await support_app_global.bot.set_webhook("https://vorn-bot-nggr.onrender.com/support")
+
     print("✅ Support bot webhook set successfully")
+
 
     global support_app_global, support_loop_global
     support_app_global = app
