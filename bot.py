@@ -1504,9 +1504,8 @@ def telegram_webhook():
 
 
 # === SUPPORT BOT WEBHOOK ===
-from support_bot import build_support_app
-support_app = build_support_app()
-
+from support_bot import start_support_runtime, enqueue_support_update
+start_support_runtime()
 
 
 @app_web.route("/support", methods=["POST"])
