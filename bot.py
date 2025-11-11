@@ -1505,7 +1505,7 @@ def telegram_webhook():
 from support_bot import build_support_app
 support_app = build_support_app()
 
-@app.route("/support", methods=["POST"])
+@app_web.route("/support", methods=["POST"])
 def support_webhook():
     try:
         from flask import request
