@@ -74,3 +74,7 @@ async def start_support_webhook():
     await app.bot.delete_webhook()
     await app.bot.set_webhook("https://vorn-bot-nggr.onrender.com/support")
     print("✅ Support bot webhook set successfully")
+
+    global support_app_global, support_loop_global
+    support_app_global = app
+    support_loop_global = loop
