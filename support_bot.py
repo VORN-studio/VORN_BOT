@@ -26,9 +26,9 @@ logging.basicConfig(
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     msg = (
-        f"👋 Բարև {user.first_name or 'ընկեր'}!\n\n"
-        f"Սա {BOT_NAME} օգնականն է.\n"
-        f"Գրի՛ր խնդիրը կամ հարցը, և մենք շուտով կպատասխանենք 🕊"
+        f"👋 Hello {user.first_name or 'friend'}!\n\n"
+        f"This is the {BOT_NAME} assistant.\n"
+        f"Please describe your issue or question below, and our team will reply soon. 🕊"
     )
     await update.message.reply_text(msg)
 
@@ -44,23 +44,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🔗 {user_link}\n\n"
         f"💬 {text}"
     )
-    # Ուղարկում ենք ադմինին
+    # Send to admin
     await context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML")
-    # Պատասխանում ենք օգտվողին
-    await update.message.reply_text("✅ Ձեր նամակն ընդունվեց.\nԿպատասխանենք մոտ ժամանակում!")
+    # Auto reply to user
+    await update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!")
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != SUPPORT_ADMIN_ID:
-        return await update.message.reply_text("⛔ Դուք իրավասու չեք այս հրամանի համար.")
+        return await update.message.reply_text("⛔ You are not authorized to use this command.")
     if len(context.args) < 2:
-        return await update.message.reply_text("Օգտագործում՝\n/reply <user_id> <message>")
+        return await update.message.reply_text("Usage:\n/reply <user_id> <message>")
     try:
         uid = int(context.args[0])
         msg = " ".join(context.args[1:])
         await context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML")
-        await update.message.reply_text("✅ Ուղարկվեց.")
+        await update.message.reply_text("✅ Sent successfully.")
     except Exception as e:
-        await update.message.reply_text(f"❌ Չհաջողվեց՝ {e}")
+        await update.message.reply_text(f"❌ Failed to send: {e}")
 
 def build_support_app() -> Application:
     app = Application.builder().token(SUPPORT_BOT_TOKEN).build()
