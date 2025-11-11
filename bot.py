@@ -1882,8 +1882,8 @@ def start_support_bot_in_thread():
             print("✅ Support bot polling started...")
             await app.initialize()
             await app.start()
-            await app.updater.start_polling()
-            await app.updater.wait_for_stop()
+            await app.run_polling(stop_signals=None)
+
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
