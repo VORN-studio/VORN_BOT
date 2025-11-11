@@ -98,25 +98,26 @@ async def start_support_webhook():
     global support_app_global
     support_app_global = build_support_app()
 
-    # 🔹 Նախ webhook-ը ջնջենք, հետո նոր տեղադրենք
     try:
+        # Նախ webhook-ը ջնջենք ու նորից դնենք
         await support_app_global.bot.delete_webhook()
         await support_app_global.bot.set_webhook("https://vorn-bot-nggr.onrender.com/support")
         print("✅ Support bot webhook set successfully")
     except Exception as e:
         print(f"⚠️ Failed to set webhook: {e}")
 
-    # 🔹 Հատուկ Render-ի համար — բոտը թող աշխատի սեփական event loop-ով
-    import threading
+    # --- Աշխատեցնենք բոտը նոր asyncio loop-ում (առանձին thread-ում)
+    import threading, asyncio
 
     def run_asyncio_loop():
-        import asyncio
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(support_app_global.start())
+        loop.run_until_complete(support_app_global.initialize())
+        loop.create_task(support_app_global.start())
+        print("🤖 Support bot started safely in background thread.")
         loop.run_forever()
 
     t = threading.Thread(target=run_asyncio_loop, name="support-bot-thread", daemon=True)
     t.start()
-    print("🤖 Support bot started safely in background thread.")
+
 
