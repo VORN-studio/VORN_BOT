@@ -49,10 +49,28 @@ function lockLang(lang) {
 
 
 function uidFromURL() {
+  // 1) Փորձում ենք UID-ը վերցնել Telegram WebApp-ից (հատկապես iPhone-ում սա ավելի հուսալի է)
+  try {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+      const tgUserId = window.Telegram.WebApp.initDataUnsafe.user?.id;
+      if (tgUserId) {
+        console.log("🧠 UID from Telegram WebApp:", tgUserId);
+        return Number(tgUserId) || 0;
+      }
+    }
+  } catch (e) {
+    console.warn("Telegram WebApp UID read failed:", e);
+  }
+
+  // 2) Եթե Telegram-ից չստացվեց, fallback՝ URL-ից (ինչպես առաջ)
   try {
     const s = new URLSearchParams(window.location.search);
-    return parseInt(s.get("uid") || "0", 10) || 0;
-  } catch { return 0; }
+    const urlUid = parseInt(s.get("uid") || "0", 10) || 0;
+    console.log("🧠 UID from URL:", urlUid);
+    return urlUid;
+  } catch {
+    return 0;
+  }
 }
 function nowSec() { return Math.floor(Date.now() / 1000); }
 
@@ -2685,10 +2703,17 @@ setTimeout(function() {
 };
 
 /* ------------ BOOTSTRAP ------------ */
+// ✅ Telegram WebApp ինտեգրում՝ որ լավ աշխատի Telegram-ի ներսում (Android + iOS)
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🌐 Connecting to API_BASE:", API_BASE);
-  VORN.init();
-  applyI18N(getSavedLang());
+  try {
+    if (window.Telegram && window.Telegram.WebApp) {
+      console.log("📲 Telegram WebApp detected");
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand(); // բացում է ամբողջ էկրանով
+    }
+  } catch (e) {
+    console.warn("Telegram WebApp init failed:", e);
+  }
 });
 
 // ✅ Safe delayed ready signal
