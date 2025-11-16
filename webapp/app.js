@@ -1911,7 +1911,9 @@ bindTasksModal() {
       if (!d1.ok) { btn.disabled = false; return alert("⚠️ Failed to start task"); }
 
       const token = d1.token;
-      if (link) window.open(link, "_blank");
+      if (link) {
+      Telegram.WebApp.openLink(link, { try_instant_view: false });
+      }
 
       setTimeout(async () => {
         const r2 = await fetch(`${API_BASE}/api/task_attempt_verify`, {
