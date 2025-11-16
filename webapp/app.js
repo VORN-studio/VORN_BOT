@@ -1912,7 +1912,12 @@ bindTasksModal() {
 
       const token = d1.token;
       if (link) {
-      Telegram.WebApp.openLink(link, { try_instant_view: false });
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.openLink(link);
+    } else {
+        window.location.href = link;
+      }
+
       }
 
       setTimeout(async () => {
