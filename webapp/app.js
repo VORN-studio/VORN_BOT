@@ -802,6 +802,22 @@ const infoData = {
 const RTL_LANGS = new Set(["ar","fa"]);
 
 
+function openTaskLink(link) {
+    try {
+        if (window.Telegram && Telegram.WebApp) {
+            Telegram.WebApp.openLink(link, { 
+                try_browser: true,
+                enable_external_browser: true 
+            });
+        } else {
+            window.location.href = link;
+        }
+    } catch (e) {
+        window.location.href = link;
+    }
+}
+
+
 /* -------- APPLY TRANSLATIONS -------- */
 function applyI18N(lang) {
   // 🧠 Fallback եթե սխալ է ընտրված լեզուն
@@ -1912,12 +1928,7 @@ bindTasksModal() {
 
       const token = d1.token;
       if (link) {
-      if (window.Telegram && Telegram.WebApp) {
-        Telegram.WebApp.openLink(link);
-    } else {
-        window.location.href = link;
-      }
-
+      openTaskLink(link);
       }
 
       setTimeout(async () => {
