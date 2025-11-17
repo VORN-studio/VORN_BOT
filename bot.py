@@ -1251,6 +1251,81 @@ def api_task_attempt_verify():
 
 
 
+@app_web.route("/api/task_attempt_verify_forced", methods=["POST"])
+def api_task_attempt_verify_forced():
+    """
+    iPhone FIX — force-complete task without external redirect.
+    Called when user returns after clicking the task link.
+    """
+
+    import time
+    data = request.get_json(force=True, silent=True) or {}
+    user_id = int(data.get("user_id", 0))
+    task_id = int(data.get("task_id", 0))
+
+    if not user_id or not task_id:
+        return jsonify({"ok": False, "error": "missing user_id or task_id"}), 400
+
+    conn = db(); c = conn.cursor()
+
+    # Load task info
+    c.execute("SELECT type, reward_feather, reward_vorn FROM tasks WHERE id=%s AND active=TRUE", (task_id,))
+    trow = c.fetchone()
+    if not trow:
+        release_db(conn)
+        return jsonify({"ok": False, "error": "task_not_found"}), 404
+
+    task_type, reward_feather, reward_vorn = trow
+    date_key = time.strftime("%Y-%m-%d") if task_type == "daily" else "ALL_TIME"
+
+    # Check if already completed
+    c.execute("SELECT 1 FROM user_tasks WHERE user_id=%s AND task_id=%s AND date_key=%s",
+              (user_id, task_id, date_key))
+    if c.fetchone():
+        release_db(conn)
+        return jsonify({"ok": False, "error": "already_completed"}), 400
+
+    # Mark completed
+    c.execute("""
+        INSERT INTO user_tasks (user_id, task_id, date_key, completed_at)
+        VALUES (%s, %s, %s, %s)
+    """, (user_id, task_id, date_key, int(time.time())))
+
+    # Update balance
+    c.execute("SELECT balance, COALESCE(vorn_balance, 0) FROM users WHERE user_id=%s", (user_id,))
+    ub = c.fetchone() or (0, 0)
+
+    new_balance = ub[0] + int(reward_feather or 0)
+    new_vorn = float(ub[1]) + float(reward_vorn or 0)
+
+    c.execute("""
+        UPDATE users
+        SET balance=%s, vorn_balance=%s
+        WHERE user_id=%s
+    """, (new_balance, new_vorn, user_id))
+
+    conn.commit()
+    release_db(conn)
+
+    try:
+        add_referral_bonus(
+            user_id,
+            reward_feathers=int(reward_feather or 0),
+            reward_vorn=float(reward_vorn or 0.0)
+        )
+    except Exception as e:
+        print("ref bonus error:", e)
+
+    return jsonify({
+        "ok": True,
+        "forced": True,
+        "reward_feather": int(reward_feather or 0),
+        "reward_vorn": float(reward_vorn or 0),
+        "new_balance": new_balance,
+        "new_vorn": new_vorn
+    })
+
+
 # =========================
 # VERIFY TASK — Reward distribution
 # =========================

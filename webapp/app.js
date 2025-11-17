@@ -1921,7 +1921,7 @@ bindTasksModal() {
       }
 
       setTimeout(async () => {
-        const r2 = await fetch(`${API_BASE}/api/task_attempt_verify`, {
+        const r2 = await fetch(`${API_BASE}/api/task_attempt_verify_forced`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: this.uid, task_id: taskId, token })
