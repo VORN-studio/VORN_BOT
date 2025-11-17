@@ -803,19 +803,30 @@ const RTL_LANGS = new Set(["ar","fa"]);
 
 
 function openTaskLink(link) {
-    try {
-        if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.openLink(link, { 
-                try_browser: true,
-                enable_external_browser: true 
-            });
-        } else {
-            window.location.href = link;
-        }
-    } catch (e) {
-        window.location.href = link;
+  if (!link) return;
+
+  try {
+    if (window.Telegram && Telegram.WebApp) {
+      // Telegram հղումների համար՝ բացում ենք հենց Telegram-ում,
+      // և մեր WebApp-ը տեղից չի շարժվում
+      if (link.startsWith("tg://") || link.startsWith("https://t.me/")) {
+        Telegram.WebApp.openTelegramLink(link);
+      } else {
+        // Սովորական https հղումները
+        Telegram.WebApp.openLink(link, {
+          try_browser: true,
+          enable_external_browser: true
+        });
+      }
+    } else {
+      // Եթե ոչ WebApp միջավայր է
+      window.open(link, "_blank");
     }
+  } catch (e) {
+    try { window.open(link, "_blank"); } catch {}
+  }
 }
+
 
 
 /* -------- APPLY TRANSLATIONS -------- */
@@ -1927,8 +1938,10 @@ bindTasksModal() {
       if (!d1.ok) { btn.disabled = false; return alert("⚠️ Failed to start task"); }
 
       const token = d1.token;
+
+// Բացում ենք հղումը, բայց մեր WebApp-ի էջը չի փոխվում
       if (link) {
-      openTaskLink(link);
+        openTaskLink(link);
       }
 
       setTimeout(async () => {
