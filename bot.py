@@ -1448,27 +1448,46 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
     wa_url = f"{base}/app?uid={user.id}"
 
+async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if not user:
+        return
+
+    # inviter_id logic նույնը թողնում ենք
+    text = update.message.text if update.message else ""
+    inviter_id = None
+    if text and text.startswith("/start"):
+        parts = text.split()
+        if len(parts) > 1 and parts[1].startswith("ref_"):
+            try:
+                inviter_id = int(parts[1].replace("ref_", ""))
+            except Exception:
+                inviter_id = None
+
+    if inviter_id == user.id:
+        inviter_id = None
+
+    ensure_user(user.id, user.username, inviter_id)
+
+    base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
+    wa_url = f"{base}/app?uid={user.id}"
+
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
     ])
-    import asyncio
 
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    send_task = context.bot.send_message(
+    # 👉 ՍԱ Է ՃԻՇՏ ՎԵՐԱՐԿՈՒՄՆԵՐԸ
+    msg = await context.bot.send_message(
         chat_id=user.id,
         text="🌕 Press the button to enter VORN App 👇",
         reply_markup=keyboard
-)
+    )
 
-    if loop.is_running():
-        loop.create_task(send_task)
-    else:
-        loop.run_until_complete(send_task)
+    # optional pin
+    try:
+        await context.bot.pin_chat_message(chat_id=user.id, message_id=msg.message_id)
+    except Exception:
+        pass
 
 
     try:
