@@ -1644,38 +1644,31 @@ def telegram_webhook():
     global application
 
     if application is None:
-        print("❌ application is None — bot not ready")
-        return jsonify({"ok": False, "error": "bot not ready"}), 503
+        print("❌ Application is None — bot not ready yet.")
+        return jsonify({"ok": False, "error": "not_ready"}), 503
 
     update_data = request.get_json(force=True, silent=True)
     if not update_data:
         print("⚠️ Empty update received")
-        return jsonify({"ok": False, "error": "empty update"}), 400
+        return jsonify({"ok": False, "error": "empty"}), 400
 
     try:
         upd = Update.de_json(update_data, application.bot)
-        print("📩 Telegram update received")
 
-        def process_update_safely():
-            try:
-                loop = application._loop
-                asyncio.run_coroutine_threadsafe(
-                    application.process_update(upd),
-                    loop
-                )
-            except Exception as e:
-                print("🔥 process_update_safely error:", e)
+        # MAIN FIX — always use application.loop
+        loop = application.loop  # ✔ official PTB event loop
 
-        threading.Thread(
-            target=process_update_safely,
-            daemon=True
-        ).start()
+        asyncio.run_coroutine_threadsafe(
+            application.process_update(upd),
+            loop
+        )
 
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 # === SUPPORT BOT WEBHOOK (Render-safe) ===
