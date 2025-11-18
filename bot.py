@@ -1658,25 +1658,24 @@ def telegram_webhook():
 
         def process_update_safely():
             try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+                loop = application._loop
+                asyncio.run_coroutine_threadsafe(
+                    application.process_update(upd),
+                    loop
+                )
+            except Exception as e:
+                print("🔥 process_update_safely error:", e)
 
-            if loop.is_running():
-                loop.create_task(application.process_update(upd))
-            else:
-                loop.run_until_complete(application.process_update(upd))
+        threading.Thread(
+            target=process_update_safely,
+            daemon=True
+        ).start()
 
-            print("✅ Update processed successfully")
-
-        threading.Thread(target=process_update_safely, daemon=True).start()
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
- 
 
 
 # === SUPPORT BOT WEBHOOK (Render-safe) ===
