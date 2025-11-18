@@ -133,9 +133,25 @@ def favicon():
 # =========================
 # Telegram Bot
 # =========================
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, Bot
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
-from telegram import Bot
+from telegram import (
+    Update,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    WebAppInfo,
+    Bot,
+    InputTextMessageContent,      # ✅ Ավելացրու
+    InlineQueryResultArticle      # ✅ Ավելացրու
+)
+
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+    InlineQueryHandler            # ✅ Ավելացրու
+)
 
 print("✅ Bot script loaded successfully.")
 
@@ -148,6 +164,7 @@ PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").strip()
 if not PUBLIC_BASE_URL:
     PUBLIC_BASE_URL = "https://vorn-bot-nggr.onrender.com"
 
+BOT_USERNAME = os.getenv("BOT_USERNAME", "VORNCoinbot").lstrip("@")
 ADMIN_IDS = {5274439601}
 DB_PATH = os.path.join(BASE_DIR, "vorn.db")
 
@@ -1020,8 +1037,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @app_web.route("/api/ref_link/<int:user_id>")
 def api_ref_link(user_id: int):
-    bot_username = os.getenv("BOT_USERNAME", "VORNCoinbot").lstrip("@")
-    ref_link = f"https://t.me/{bot_username}?start=ref_{user_id}"
+    ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{user_id}"
     return jsonify({"ok": True, "link": ref_link})
 
 # =========================
@@ -1485,7 +1501,7 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user:
         return
 
-    # 🧩 Ստանում ենք inviter_id եթե կա /start ref_XXXX
+    # 🧩 inviter_id /start ref_xxx
     text = update.message.text if update.message else ""
     inviter_id = None
     if text and text.startswith("/start"):
@@ -1496,46 +1512,44 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception:
                 inviter_id = None
 
-     # ❌ Block self-referral (if user clicks his own link)
+    # ❌ self-referral block
     if inviter_id == user.id:
         inviter_id = None
 
-
-    # 🧩 Գրանցում ենք user-ին բազայում՝ հրավիրողի ID-ով
+    # 🧩 ensure user in DB
     ensure_user(user.id, user.username, inviter_id)
 
-    # 🌐 Բացում ենք WebApp-ը
+    # 🌐 WebApp URL
     base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
     wa_url = f"{base}/app?uid={user.id}"
 
+    # 🌍 լեզուն
+    user_lang = get_user_language(user.id)
+    button_text = INVITE_BUTTONS.get(user_lang, INVITE_BUTTONS["en"])
+
+    # 🔘 keyboard — Open App + Share Button
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
+        [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))],
+        [InlineKeyboardButton(text=button_text, switch_inline_query=f"vorn_{user.id}")]
     ])
-    import asyncio
 
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    send_task = context.bot.send_message(
+    # ✉️ ուղարկում ենք մեսիջը նորմալ async-ով
+    msg = await context.bot.send_message(
         chat_id=user.id,
         text="🌕 Press the button to enter VORN App 👇",
         reply_markup=keyboard
-)
-    
+    )
 
-    if loop.is_running():
-        loop.create_task(send_task)
-    else:
-        loop.run_until_complete(send_task)
-
-
+    # 📌 փորձում ենք pin անել /start մեսիջը
     try:
-        await context.bot.pin_chat_message(chat_id=user.id, message_id=update.message.message_id)
+        if update.message:
+            await context.bot.pin_chat_message(
+                chat_id=user.id,
+                message_id=update.message.message_id
+            )
     except Exception:
         pass
+
 
     user_lang = get_user_language(user.id)
     button_text = INVITE_BUTTONS.get(user_lang, INVITE_BUTTONS["en"])
@@ -1644,31 +1658,38 @@ def telegram_webhook():
     global application
 
     if application is None:
-        print("❌ Application is None — bot not ready yet.")
-        return jsonify({"ok": False, "error": "not_ready"}), 503
+        print("❌ application is None — bot not ready")
+        return jsonify({"ok": False, "error": "bot not ready"}), 503
 
     update_data = request.get_json(force=True, silent=True)
     if not update_data:
         print("⚠️ Empty update received")
-        return jsonify({"ok": False, "error": "empty"}), 400
+        return jsonify({"ok": False, "error": "empty update"}), 400
 
     try:
         upd = Update.de_json(update_data, application.bot)
+        print("📩 Telegram update received")
 
-        # MAIN FIX — always use application.loop
-        loop = application.loop  # ✔ official PTB event loop
+        def process_update_safely():
+            try:
+                loop = application._loop
+                asyncio.run_coroutine_threadsafe(
+                    application.process_update(upd),
+                    loop
+                )
+            except Exception as e:
+                print("🔥 process_update_safely error:", e)
 
-        asyncio.run_coroutine_threadsafe(
-            application.process_update(upd),
-            loop
-        )
+        threading.Thread(
+            target=process_update_safely,
+            daemon=True
+        ).start()
 
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
-
 
 
 # === SUPPORT BOT WEBHOOK (Render-safe) ===
@@ -2027,29 +2048,26 @@ if __name__ == "__main__":
             print("🔥 Flask failed to start:", e)
 
     def run_bot():
-        """Run Telegram bot in its own event loop (sync-safe)."""
-        try:
-            print("🤖 Starting Telegram bot thread ...")
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(start_bot_webhook())
-        except Exception as e:
-            print("🔥 Telegram bot failed:", e)
+        """Run Telegram bot in its own event loop (webhook mode)."""
+    try:
+        print("🤖 Starting Telegram bot thread ...")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
-    # ✅ Սկսում ենք նախ Flask-ը (որպես հիմնական պրոցես)
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
+        async def runner():
+            # 1) Build + initialize + set webhook
+            await start_bot_webhook()
+            # 2) Start Application (it will create internal tasks, set .loop correctly)
+            await application.start()
+            print("✅ Telegram bot started and listening for updates (Webhook mode).")
+            # 3) Keep loop alive forever
+            await asyncio.Event().wait()
 
-    # ✅ Հետո Telegram bot-ը
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
-     
-    
-    print("🚀 Both Flask and Telegram bot started successfully.")
+        loop.run_until_complete(runner())
 
-    # ✅ պահում ենք հիմնական process-ը կենդանի
-    while True:
-        time.sleep(60)
+    except Exception as e:
+        print("🔥 Telegram bot failed:", e)
+
 
 
 
