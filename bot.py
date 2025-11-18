@@ -949,6 +949,13 @@ def api_tasks():
     return jsonify(data)
 
 
+# ---------- USER STATS COMMAND ----------
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    conn = db()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM users;")
+    total = c.fetchone()[0]
+    await update.message.reply_text(f"Total users: {total}")
 
 
 @app_web.route("/api/ref_link/<int:user_id>")
@@ -1492,6 +1499,8 @@ async def start_bot_webhook():
     application.add_handler(CommandHandler("listtasks", listtasks_cmd))
     application.add_handler(CallbackQueryHandler(btn_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, block_text))
+    application.add_handler(CommandHandler("stats", stats))
+
 
     # ✅ Proper initialization (NEW FIX)
     await application.initialize()
