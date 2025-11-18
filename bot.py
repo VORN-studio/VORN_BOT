@@ -1448,46 +1448,27 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
     wa_url = f"{base}/app?uid={user.id}"
 
-async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if not user:
-        return
-
-    # inviter_id logic նույնը թողնում ենք
-    text = update.message.text if update.message else ""
-    inviter_id = None
-    if text and text.startswith("/start"):
-        parts = text.split()
-        if len(parts) > 1 and parts[1].startswith("ref_"):
-            try:
-                inviter_id = int(parts[1].replace("ref_", ""))
-            except Exception:
-                inviter_id = None
-
-    if inviter_id == user.id:
-        inviter_id = None
-
-    ensure_user(user.id, user.username, inviter_id)
-
-    base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
-    wa_url = f"{base}/app?uid={user.id}"
-
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
     ])
+    import asyncio
 
-    # 👉 ՍԱ Է ՃԻՇՏ ՎԵՐԱՐԿՈՒՄՆԵՐԸ
-    msg = await context.bot.send_message(
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    send_task = context.bot.send_message(
         chat_id=user.id,
         text="🌕 Press the button to enter VORN App 👇",
         reply_markup=keyboard
-    )
+)
 
-    # optional pin
-    try:
-        await context.bot.pin_chat_message(chat_id=user.id, message_id=msg.message_id)
-    except Exception:
-        pass
+    if loop.is_running():
+        loop.create_task(send_task)
+    else:
+        loop.run_until_complete(send_task)
 
 
     try:
@@ -1563,12 +1544,13 @@ async def run_telegram_bot():
 from flask import request
 import asyncio
 
+
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
     global application
 
     if application is None:
-        print("❌ Application is None — bot not ready")
+        print("❌ application is None — bot not ready")
         return jsonify({"ok": False, "error": "bot not ready"}), 503
 
     update_data = request.get_json(force=True, silent=True)
@@ -1577,20 +1559,31 @@ def telegram_webhook():
         return jsonify({"ok": False, "error": "empty update"}), 400
 
     try:
-        update = Update.de_json(update_data, application.bot)
+        upd = Update.de_json(update_data, application.bot)
         print("📩 Telegram update received")
 
-        # 🔥 ՈՉ THREAD, ՈՉ loop.run_until_complete, ՈՉ create_task
-        # 🔥 Ճիշտ, async-safe մեթոդ Telegram-ի համար:
-        loop = application._loop
-        asyncio.run_coroutine_threadsafe(application.process_update(update), loop)
+        # ✅ Միևնույն event loop-ի վերա ապահով մշակող ֆունկցիա
+        def process_update_safely():
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
 
+            if loop.is_running():
+                # եթե loop արդեն ակտիվ է (օրինակ՝ Render-ում կամ Flask-ի մեջ)
+                loop.create_task(application.process_update(upd))
+            else:
+                loop.run_until_complete(application.process_update(upd))
+
+            print("✅ Update processed successfully")
+
+        threading.Thread(target=process_update_safely, daemon=True).start()
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
-
 
 
 
