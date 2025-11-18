@@ -1544,12 +1544,13 @@ async def run_telegram_bot():
 from flask import request
 import asyncio
 
+
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
     global application
 
     if application is None:
-        print("❌ Application is None — bot not ready")
+        print("❌ application is None — bot not ready")
         return jsonify({"ok": False, "error": "bot not ready"}), 503
 
     update_data = request.get_json(force=True, silent=True)
@@ -1558,20 +1559,32 @@ def telegram_webhook():
         return jsonify({"ok": False, "error": "empty update"}), 400
 
     try:
-        update = Update.de_json(update_data, application.bot)
+        upd = Update.de_json(update_data, application.bot)
         print("📩 Telegram update received")
 
-        # 🔥 ՈՉ THREAD, ՈՉ loop.run_until_complete, ՈՉ create_task
-        # 🔥 Ճիշտ, async-safe մեթոդ Telegram-ի համար:
-        loop = application._loop
-        asyncio.run_coroutine_threadsafe(application.process_update(update), loop)
+        # ✅ Միևնույն event loop-ի վերա ապահով մշակող ֆունկցիա
+        def process_update_safely():
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
 
+            if loop.is_running():
+                # եթե loop արդեն ակտիվ է (օրինակ՝ Render-ում կամ Flask-ի մեջ)
+                loop.create_task(application.process_update(upd))
+            else:
+                loop.run_until_complete(application.process_update(upd))
+
+            print("✅ Update processed successfully")
+
+        threading.Thread(target=process_update_safely, daemon=True).start()
         return jsonify({"ok": True}), 200
 
     except Exception as e:
         print("🔥 Webhook error:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
- 
+
 
 
 # === SUPPORT BOT WEBHOOK (Render-safe) ===
