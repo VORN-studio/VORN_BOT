@@ -2,7 +2,33 @@
    VORN WebApp — Unified Core
    ========================================================= */
 
-   
+   // =======================================================
+//        AUTHENTICATION FIX — GET REAL TELEGRAM USER
+// =======================================================
+const tg = window.Telegram.WebApp;
+tg.expand(); // optional
+
+let UID = null;
+
+// 1) If Telegram opened WebApp normally → get real UID here
+if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    UID = tg.initDataUnsafe.user.id;
+}
+
+// 2) If opened through `/start ...` URL → take uid from URL
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has("uid")) {
+    UID = urlParams.get("uid");
+}
+
+// 3) If still empty → force guest mode (should not happen if bot is correct)
+if (!UID) {
+    UID = 0;
+}
+
+window.USER_ID = Number(UID);
+console.log("AUTH → ACTIVE USER ID:", window.USER_ID);
+
 
 console.log("✅ app.js loaded (VORN unified)");
 
@@ -33,29 +59,6 @@ let exchangeBusy = false; // ⚙️ արգելում է կրկնակի սեղմ�
 
 /* ------------ HELPERS ------------ */
 
-// Telegram MiniApp – get authenticated user ID
-const tg = window.Telegram.WebApp;
-
-// Եթե բոտն է բացել → Telegram-ը տալիս է uid
-let UID = null;
-
-if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-    UID = tg.initDataUnsafe.user.id;
-}
-
-// Եթե URL-ում կա uid → պահում ենք
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.has("uid")) {
-    UID = urlParams.get("uid");
-}
-
-// Եթե UID դեռ չկա → default guest ID
-if (!UID) {
-    UID = 0; // կամ "guest"
-}
-
-window.USER_ID = UID;
-console.log("Active UID →", UID);
 
 
 // === One-time language lock ===
