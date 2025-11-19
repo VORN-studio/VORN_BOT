@@ -1416,6 +1416,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 from telegram import MenuButtonWebApp
 
 application = None  # Global
+bot_loop = None
 
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -1544,10 +1545,10 @@ import asyncio
 
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
-    global application
+    global application, bot_loop
 
-    if application is None:
-        print("❌ application is None — bot not ready")
+    if application is None or bot_loop is None:
+        print("❌ application or bot_loop is None — bot not ready")
         return jsonify({"ok": False, "error": "bot not ready"}), 503
 
     update_data = request.get_json(force=True, silent=True)
@@ -1559,23 +1560,9 @@ def telegram_webhook():
         upd = Update.de_json(update_data, application.bot)
         print("📩 Telegram update received")
 
-        # ✅ Միևնույն event loop-ի վերա ապահով մշակող ֆունկցիա
-        def process_update_safely():
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+        # ✅ Ուղարկում ենք update-ը հիմնական loop-ին (Thread-Safe)
+        asyncio.run_coroutine_threadsafe(application.process_update(upd), bot_loop)
 
-            if loop.is_running():
-                # եթե loop արդեն ակտիվ է (օրինակ՝ Render-ում կամ Flask-ի մեջ)
-                loop.create_task(application.process_update(upd))
-            else:
-                loop.run_until_complete(application.process_update(upd))
-
-            print("✅ Update processed successfully")
-
-        threading.Thread(target=process_update_safely, daemon=True).start()
         return jsonify({"ok": True}), 200
 
     except Exception as e:
@@ -1941,11 +1928,14 @@ if __name__ == "__main__":
 
     def run_bot():
         """Run Telegram bot in its own event loop (sync-safe)."""
+        global bot_loop
         try:
             print("🤖 Starting Telegram bot thread ...")
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(start_bot_webhook())
+            bot_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(bot_loop)
+            
+            bot_loop.run_until_complete(start_bot_webhook())
+            bot_loop.run_forever() # <--- Սա կարևոր է loop-ը պահելու համար
         except Exception as e:
             print("🔥 Telegram bot failed:", e)
 
