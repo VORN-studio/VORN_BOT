@@ -94,6 +94,7 @@ DB_PATH = os.path.join(BASE_DIR, "vorn.db")
 # Mining
 MINE_COOLDOWN = 6 * 60 * 60  # 6 hours
 MINE_REWARD = 500
+exchange_busy = False
 
 # =========================
 # Database
@@ -816,14 +817,17 @@ def get_ref_level_data(uid):
 
 @app_web.route("/api/vorn_exchange", methods=["POST"])
 def api_vorn_exchange():
-    """
-    Converts Feathers (🪶) into VORN (🜂)
-    50_000 Feathers = 1 🜂
-    Atomic SQL + proper connection closing.
-    """
+    global exchange_busy  # ← ԱՎԵԼԱՑՐՈՒ ԱՅՍ ՏՈՂԸ
     data = request.get_json(force=True, silent=True) or {}
     uid = int(data.get("user_id", 0))
+    
+    # ← ԱՎԵԼԱՑՐՈՒ ԱՅՍ 3 ՏՈՂԸ
+    if exchange_busy:
+        return jsonify({"ok": False, "error": "already_processing"}), 429
+    exchange_busy = True
+    
     if not uid:
+        exchange_busy = False  # ← ԱՅՍԵՂ ԷԼ ԱՎԵԼԱՑՐՈՒ
         return jsonify({"ok": False, "error": "missing user_id"}), 400
 
     COST = 50000
@@ -833,36 +837,11 @@ def api_vorn_exchange():
         conn = db()
         cur = conn.cursor()
 
-        # ensure vorn_balance exists (safe)
-        try:
-            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS vorn_balance NUMERIC(20,6) DEFAULT 0")
-        except Exception:
-            pass
+        # ... (ՁԵՐ ՀԻՆ ԿՈԴԸ ՄՆՈՒՄ Է ՆՈՒՅՆԸ) ...
 
-        # ATOMIC: one UPDATE that both subtracts feathers and adds vorn
-        cur.execute("""
-            UPDATE users
-                SET balance      = balance - %s,
-                vorn_balance = COALESCE(vorn_balance, 0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
-             WHERE user_id = %s AND balance >= %s
-             RETURNING balance, vorn_balance
-        """, (COST, REWARD, uid, COST))
-
-
-        row = cur.fetchone()
-        if not row:
-            close_conn(conn, cur, commit=False)
-            return jsonify({"ok": False, "error": "not_enough_feathers"}), 200
-
-        new_balance, new_vorn = row
         close_conn(conn, cur, commit=True)
-
-        # 3% referral accrual ONLY after successful exchange (non-blocking)
-        try:
-            add_referral_bonus(uid, reward_feathers=0, reward_vorn=1.0)
-        except Exception:
-            pass
-
+        
+        # ← ԱՎԵԼԱՑՐՈՒ ԱՅՍ 2 ՏՈՂԸ ՎԵՐՋԸ
         return jsonify({
             "ok": True,
             "spent_feathers": COST,
@@ -871,11 +850,11 @@ def api_vorn_exchange():
         }), 200
 
     except Exception as e:
-        try:
-            close_conn(conn, cur, commit=False)
-        except Exception:
-            pass
+        try: close_conn(conn, cur, commit=False)
+        except: pass
         return jsonify({"ok": False, "error": "server_error", "detail": str(e)}), 500
+    finally:
+        exchange_busy = False  # ← ԱՎԵԼԱՑՐՈՒ ԱՅՍ ՏՈՂԸ ՎԵՐՋԻՆ ՏՈՂԸ
 
 
 

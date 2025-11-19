@@ -2140,66 +2140,65 @@ if (pf) {
   },
 
   async onExchangeClick() {
-  console.log("🟢 Exchange button clicked");
+    // ← ԱՎԵԼԱՑՐՈՒ ԱՅՍ 2 ՏՈՂԸ
+    if (this._exchangeBusy) return;
+    this._exchangeBusy = true;
+    
+    console.log("🟢 EXCHANGE button clicked");
 
-  const uid = this.uid || UID; // քո user ID-ն
-  if (!uid) {
-    this.toast("User not loaded yet.");
-    return;
-  }
+    try {
+        const uid = this.uid || VORN.uid;
+        if (!uid) {
+            this.showMessage("⚠️ Cannot find user ID", "error");
+            return;
+        }
 
-  // Գտնում ենք կոճակը
-  const btn = document.getElementById("exchangeBtn");
-  if (!btn) {
-    console.warn("⚠️ Exchange button not found!");
-    return;
-  }
+        // disable while processing
+        this.els.exchangeBtn.disabled = true;
+        this.els.exchangeBtn.textContent = "⏳";
 
-  // Կանխում ենք կրկնակի սեղմումները
-  if (btn.disabled) return;
-  btn.disabled = true;
+        const resp = await fetch(`${API_BASE}/api/vorn_exchange`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: uid })
+        });
 
-  try {
-    const res = await fetch(`${API_BASE}/api/vorn_exchange`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: uid })
-    });
+        const data = await resp.json();
+        console.log("EXCHANGE RESP:", data);
 
-    const data = await res.json();
-    console.log("EXCHANGE RESP:", data);
+        if (data.ok) {
+            this.balance = data.new_balance;
+            this.vornBalance = data.new_vorn;
 
-    if (!data.ok) {
-   console.log("⚠️ Exchange error:", data.error); // debug only
-   if (data.error === "not_enough_feathers") {
-       this.showMessage("not_enough", "error");
-   } else {
-       this.toast("❌ " + (data.error || "Exchange failed"));
-   }
-   return;
-}
+            document.getElementById("featherCount").textContent =
+                Number(data.new_balance).toLocaleString("en-US");
+            document.getElementById("foodCount").textContent =
+                Number(data.new_vorn).toFixed(2);
 
+            this.showMessage("success_exchange", "success");
+        } else {
+            if (data.error === "not_enough_feathers") {
+                this.showMessage("not_enough", "error");
+            } else if (data.error === "already_processing") {
+                this.showMessage("⏳ Please wait...", "info");
+            } else {
+                this.showMessage("error", "error");
+            }
+        }
 
-
-    // Թարմացնում ենք քո թվերը
-    this.balance = Number(data.new_balance || 0);
-    this.vornBalance = Number(data.new_vorn || 0);
-
-    // Թարմացնում ենք DOM-ը (քո քանակները էկրանի վրա)
-    const featherEl = document.getElementById("featherCount");
-    const vornEl = document.getElementById("foodCount");
-    if (featherEl) featherEl.textContent = this.balance.toLocaleString("en-US");
-    if (vornEl) vornEl.textContent = this.vornBalance.toFixed(4);
-
-    this.showMessage("success_exchange", "success");
-
-  } catch (err) {
-    console.error("Exchange failed:", err);
-    this.toast("⚠️ Ошибка соединения.");
-  } finally {
-    // միշտ բացում ենք կոճակը նորից
-    btn.disabled = false;
-  }
+        this.els.exchangeBtn.textContent = "🔁";
+        this.els.exchangeBtn.disabled = false;
+        
+    } catch (err) {
+        console.error("Exchange error:", err);
+        this.showMessage("🔥 Server error", "error");
+        this.els.exchangeBtn.textContent = "🔁";
+        this.els.exchangeBtn.disabled = false;
+    } finally {
+        // ← ԱՎԵԼԱՑՐՈՒ ԱՅՍ 2 ՏՈՂԸ ՎԵՐՋԸ
+        this._exchangeBusy = false;
+        this.els.exchangeBtn.disabled = false;
+    }
 },
 
 
