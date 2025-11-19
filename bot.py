@@ -32,6 +32,16 @@ def catch_all(anypath):
     return "✅ VORN Bot is running. Unknown path: /" + anypath, 200
 # ----------------------------------------------------
 
+@app_web.route("/app")
+def app_handler():
+    # ⛔ STOP catch_all from hijacking /app
+    query = request.query_string.decode("utf-8")
+    if query:
+        # redirect → /webapp/index.html?uid=XXXX
+        return redirect(f"/webapp/index.html?{query}", code=302)
+
+    return redirect("/webapp/index.html", code=302)
+
 
 @app_web.route('/googleac678a462577a462.html')
 def google_verification():
