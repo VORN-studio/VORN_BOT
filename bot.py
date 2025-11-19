@@ -15,66 +15,6 @@ last_exchange_ts = {}
 EXCHANGE_GUARD_WINDOW = 5  # sec
 
 
-# -------------------------------
-# MULTILINGUAL REFERRAL TEXTS
-# -------------------------------
-INVITE_TEXTS = {
-    "en": "🌕 Confidential Access — VORN\n\nA hidden route has unlocked.\nThis entry is not public.\n\nYour encrypted gate:\n{ref}\n\n🜂 If you enter, the system will register you instantly.",
-    "ru": "🌕 Конфиденциальный доступ — VORN\n\nСкрытый маршрут был открыт.\nЭтот вход не является публичным.\n\nВаш зашифрованный проход:\n{ref}\n\n🜂 Если войдёте, система зарегистрирует вас мгновенно.",
-    "hy": "🌕 Գաղտնի Մուտք — VORN\n\nԹաքնված ուղին բացվել է։\nԱյս մուտքը հանրային չէ։\n\nՔո կոդավորված դարպասը՝\n{ref}\n\n🜂 Եթե մուտք գործես, համակարգը կգրանցի քեզ անմիջապես.",
-    "fr": "🌕 Accès Confidentiel — VORN\n\nUn passage caché s’est ouvert.\nCet accès n’est pas public.\n\nVotre porte chiffrée :\n{ref}\n\n🜂 Si vous entrez, le système vous enregistrera instantanément.",
-    "es": "🌕 Acceso Confidencial — VORN\n\nUna ruta oculta se ha desbloqueado.\nEsta entrada no es pública.\n\nTu puerta cifrada:\n{ref}\n\n🜂 Si entras, el sistema te registrará al instante.",
-    "de": "🌕 Vertraulicher Zugang — VORN\n\nEin versteckter Pfad wurde freigeschaltet.\nDieser Zugang ist nicht öffentlich.\n\nDein verschlüsseltes Tor:\n{ref}\n\n🜂 Wenn du eintrittst, registriert dich das System sofort.",
-    "it": "🌕 Accesso Confidenziale — VORN\n\nUn percorso nascosto è stato sbloccato.\nQuesto ingresso non è pubblico.\n\nIl tuo varco criptato:\n{ref}\n\n🜂 Se entri, il sistema ti registrerà all’istante.",
-    "tr": "🌕 Gizli Erişim — VORN\n\nGizli bir yol açıldı.\nBu giriş herkese açık değildir.\n\nŞifreli geçidin:\n{ref}\n\n🜂 Girersen, sistem seni anında kaydeder.",
-    "fa": "🌕 دسترسی محرمانه — VORN\n\nیک مسیر پنهان باز شده است.\nاین ورودی عمومی نیست.\n\nدروازه رمزگذاری‌شده شما:\n{ref}\n\n🜂 اگر وارد شوید، سیستم فوراً شما را ثبت می‌کند.",
-    "ar": "🌕 وصول سري — VORN\n\nتم فتح مسار مخفي.\nهذا المدخل غير علني.\n\nبوابتك المشفرة:\n{ref}\n\n🜂 إذا دخلت، سيسجّلك النظام فورًا.",
-    "zh": "🌕 机密入口 — VORN\n\n一条隐藏的通道已开启。\n此入口不对公众开放。\n\n你的加密入口：\n{ref}\n\n🜂 进入后，系统会立即登记你。",
-    "ja": "🌕 機密アクセス — VORN\n\n隠されたルートが解放されました。\nこの入口は公開されていません。\n\nあなたの暗号化ゲート：\n{ref}\n\n🜂 入れば、システムが即座に登録します。",
-    "ko": "🌕 기밀 접속 — VORN\n\n숨겨진 경로가 열렸습니다.\n이 입구는 공개되어 있지 않습니다.\n\n당신의 암호화된 게이트:\n{ref}\n\n🜂 들어오면 시스템이 즉시 등록합니다.",
-    "hi": "🌕 गोपनीय प्रवेश — VORN\n\nएक छिपा मार्ग खुल गया है।\nयह प्रवेश सार्वजनिक नहीं है।\n\nआपका एन्क्रिप्टेड द्वार:\n{ref}\n\n🜂 प्रवेश करते ही सिस्टम तुरंत रजिस्टर करेगा.",
-    "pt": "🌕 Acesso Confidencial — VORN\n\nUma rota oculta foi desbloqueada.\nEsta entrada não é pública.\n\nSeu portão criptografado:\n{ref}\n\n🜂 Se entrar, o sistema o registrará instantaneamente.",
-    "el": "🌕 Απόρρητη Πρόσβαση — VORN\n\nΈνα κρυφό μονοπάτι άνοιξε.\nΑυτή η είσοδος δεν είναι δημόσια.\n\nΗ κρυπτογραφημένη πύλη σου:\n{ref}\n\n🜂 Αν μπεις, το σύστημα θα σε καταγράψει άμεσα.",
-    "pl": "🌕 Poufny Dostęp — VORN\n\nUkryta ścieżka została odblokowana.\nTo wejście nie jest publiczne.\n\nTwoja zaszyfrowana brama:\n{ref}\n\n🜂 Jeśli wejdziesz, system natychmiast cię zarejestruje.",
-    "nl": "🌕 Vertrouwelijke Toegang — VORN\n\nEen verborgen route is geopend.\nDeze toegang is niet openbaar.\n\nJouw versleutelde poort:\n{ref}\n\n🜂 Als je binnenkomt, registreert het systeem je direct.",
-    "sv": "🌕 Konfidentiell Åtkomst — VORN\n\nEn dold väg har låsts upp.\nDenna ingång är inte offentlig.\n\nDin krypterade port:\n{ref}\n\n🜂 Om du går in registrerar systemet dig direkt.",
-    "ro": "🌕 Acces Confidențial — VORN\n\nO rută ascunsă a fost deblocată.\nAceastă intrare nu este publică.\n\nPoarta ta criptată:\n{ref}\n\n🜂 Dacă intri, sistemul te va înregistra instant.",
-    "hu": "🌕 Bizalmas Hozzáférés — VORN\n\nEgy rejtett út megnyílt.\nEz a belépés nem nyilvános.\n\nA titkosított kapud:\n{ref}\n\n🜂 Ha belépsz, a rendszer azonnal regisztrál.",
-    "cs": "🌕 Důvěrný Přístup — VORN\n\nSkrytá cesta byla odemčena.\nTento vstup není veřejný.\n\nTvá šifrovaná brána:\n{ref}\n\n🜂 Pokud vstoupíš, systém tě okamžitě zaregistruje.",
-    "uk": "🌕 Конфіденційний Доступ — VORN\n\nПрихований маршрут відкрито.\nЦей вхід не є публічним.\n\nТвій зашифрований прохід:\n{ref}\n\n🜂 Якщо увійдеш, система зареєструє тебе миттєво.",
-    "az": "🌕 Konfidensial Giriş — VORN\n\nGizli bir yol açılıb.\nBu giriş ictimai deyil.\n\nŞifrələnmiş keçidin:\n{ref}\n\n🜂 Daxil olsan, sistem səni dərhal qeyd edəcək.",
-    "ka": "🌕 კონფიდენციალური წვდომა — VORN\n\nდამალული ბილიკი გაიხსნა.\nეს შესასვლელი საჯარო არ არის.\n\nშენი დაშიფრული კარი:\n{ref}\n\n🜂 თუ შეხვიდე, სისტემა მყისიერად დაგარეგისტრირებს."
-}
-
-INVITE_BUTTONS = {
-    "en": "📩 Share with a friend",
-    "ru": "📩 Поделиться с другом",
-    "hy": "📩 Ուղարկել ընկերոջը",
-    "fr": "📩 Partager avec un ami",
-    "es": "📩 Compartir con un amigo",
-    "de": "📩 Mit einem Freund teilen",
-    "it": "📩 Condividi con un amico",
-    "tr": "📩 Bir arkadaşla paylaş",
-    "fa": "📩 ارسال برای دوست",
-    "ar": "📩 شارك مع صديق",
-    "zh": "📩 与朋友分享",
-    "ja": "📩 友達に送る",
-    "ko": "📩 친구에게 보내기",
-    "hi": "📩 दोस्त को भेजें",
-    "pt": "📩 Compartilhar com amigo",
-    "el": "📩 Μοιράσου με φίλο",
-    "pl": "📩 Udostępnij znajomemu",
-    "nl": "📩 Delen met een vriend",
-    "sv": "📩 Dela med en vän",
-    "ro": "📩 Trimite unui prieten",
-    "hu": "📩 Megosztás egy baráttal",
-    "cs": "📩 Sdílet s přítelem",
-    "uk": "📩 Поділитися з другом",
-    "az": "📩 Dostuna göndər",
-    "ka": "📩 გაუზიარე მეგობარს"
-}
-
-
 
 # =========================
 # Flask Web Server
@@ -133,25 +73,9 @@ def favicon():
 # =========================
 # Telegram Bot
 # =========================
-from telegram import (
-    Update,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    WebAppInfo,
-    Bot,
-    InputTextMessageContent,      # ✅ Ավելացրու
-    InlineQueryResultArticle      # ✅ Ավելացրու
-)
-
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    CallbackQueryHandler,
-    ContextTypes,
-    MessageHandler,
-    filters,
-    InlineQueryHandler            # ✅ Ավելացրու
-)
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, Bot
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Bot
 
 print("✅ Bot script loaded successfully.")
 
@@ -164,7 +88,6 @@ PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").strip()
 if not PUBLIC_BASE_URL:
     PUBLIC_BASE_URL = "https://vorn-bot-nggr.onrender.com"
 
-BOT_USERNAME = os.getenv("BOT_USERNAME", "VORNCoinbot").lstrip("@")
 ADMIN_IDS = {5274439601}
 DB_PATH = os.path.join(BASE_DIR, "vorn.db")
 
@@ -1037,7 +960,8 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @app_web.route("/api/ref_link/<int:user_id>")
 def api_ref_link(user_id: int):
-    ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{user_id}"
+    bot_username = os.getenv("BOT_USERNAME", "VORNCoinbot").lstrip("@")
+    ref_link = f"https://t.me/{bot_username}?start=ref_{user_id}"
     return jsonify({"ok": True, "link": ref_link})
 
 # =========================
@@ -1501,7 +1425,7 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user:
         return
 
-    # 🧩 inviter_id /start ref_xxx
+    # 🧩 Ստանում ենք inviter_id եթե կա /start ref_XXXX
     text = update.message.text if update.message else ""
     inviter_id = None
     if text and text.startswith("/start"):
@@ -1512,76 +1436,45 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception:
                 inviter_id = None
 
-    # ❌ self-referral block
+     # ❌ Block self-referral (if user clicks his own link)
     if inviter_id == user.id:
         inviter_id = None
 
-    # 🧩 ensure user in DB
+
+    # 🧩 Գրանցում ենք user-ին բազայում՝ հրավիրողի ID-ով
     ensure_user(user.id, user.username, inviter_id)
 
-    # 🌐 WebApp URL
+    # 🌐 Բացում ենք WebApp-ը
     base = (PUBLIC_BASE_URL or "https://vorn-bot-nggr.onrender.com").rstrip("/")
     wa_url = f"{base}/app?uid={user.id}"
 
-    # 🌍 լեզուն
-    user_lang = get_user_language(user.id)
-    button_text = INVITE_BUTTONS.get(user_lang, INVITE_BUTTONS["en"])
-
-    # 🔘 keyboard — Open App + Share Button
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))],
-        [InlineKeyboardButton(text=button_text, switch_inline_query=f"vorn_{user.id}")]
+        [InlineKeyboardButton(text="🌀 OPEN APP", web_app=WebAppInfo(url=wa_url))]
     ])
+    import asyncio
 
-    # ✉️ ուղարկում ենք մեսիջը նորմալ async-ով
-    msg = await context.bot.send_message(
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    send_task = context.bot.send_message(
         chat_id=user.id,
         text="🌕 Press the button to enter VORN App 👇",
         reply_markup=keyboard
-    )
+)
 
-    # 📌 փորձում ենք pin անել /start մեսիջը
+    if loop.is_running():
+        loop.create_task(send_task)
+    else:
+        loop.run_until_complete(send_task)
+
+
     try:
-        if update.message:
-            await context.bot.pin_chat_message(
-                chat_id=user.id,
-                message_id=update.message.message_id
-            )
+        await context.bot.pin_chat_message(chat_id=user.id, message_id=update.message.message_id)
     except Exception:
         pass
-
-
-    user_lang = get_user_language(user.id)
-    button_text = INVITE_BUTTONS.get(user_lang, INVITE_BUTTONS["en"])
-
-    share_keyboard = InlineKeyboardMarkup([
-    [InlineKeyboardButton(text=button_text, switch_inline_query=f"vorn_{user.id}")]
-])
-
-
-async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.inline_query.query
-
-    if q.startswith("vorn_"):
-        uid = int(q.replace("vorn_", ""))
-
-        user_lang = get_user_language(uid)
-        txt = INVITE_TEXTS.get(user_lang, INVITE_TEXTS["en"])
-
-        ref = f"https://t.me/{BOT_USERNAME}?start=ref_{uid}"
-        final_text = txt.format(ref=ref)
-
-        results = [
-            InlineQueryResultArticle(
-                id="1",
-                title="VORN Invite",
-                description="Send invitation message",
-                thumb_url="https://yourcdn.com/vorn_share.png",
-                input_message_content=InputTextMessageContent(final_text)
-            )
-        ]
-
-        await update.inline_query.answer(results, cache_time=0)
 
 
 # User-ի ուղարկած ցանկացած տեքստ ջնջում ենք, որպեսզի չատը «փակ» լինի
@@ -1607,7 +1500,6 @@ async def start_bot_webhook():
     application.add_handler(CallbackQueryHandler(btn_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, block_text))
     application.add_handler(CommandHandler("stats", stats))
-    application.add_handler(InlineQueryHandler(inline_query_handler))
 
 
     # ✅ Proper initialization (NEW FIX)
@@ -1649,53 +1541,50 @@ async def run_telegram_bot():
 
 
 
-from flask import request, jsonify
+from flask import request
 import asyncio
-import threading
+
 
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
-    """
-    Receive Telegram updates from webhook and forward them
-    into python-telegram-bot Application via update_queue.
-    """
     global application
 
     if application is None:
         print("❌ application is None — bot not ready")
-        return jsonify({"ok": False, "error": "bot_not_ready"}), 503
+        return jsonify({"ok": False, "error": "bot not ready"}), 503
 
-    update_data = request.get_json(force=True, silent=True) or {}
-    print("📨 Raw Telegram update:", update_data)
-
+    update_data = request.get_json(force=True, silent=True)
     if not update_data:
         print("⚠️ Empty update received")
-        return jsonify({"ok": False, "error": "empty_update"}), 400
+        return jsonify({"ok": False, "error": "empty update"}), 400
 
     try:
-        # Convert dict -> PTB Update object
         upd = Update.de_json(update_data, application.bot)
+        print("📩 Telegram update received")
 
-        # Push into PTB's internal queue on its own event loop
-        fut = asyncio.run_coroutine_threadsafe(
-            application.update_queue.put(upd),
-            application._loop,
-        )
+        # ✅ Միևնույն event loop-ի վերա ապահով մշակող ֆունկցիա
+        def process_update_safely():
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
 
-        # Optional: don't wait երկար, պարզապես չթռնի սխալը
-        try:
-            fut.result(timeout=0.01)
-        except Exception:
-            pass
+            if loop.is_running():
+                # եթե loop արդեն ակտիվ է (օրինակ՝ Render-ում կամ Flask-ի մեջ)
+                loop.create_task(application.process_update(upd))
+            else:
+                loop.run_until_complete(application.process_update(upd))
 
-        print("✅ Telegram update enqueued for processing")
+            print("✅ Update processed successfully")
+
+        threading.Thread(target=process_update_safely, daemon=True).start()
         return jsonify({"ok": True}), 200
 
     except Exception as e:
-        import traceback
         print("🔥 Webhook error:", e)
-        print(traceback.format_exc())
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 # === SUPPORT BOT WEBHOOK (Render-safe) ===
@@ -2033,55 +1922,50 @@ def api_fix_vorn_column():
 
 
 
-async def run_bot():
-    """Runs Telegram bot in webhook mode and keeps the loop alive."""
-    try:
-        # 1) Initialize + set webhook
-        await start_bot_webhook()
-
-        # 2) Start Application (creates tasks, assigns .loop)
-        await application.start()
-        print("✅ Telegram bot started and listening for updates (Webhook mode).")
-
-        # 3) Keep the bot alive forever
-        await asyncio.Event().wait()
-
-    except Exception as e:
-        print("🔥 run_bot error:", e)
 
 
 
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
-
     try:
         init_db()
         print("✅ Database initialized (PostgreSQL ready).")
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # --- Run Telegram bot in background thread ---
-    def start_bot_thread():
-        try:
-            asyncio.run(run_bot())
-        except Exception as e:
-            print("🔥 Telegram bot thread crashed:", e)
-
-    bot_thread = threading.Thread(target=start_bot_thread, daemon=True)
-    bot_thread.start()
-
-    # --- Run Flask as MAIN PROCESS for Render ---
     port = int(os.environ.get("PORT", "10000"))
-    print(f"🌍 Flask starting on port {port} ...")
 
-    app_web.run(
-        host="0.0.0.0",
-        port=port,
-        threaded=True,
-        use_reloader=False
-    )
+    def run_flask():
+        try:
+            print(f"🌍 Flask starting on port {port} ...")
+            app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+        except Exception as e:
+            print("🔥 Flask failed to start:", e)
 
+    def run_bot():
+        """Run Telegram bot in its own event loop (sync-safe)."""
+        try:
+            print("🤖 Starting Telegram bot thread ...")
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(start_bot_webhook())
+        except Exception as e:
+            print("🔥 Telegram bot failed:", e)
 
+    # ✅ Սկսում ենք նախ Flask-ը (որպես հիմնական պրոցես)
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+
+    # ✅ Հետո Telegram bot-ը
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
+     
+    
+    print("🚀 Both Flask and Telegram bot started successfully.")
+
+    # ✅ պահում ենք հիմնական process-ը կենդանի
+    while True:
+        time.sleep(60)
 
 
 
