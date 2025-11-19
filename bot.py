@@ -6,7 +6,7 @@ import time
 import threading
 from typing import Optional
 
-from flask import Flask, jsonify, send_from_directory, request
+from flask import Flask, jsonify, send_from_directory, request, redirect
 from flask_cors import CORS
 from support_bot import start_support_runtime, enqueue_support_update
 
@@ -69,6 +69,29 @@ def serve_webapp(filename):
 @app_web.route("/favicon.ico")
 def favicon():
     return send_from_directory(os.path.join(WEBAPP_DIR, "assets"), "favicon.ico")
+
+
+# ------------------------------------------------------------------
+# WebApp Main Route FIX: Proper handling of Telegram initData
+# ------------------------------------------------------------------
+@app_web.route("/app")
+def app_handler():
+    # Ստանում ենք բոլոր պարամետրերը, որոնք Telegram-ն է ուղարկում (օրինակ՝ ?tgWebAppStartParam=...)
+    query_params = request.query_string.decode('utf-8')
+    
+    # Մենք օգտագործում ենք redirect, որպեսզի բոլոր պարամետրերը պահպանվեն 
+    # և ճիշտ հասնեն index.html-ին
+    if query_params:
+        # Բացում ենք index.html-ը՝ ավելացնելով բոլոր Telegram պարամետրերը
+        return redirect(f"/index.html?{query_params}", code=302)
+    
+    # Եթե ոչ մի պարամետր չկա, ուղղակի բացում ենք հիմնական էջը
+    return send_from_directory('.', 'index.html')
+
+@app_web.route("/index.html")
+def index_html_file():
+    # Պարզապես ցույց է տալիս հիմնական HTML ֆայլը (առանց query պարամետրերի)
+    return send_from_directory('.', 'index.html')
 
 # =========================
 # Telegram Bot
