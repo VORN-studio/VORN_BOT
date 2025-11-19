@@ -69,20 +69,6 @@ def serve_webapp(filename):
 def favicon():
     return send_from_directory(os.path.join(WEBAPP_DIR, "assets"), "favicon.ico")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WEBAPP_DIR = os.path.join(BASE_DIR, "webapp")
-
-@app_web.route("/app")
-def app_handler():
-    query = request.query_string.decode("utf-8")
-    if query:
-        return redirect(f"/webapp/index.html?{query}", code=302)
-    return send_from_directory(WEBAPP_DIR, "index.html")
-
-@app_web.route("/webapp/<path:filename>")
-def serve_webapp(filename):
-    return send_from_directory(WEBAPP_DIR, filename)
-
 
 # =========================
 # Telegram Bot
