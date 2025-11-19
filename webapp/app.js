@@ -2083,20 +2083,29 @@ bindTasksModal() {
     const link   = btn.dataset.link || "";
     btn.disabled = true;
 
+    // ✅ 1. iPhone FIX: Հղումը բացում ենք ԱՆՄԻՋԱՊԵՍ (առանց սպասելու)
+    if (link) {
+      openTaskLink(link);
+    }
+
     try {
+      // 2. Հետո նոր ուղարկում ենք հարցումը սերվերին
       const r1 = await fetch(`${API_BASE}/api/task_attempt_create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: this.uid, task_id: taskId })
       });
       const d1 = await r1.json();
-      if (!d1.ok) { btn.disabled = false; return alert("⚠️ Failed to start task"); }
+      
+      // Եթե սխալ եղավ, կոճակը հետ ենք բերում
+      if (!d1.ok) { 
+          btn.disabled = false; 
+          return; // alert պետք չի, որ չխանգարի
+      }
 
       const token = d1.token;
 
-      if (link) {
-        openTaskLink(link);
-      }
+      // (Հին տեղից openTaskLink-ը հանված է)
 
       setTimeout(async () => {
         const r2 = await fetch(`${API_BASE}/api/task_attempt_verify_forced`, {
