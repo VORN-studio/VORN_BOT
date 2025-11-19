@@ -2923,57 +2923,58 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // ← ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՆՈՐ ՖՈՒՆԿՑԻԱՆ
-  shareBtn.addEventListener("click", async () => {
-    try {
-      const lang = VORN.lang || getSavedLang() || "en";
-      const shareText = texts[lang]?.shareText || texts.en.shareText;
-      const fullShareText = `${shareText}\n\n${link}`;
-      
-      // Telegram Share Functionality
-      if (window.Telegram && Telegram.WebApp) {
-        Telegram.WebApp.shareURL(fullShareText, link);
+  // ՆՈՐ (ուղղված) կոդը
+shareBtn.addEventListener("click", async () => {
+  try {
+    const lang = VORN.lang || getSavedLang() || "en";
+    const shareText = getInviteText(lang); // ✅ ճիշտ ֆունկցիա
+    const fullShareText = `${shareText}\n\n${link}`;
+    
+    // Telegram Share Functionality
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.shareURL(fullShareText, link);
+    } else {
+      // Fallback for non-Telegram environments
+      if (navigator.share) {
+        await navigator.share({
+          title: 'VORN App',
+          text: shareText,
+          url: link
+        });
       } else {
-        // Fallback for non-Telegram environments
-        if (navigator.share) {
-          await navigator.share({
-            title: 'VORN App',
-            text: shareText,
-            url: link
-          });
-        } else {
-          // Final fallback - copy to clipboard
-          await navigator.clipboard.writeText(fullShareText);
-          shareBtn.textContent = "✅ " + (texts[lang]?.copied || "Copied!");
-          setTimeout(() => {
-            shareBtn.textContent = texts[lang]?.inviteFriends || "📤 Invite Friends";
-          }, 1500);
-        }
-      }
-    } catch (error) {
-      console.error("Share failed:", error);
-      // Fallback to copy
-      try {
-        await navigator.clipboard.writeText(link);
-        const lang = VORN.lang || getSavedLang() || "en";
-        shareBtn.textContent = "✅ " + (texts[lang]?.copied || "Copied!");
+        // Final fallback - copy to clipboard
+        await navigator.clipboard.writeText(fullShareText);
+        shareBtn.textContent = "✅ " + getSuccessMessage(lang);
         setTimeout(() => {
-          shareBtn.textContent = texts[lang]?.inviteFriends || "📤 Invite Friends";
+          shareBtn.textContent = getShareButtonText(lang); // ✅ ճիշտ ֆունկցիա
         }, 1500);
-      } catch {
-        alert("⚠️ Share not supported, copy manually.");
       }
     }
-  });
+  } catch (error) {
+    console.error("Share failed:", error);
+    // Fallback to copy
+    try {
+      await navigator.clipboard.writeText(link);
+      const lang = VORN.lang || getSavedLang() || "en";
+      shareBtn.textContent = "✅ " + getSuccessMessage(lang);
+      setTimeout(() => {
+        shareBtn.textContent = getShareButtonText(lang); // ✅ ճիշտ ֆունկցիա
+      }, 1500);
+    } catch {
+      alert("⚠️ Share not supported, copy manually.");
+    }
+  }
+});
 
   // ← ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՖՈՒՆԿՑԻԱՆ Referrals բացելու ժամանակ կոճակները թարմացնելու համար
   const originalOpenReferrals = VORN.openReferrals;
-  VORN.openReferrals = async function() {
-    await originalOpenReferrals.call(this);
-    // Թարմացնել կոճակների տեքստերը ըստ ընտրված լեզվի
-    const lang = this.lang || getSavedLang() || "en";
-    if (copyBtn) copyBtn.textContent = texts[lang]?.copyLink || "📋 Copy Link";
-    if (shareBtn) shareBtn.textContent = texts[lang]?.inviteFriends || "📤 Invite Friends";
-  };
+  // ՆՈՐ (ուղղված) կոդը
+VORN.openReferrals = async function() {
+  await originalOpenReferrals.call(this);
+  const lang = this.lang || getSavedLang() || "en";
+  if (copyBtn) copyBtn.textContent = getCopyButtonText(lang); // ✅ ճիշտ ֆունկցիա
+  if (shareBtn) shareBtn.textContent = getShareButtonText(lang); // ✅ ճիշտ ֆունկցիա
+};
 });
 
 // ✅ Safe delayed ready signal
