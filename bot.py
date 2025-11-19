@@ -1655,40 +1655,46 @@ import threading
 
 @app_web.route("/webhook", methods=["POST"])
 def telegram_webhook():
+    """
+    Receive Telegram updates from webhook and forward them
+    into python-telegram-bot Application via update_queue.
+    """
     global application
 
     if application is None:
         print("❌ application is None — bot not ready")
-        return jsonify({"ok": False, "error": "bot not ready"}), 503
+        return jsonify({"ok": False, "error": "bot_not_ready"}), 503
 
-    update_data = request.get_json(force=True, silent=True)
+    update_data = request.get_json(force=True, silent=True) or {}
+    print("📨 Raw Telegram update:", update_data)
+
     if not update_data:
         print("⚠️ Empty update received")
-        return jsonify({"ok": False, "error": "empty update"}), 400
+        return jsonify({"ok": False, "error": "empty_update"}), 400
 
     try:
+        # Convert dict -> PTB Update object
         upd = Update.de_json(update_data, application.bot)
-        print("📩 Telegram update received")
 
-        def process_update_safely():
-            try:
-                loop = application._loop
-                asyncio.run_coroutine_threadsafe(
-                    application.process_update(upd),
-                    loop
-                )
-            except Exception as e:
-                print("🔥 process_update_safely error:", e)
+        # Push into PTB's internal queue on its own event loop
+        fut = asyncio.run_coroutine_threadsafe(
+            application.update_queue.put(upd),
+            application._loop,
+        )
 
-        threading.Thread(
-            target=process_update_safely,
-            daemon=True
-        ).start()
+        # Optional: don't wait երկար, պարզապես չթռնի սխալը
+        try:
+            fut.result(timeout=0.01)
+        except Exception:
+            pass
 
+        print("✅ Telegram update enqueued for processing")
         return jsonify({"ok": True}), 200
 
     except Exception as e:
+        import traceback
         print("🔥 Webhook error:", e)
+        print(traceback.format_exc())
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
