@@ -42,17 +42,17 @@ def google_verification():
 # ԿԱՐԵՎՈՐ ՖԻՔՍ՝ Telegram Web App-ի տվյալների (initData) պահպանում
 # ------------------------------------------------------------------
 @app_web.route("/app")
-def web_app_entry():
-    # Ստանում ենք Telegram-ի ուղարկած բոլոր պարամետրերը 
+def telegram_web_app_entry_fix():
+    # 1. Ստանում ենք Telegram-ի ուղարկած բոլոր պարամետրերը 
     query_params = request.query_string.decode('utf-8')
     
-    # Կատարում ենք վերահասցեագրում դեպի /index.html՝ ՊԱՀՊԱՆԵԼՈՎ պարամետրերը
+    # 2. Կատարում ենք վերահասցեագրում դեպի /index.html՝ ՊԱՀՊԱՆԵԼՈՎ պարամետրերը
     return redirect(f"/index.html?{query_params}", code=302)
 
 
 @app_web.route("/index.html")
-def main_index_file():
-    # Սա ապահովում է, որ index.html ֆայլը ցուցադրվի ճիշտ հասցեով
+def telegram_index_file_fix():
+    # 3. Սա ապահովում է, որ index.html ֆայլը ցուցադրվի ճիշտ հասցեով
     return send_from_directory('.', 'index.html')
 
 # ------------------------------------------------------------------
@@ -61,13 +61,13 @@ def main_index_file():
 # ԿԱՐԵՎՈՐ ՖԻՔՍ՝ Telegram Web App-ի տվյալների (initData) պահպանում
 # ------------------------------------------------------------------
 @app_web.route("/app")
-def app_handler():
-    # 1. Ստանում ենք Telegram-ի ուղարկած բոլոր պարամետրերը (օրինակ՝ initData, user_id)
+def web_app_entry():
+    # Ստանում ենք Telegram-ի ուղարկած բոլոր պարամետրերը 
     query_params = request.query_string.decode('utf-8')
     
-    # 2. Կատարում ենք վերահասցեագրում դեպի /index.html՝ պահպանելով այդ պարամետրերը
-    # Սա թույլ կտա app.js-ին ճիշտ կարդալ user_id-ն։
+    # Կատարում ենք վերահասցեագրում դեպի /index.html՝ ՊԱՀՊԱՆԵԼՈՎ պարամետրերը
     return redirect(f"/index.html?{query_params}", code=302)
+
 
 
 @app_web.route("/index.html")
