@@ -2077,35 +2077,6 @@ if __name__ == "__main__":
 
 
 
-    def run_flask():
-        try:
-            print(f"🌍 Flask starting on port {port} ...")
-            app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
-        except Exception as e:
-            print("🔥 Flask failed to start:", e)
-
-    def run_bot():
-        """Run Telegram bot in its own event loop (webhook mode)."""
-    try:
-        print("🤖 Starting Telegram bot thread ...")
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        async def runner():
-            # 1) Build + initialize + set webhook
-            await start_bot_webhook()
-            # 2) Start Application (it will create internal tasks, set .loop correctly)
-            await application.start()
-            print("✅ Telegram bot started and listening for updates (Webhook mode).")
-            # 3) Keep loop alive forever
-            await asyncio.Event().wait()
-
-        loop.run_until_complete(runner())
-
-    except Exception as e:
-        print("🔥 Telegram bot failed:", e)
-
-
 
 
 
