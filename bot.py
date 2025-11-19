@@ -39,6 +39,26 @@ from flask import send_from_directory
 def google_verification():
     return send_from_directory('.', 'googleac678a462577a462.html')
 
+# ------------------------------------------------------------------
+# ԿԱՐԵՎՈՐ ՖԻՔՍ՝ Telegram Web App-ի տվյալների (initData) պահպանում
+# ------------------------------------------------------------------
+@app_web.route("/app")
+def app_handler():
+    # 1. Ստանում ենք Telegram-ի ուղարկած բոլոր պարամետրերը (օրինակ՝ initData, user_id)
+    query_params = request.query_string.decode('utf-8')
+    
+    # 2. Կատարում ենք վերահասցեագրում դեպի /index.html՝ պահպանելով այդ պարամետրերը
+    # Սա թույլ կտա app.js-ին ճիշտ կարդալ user_id-ն։
+    return redirect(f"/index.html?{query_params}", code=302)
+
+
+@app_web.route("/index.html")
+def index_html_file():
+    # 3. Սա ապահովում է, որ index.html ֆայլը ցուցադրվի ճիշտ հասցեով
+    # (նույնիսկ եթե հղման վրա կան query պարամետրեր)
+    return send_from_directory('.', 'index.html')
+
+# ------------------------------------------------------------------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEBAPP_DIR = os.path.join(BASE_DIR, "webapp")  # contains index.html, app.js, style.css, assets/
