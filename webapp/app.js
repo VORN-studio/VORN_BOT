@@ -57,8 +57,12 @@ function uidFromURL() {
 function nowSec() { return Math.floor(Date.now() / 1000); }
 
 
+
+
 /* ------------ I18N CORE ------------ */
 const texts = {
+  
+
   
   en: { confirmText: "You have chosen English for the entire experience.\nYou cannot change it later.", confirmBtn: "Confirm", changeBtn: "Change", eggTip: "🥚 Tap the egg to hatch it!" },
   ru: { confirmText: "Вы выбрали русский язык для всей игры.\nВы не сможете изменить его позже.", confirmBtn: "Подтвердить", changeBtn: "Изменить", eggTip: "🥚 Коснитесь яйца, чтобы разбить его!" },
@@ -256,6 +260,7 @@ const langButtonsDict = {
     }
 
 
+    
 };
 
 
@@ -289,7 +294,167 @@ const walletMessages = {
   ka: "⚠️ ეს ფუნქცია დროებით გათიშულია."
 };
 
+// Invitation texts for all 25 languages
+const inviteTexts = {
+    en: "🚀 Join me in VORN - the future of click-mining! Earn feathers and VORN tokens together.",
+    ru: "🚀 Присоединяйся ко мне в VORN - будущее клик-майнинга! Зарабатывай перья и токены VORN вместе со мной.",
+    hy: "🚀 Միացիր ինձ VORN-ում - կլիկ-մայնինգի ապագան։ Վաստակիր փետուրներ և VORN token-ներ միասին։",
+    fr: "🚀 Rejoins-moi sur VORN - le futur du click-mining ! Gagne des plumes et des jetons VORN ensemble.",
+    es: "🚀 ¡Únete a mí en VORN - el futuro del click-mining! Gana plumas y tokens VORN juntos.",
+    de: "🚀 Begleite mich bei VORN - die Zukunft des Click-Minings! Verdiene Federn und VORN-Tokens zusammen.",
+    it: "🚀 Unisciti a me in VORN - il futuro del click-mining! Guadagna piume e token VORN insieme.",
+    tr: "🚀 VORN'da bana katıl - click-mining'in geleceği! Birlikte tüyler ve VORN token'ları kazan.",
+    fa: "🚀 به من در VORN بپیوندید - آینده کلیک-ماینینگ! با هم پرها و توکن‌های VORN کسب کنید.",
+    ar: "🚀 انضم إلي في VORN - مستقبل التعدين بالنقر! اكسب الريش ورمز VORN معًا.",
+    zh: "🚀 加入我在VORN - 点击挖矿的未来！一起赚取羽毛和VORN代币。",
+    ja: "🚀 VORNで私に参加しましょう - クリックマイニングの未来！一緒に羽とVORNトークンを獲得しましょう。",
+    ko: "🚀 VORN에서 저와 함께하세요 - 클릭 마이닝의 미래! 함께 깃털과 VORN 토큰을 얻으세요.",
+    hi: "🚀 VORN में मेरे साथ जुड़ें - क्लिक-माइनिंग का भविष्य! एक साथ पंख और VORN टोकन कमाएं।",
+    pt: "🚀 Junte-se a mim no VORN - o futuro da mineração por clique! Ganhe penas e tokens VORN juntos.",
+    el: "🚀 Ελάτε μαζί μου στο VORN - το μέλλον του click-mining! Κερδίστε φτερά και VORN tokens μαζί.",
+    pl: "🚀 Dołącz do mnie w VORN - przyszłość click-miningu! Zdobywaj pióra i tokeny VORN razem.",
+    nl: "🚀 Doe met me mee in VORN - de toekomst van click-mining! Verdien veren en VORN tokens samen.",
+    sv: "🚀 Gå med mig i VORN - framtiden för click-mining! Tjäna fjädrar och VORN tokens tillsammans.",
+    ro: "🚀 Alătură-te mie în VORN - viitorul click-mining-ului! Câștigă pene și token-uri VORN împreună.",
+    hu: "🚀 Csatlakozz hozzám a VORN-ban - a click-bányászat jövője! Szerezz tollakat és VORN tokeneket együtt.",
+    cs: "🚀 Přidej se ke mně ve VORN - budoucnost click-miningu! Získej peří a VORN tokeny společně.",
+    uk: "🚀 Приєднуйся до мене в VORN - майбутнє клік-майнінгу! Заробляй пір'я та токени VORN разом.",
+    az: "🚀 VORN-da mənə qoşul - klik-mayning-in gələcəyi! Birlikdə lələklər və VORN token-ləri qazanın.",
+    ka: "🚀 შეუერთდი მე VORN-ში - კლიკ-მაინინგის მომავალი! ერთად მოიპოვე ბუმბული და VORN ტოკენები."
+};
 
+// Share button texts
+const shareButtonTexts = {
+    en: "📤 Invite Friends",
+    ru: "📤 Пригласить друзей",
+    hy: "📤 Հրավիրել ընկերներին",
+    fr: "📤 Inviter des amis",
+    es: "📤 Invitar amigos",
+    de: "📤 Freunde einladen",
+    it: "📤 Invita amici",
+    tr: "📤 Arkadaşları Davet Et",
+    fa: "📤 دعوت دوستان",
+    ar: "📤 دعوة الأصدقاء",
+    zh: "📤 邀请朋友",
+    ja: "📤 友達を招待",
+    ko: "📤 친구 초대",
+    hi: "📤 दोस्तों को आमंत्रित करें",
+    pt: "📤 Convidar Amigos",
+    el: "📤 Προσκάλεσε Φίλους",
+    pl: "📤 Zaproś Przyjaciół",
+    nl: "📤 Nodig Vrienden Uit",
+    sv: "📤 Bjud In Vänner",
+    ro: "📤 Invită Prieteni",
+    hu: "📤 Barátok Meghívása",
+    cs: "📤 Pozvat Přátele",
+    uk: "📤 Запросити друзів",
+    az: "📤 Dostları Dəvət Et",
+    ka: "📤 მოწვევა მეგობრები"
+};
+
+// Copy button texts
+const copyButtonTexts = {
+    en: "📋 Copy Link",
+    ru: "📋 Копировать ссылку",
+    hy: "📋 Պատճենել հղումը",
+    fr: "📋 Copier le lien",
+    es: "📋 Copiar enlace",
+    de: "📋 Link kopieren",
+    it: "📋 Copia link",
+    tr: "📋 Bağlantıyı Kopyala",
+    fa: "📋 کپی لینک",
+    ar: "📋 نسخ الرابط",
+    zh: "📋 复制链接",
+    ja: "📋 リンクをコピー",
+    ko: "📋 링크 복사",
+    hi: "📋 लिंक कॉपी करें",
+    pt: "📋 Copiar Link",
+    el: "📋 Αντιγραφή Συνδέσμου",
+    pl: "📋 Kopiuj Link",
+    nl: "📋 Kopieer Link",
+    sv: "📋 Kopiera Länk",
+    ro: "📋 Copiază Linkul",
+    hu: "📋 Link Másolása",
+    cs: "📋 Kopírovat Odkaz",
+    uk: "📋 Копіювати посилання",
+    az: "📋 Linki Köçür",
+    ka: "📋 ბმულის კოპირება"
+};
+
+// Success messages
+const successMessages = {
+    en: "✅ Copied!",
+    ru: "✅ Скопировано!",
+    hy: "✅ Պատճենված է!",
+    fr: "✅ Copié !",
+    es: "✅ ¡Copiado!",
+    de: "✅ Kopiert!",
+    it: "✅ Copiato!",
+    tr: "✅ Kopyalandı!",
+    fa: "✅ کپی شد!",
+    ar: "✅ تم النسخ!",
+    zh: "✅ 已复制!",
+    ja: "✅ コピーしました!",
+    ko: "✅ 복사됨!",
+    hi: "✅ कॉपी किया गया!",
+    pt: "✅ Copiado!",
+    el: "✅ Αντιγράφηκε!",
+    pl: "✅ Skopiowano!",
+    nl: "✅ Gekopieerd!",
+    sv: "✅ Kopierat!",
+    ro: "✅ Copiat!",
+    hu: "✅ Másolva!",
+    cs: "✅ Zkopírováno!",
+    uk: "✅ Скопійовано!",
+    az: "✅ Köçürüldü!",
+    ka: "✅ დაკოპირდა!"
+};
+
+// How to use these in your code:
+function getInviteText(lang) {
+    return inviteTexts[lang] || inviteTexts.en;
+}
+
+function getShareButtonText(lang) {
+    return shareButtonTexts[lang] || shareButtonTexts.en;
+}
+
+function getCopyButtonText(lang) {
+    return copyButtonTexts[lang] || copyButtonTexts.en;
+}
+
+function getSuccessMessage(lang) {
+    return successMessages[lang] || successMessages.en;
+}
+
+// Example usage in your referral system:
+function updateReferralUI(lang) {
+    const shareBtn = document.getElementById("shareRefLinkBtn");
+    const copyBtn = document.getElementById("copyRefLinkBtn");
+    
+    if (shareBtn) shareBtn.textContent = getShareButtonText(lang);
+    if (copyBtn) copyBtn.textContent = getCopyButtonText(lang);
+}
+
+// For sharing functionality:
+function shareReferralLink(lang) {
+    const inviteText = getInviteText(lang);
+    const referralLink = "https://t.me/VORNCoinbot?start=ref_" + VORN.uid;
+    const fullText = `${inviteText}\n\n${referralLink}`;
+    
+    // Your sharing logic here
+    if (navigator.share) {
+        navigator.share({
+            title: 'VORN App',
+            text: inviteText,
+            url: referralLink
+        });
+    } else {
+        // Fallback to copy
+        navigator.clipboard.writeText(fullText);
+        alert(getSuccessMessage(lang));
+    }
+}
 
 // 🌐 25 լեզվով Info բովանդակություն (լրիվ տարբերակներ)
 const infoData = {
@@ -2719,6 +2884,96 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("🌐 Connecting to API_BASE:", API_BASE);
   VORN.init();
   applyI18N(getSavedLang());
+});
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const refLinkText = document.getElementById("refLinkText");
+  const copyBtn = document.getElementById("copyRefLinkBtn");
+  const shareBtn = document.getElementById("shareRefLinkBtn"); // ← ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՏՈՂԸ
+  
+  if (!refLinkText || !copyBtn || !shareBtn) return;
+
+  const uid = uidFromURL();
+  let link = "";
+  
+  try {
+    const r = await fetch(`${API_BASE}/api/ref_link/${uid}`);
+    const d = await r.json();
+    if (d.ok && d.link) link = d.link;
+  } catch (e) { console.warn("ref link fetch failed:", e); }
+
+  if (!link) {
+    const botUsername = "VORNCoinbot";
+    link = `https://t.me/${botUsername}?start=ref_${uid}`;
+  }
+  refLinkText.textContent = link;
+
+  // Copy button (հին կոդը)
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      const lang = VORN.lang || getSavedLang() || "en";
+      copyBtn.textContent = "✅ " + (texts[lang]?.copied || "Copied!");
+      setTimeout(() => {
+        copyBtn.textContent = texts[lang]?.copyLink || "📋 Copy Link";
+      }, 1500);
+    } catch {
+      alert("⚠️ Copy failed, copy manually.");
+    }
+  });
+
+  // ← ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՆՈՐ ՖՈՒՆԿՑԻԱՆ
+  shareBtn.addEventListener("click", async () => {
+    try {
+      const lang = VORN.lang || getSavedLang() || "en";
+      const shareText = texts[lang]?.shareText || texts.en.shareText;
+      const fullShareText = `${shareText}\n\n${link}`;
+      
+      // Telegram Share Functionality
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.shareURL(fullShareText, link);
+      } else {
+        // Fallback for non-Telegram environments
+        if (navigator.share) {
+          await navigator.share({
+            title: 'VORN App',
+            text: shareText,
+            url: link
+          });
+        } else {
+          // Final fallback - copy to clipboard
+          await navigator.clipboard.writeText(fullShareText);
+          shareBtn.textContent = "✅ " + (texts[lang]?.copied || "Copied!");
+          setTimeout(() => {
+            shareBtn.textContent = texts[lang]?.inviteFriends || "📤 Invite Friends";
+          }, 1500);
+        }
+      }
+    } catch (error) {
+      console.error("Share failed:", error);
+      // Fallback to copy
+      try {
+        await navigator.clipboard.writeText(link);
+        const lang = VORN.lang || getSavedLang() || "en";
+        shareBtn.textContent = "✅ " + (texts[lang]?.copied || "Copied!");
+        setTimeout(() => {
+          shareBtn.textContent = texts[lang]?.inviteFriends || "📤 Invite Friends";
+        }, 1500);
+      } catch {
+        alert("⚠️ Share not supported, copy manually.");
+      }
+    }
+  });
+
+  // ← ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՖՈՒՆԿՑԻԱՆ Referrals բացելու ժամանակ կոճակները թարմացնելու համար
+  const originalOpenReferrals = VORN.openReferrals;
+  VORN.openReferrals = async function() {
+    await originalOpenReferrals.call(this);
+    // Թարմացնել կոճակների տեքստերը ըստ ընտրված լեզվի
+    const lang = this.lang || getSavedLang() || "en";
+    if (copyBtn) copyBtn.textContent = texts[lang]?.copyLink || "📋 Copy Link";
+    if (shareBtn) shareBtn.textContent = texts[lang]?.inviteFriends || "📤 Invite Friends";
+  };
 });
 
 // ✅ Safe delayed ready signal

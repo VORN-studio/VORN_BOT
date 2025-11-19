@@ -878,3 +878,40 @@ button, .menu-btn, .mine-btn {
 }
 
 
+/* === REFERRAL SHARE BUTTONS === */
+.ref-link-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+#copyRefLinkBtn, #shareRefLinkBtn {
+    background: linear-gradient(135deg, #ffae00, #ffcc33);
+    color: #26004d;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 120px;
+}
+
+#copyRefLinkBtn:hover, #shareRefLinkBtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(255, 200, 0, 0.8);
+}
+
+@media (max-width: 480px) {
+    .ref-link-buttons {
+        flex-direction: column;
+    }
+    
+    #copyRefLinkBtn, #shareRefLinkBtn {
+        width: 100%;
+    }
+}
