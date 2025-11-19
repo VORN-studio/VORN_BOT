@@ -42,26 +42,11 @@ def google_verification():
 # Telegram WebApp FIX — KEEP ONLY THIS VERSION
 # =========================
 
-@app_web.route("/app")
-def app_handler():
-    query = request.query_string.decode("utf-8")
-    if query:
-        return redirect(f"/index.html?{query}", code=302)
-    return send_from_directory(WEBAPP_DIR, "index.html")
-
-@app_web.route("/index.html")
-def index_handler():
-    return send_from_directory(WEBAPP_DIR, "index.html")
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEBAPP_DIR = os.path.join(BASE_DIR, "webapp")  # contains index.html, app.js, style.css, assets/
 
-
-@app_web.route("/app")
-def app_page():
-    # serve the SPA entry
-    return send_from_directory(WEBAPP_DIR, "index.html")
 
 # Serve static files under /webapp/*
 @app_web.route("/webapp/<path:filename>")
@@ -84,28 +69,20 @@ def serve_webapp(filename):
 def favicon():
     return send_from_directory(os.path.join(WEBAPP_DIR, "assets"), "favicon.ico")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WEBAPP_DIR = os.path.join(BASE_DIR, "webapp")
 
-# ------------------------------------------------------------------
-# WebApp Main Route FIX: Proper handling of Telegram initData
-# ------------------------------------------------------------------
 @app_web.route("/app")
 def app_handler():
-    # Ստանում ենք բոլոր պարամետրերը, որոնք Telegram-ն է ուղարկում (օրինակ՝ ?tgWebAppStartParam=...)
-    query_params = request.query_string.decode('utf-8')
-    
-    # Մենք օգտագործում ենք redirect, որպեսզի բոլոր պարամետրերը պահպանվեն 
-    # և ճիշտ հասնեն index.html-ին
-    if query_params:
-        # Բացում ենք index.html-ը՝ ավելացնելով բոլոր Telegram պարամետրերը
-        return redirect(f"/index.html?{query_params}", code=302)
-    
-    # Եթե ոչ մի պարամետր չկա, ուղղակի բացում ենք հիմնական էջը
-    return send_from_directory('.', 'index.html')
+    query = request.query_string.decode("utf-8")
+    if query:
+        return redirect(f"/webapp/index.html?{query}", code=302)
+    return send_from_directory(WEBAPP_DIR, "index.html")
 
-@app_web.route("/index.html")
-def index_html_file():
-    # Պարզապես ցույց է տալիս հիմնական HTML ֆայլը (առանց query պարամետրերի)
-    return send_from_directory('.', 'index.html')
+@app_web.route("/webapp/<path:filename>")
+def serve_webapp(filename):
+    return send_from_directory(WEBAPP_DIR, filename)
+
 
 # =========================
 # Telegram Bot
