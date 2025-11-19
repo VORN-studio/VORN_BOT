@@ -1045,6 +1045,7 @@ const VORN = {
   vornBalance: 0,
   lastMine: 0,
   timer: null,
+  isIOS: false,
   els: {
     feather: null, mineBtn: null, btnTasks: null, tasksModal: null, tasksList: null, closeTasksBtn: null,
     introVideo: null, introSlides: null, slideImage: null, slideNextBtn: null,
@@ -1057,9 +1058,17 @@ const VORN = {
 
   /* -------- INIT -------- */
   async init() {
-    console.log("⚙️ VORN.init()");
-    console.log("🧠 UID from URL:", uidFromURL());
-    this.bindEls();
+  console.log("⚙️ VORN.init() - iOS optimized");
+  
+  // ✅ ԱՎԵԼԱՑՐԵՔ ԱՅՍ 3 ՏՈՂԸ
+  this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (this.isIOS) {
+    console.log("📱 iOS detected - applying optimizations");
+    this.applyIOSOptimizations();
+  }
+  
+  console.log("🧠 UID from URL:", uidFromURL());
+  this.bindEls();
     this.buildLanguageGrid();
     this.uid = uidFromURL();
 
@@ -1104,7 +1113,22 @@ const VORN = {
     this.applyI18N && this.applyI18N();
   },
 
+  applyIOSOptimizations() {
+  // Prevent elastic scrolling
+  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
   
+  // Better touch handling
+  document.addEventListener('touchstart', function() {}, { passive: true });
+  
+  // Fix for modal focus issues
+  const handleTouchMove = function(e) {
+    if (e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
+      e.preventDefault();
+    }
+  };
+  document.addEventListener('touchmove', handleTouchMove, { passive: false });
+},
 
    buildLanguageGrid() {
   console.log("🧱 Building language grid (on-demand)…");
@@ -1134,6 +1158,8 @@ const VORN = {
     grid.appendChild(btn);
   });
 
+
+  
   // 🔹 Translate task buttons (Perform / Claimed)
   document.querySelectorAll(".task-btn").forEach(btn => {
   if (btn.classList.contains("claimed")) {
@@ -1993,98 +2019,62 @@ if (isLangLocked()) {
 
 
   /* -------- TASKS MODAL (Multilingual) -------- */
+/* -------- TASKS MODAL (Multilingual) -------- */
 bindTasksModal() {
   const { btnTasks, tasksModal, tasksList, closeTasksBtn } = this.els;
   if (!btnTasks || !tasksModal || !tasksList || !closeTasksBtn) return;
-  
 
-  btnTasks.addEventListener("click", async () => {
-  // Պատուհանը բացում ենք միայն կոճակից
-  tasksModal.classList.remove("hidden");
+  // iOS-compatible click handler
+  const openTasks = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Close any other open modals first
+    document.querySelectorAll('.modal').forEach(m => {
+      if (m !== tasksModal) m.classList.add('hidden');
+    });
+    
+    tasksModal.classList.remove('hidden');
+    
+    // Force reflow for iOS
+    tasksModal.style.display = 'flex';
+    setTimeout(() => {
+      tasksModal.style.display = '';
+    }, 10);
 
-  // Եթե արդեն ունենք նախաբեռնված՝ նկարում միայն render
-  if (this.tasks && (this.tasks.main?.length || this.tasks.daily?.length)) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/tasks?uid=${this.uid}`);
-    this.tasks = await res.json();
-  } catch (e) {
-    console.warn("⚠️ Preload tasks failed", e);
-  }
-});
-
-
-
-  // --- render only ---
-  const renderTasks = (data) => {
-    const lang = this.lang || getSavedLang();
-    const titleMain  = langButtonsDict.tasksTitles.main[lang]  || langButtonsDict.tasksTitles.main.en;
-    const titleDaily = langButtonsDict.tasksTitles.daily[lang] || langButtonsDict.tasksTitles.daily.en;
-
-    tasksList.innerHTML = "";
-    const addSection = (headerText, list) => {
-  if (!list || !list.length) return;
-
-  const h = document.createElement("h3");
-  h.className = "task-section-title";
-  h.textContent = headerText;
-  tasksList.appendChild(h);
-
-  list.forEach(t => {
-    const div = document.createElement("div");
-    div.className = "task-item";
-    const title = t.link
-      ? `<a href="${t.link}" target="_blank">${t.title}</a>`
-      : t.title;
-    const lang = this.lang || getSavedLang();
-    const performTxt   = (langButtonsDict[lang]?.task_perform)   || (texts[lang]?.task_perform)   || "Perform";
-    const claimedTxt   = (langButtonsDict[lang]?.task_claimed)   || (texts[lang]?.task_claimed)   || "Claimed";
-    const completedTxt = (langButtonsDict[lang]?.task_completed) || (texts[lang]?.task_completed) || "Completed";
-
-
-    const btn = t.completed
-    ? `<button class="task-btn done" disabled>✅ ${completedTxt}</button>`
-    : `<button class="task-perform-btn" data-task-id="${t.id}" data-link="${t.link || ""}">🚀 ${performTxt}</button>`;
-
-
-    div.innerHTML = `
-      <div class="task-left">
-        <span>${title}</span>
-        <span class="task-reward">
-          +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} 🜂` : ""}
-        </span>
-      </div>
-      ${btn}
-    `;
-    tasksList.appendChild(div);
-  });
-};
-
-
-    addSection(titleMain, data.main);
-    const divider = document.createElement("div");
-    divider.className = "task-divider"; divider.innerHTML = "<hr>";
-    tasksList.appendChild(divider);
-    addSection(titleDaily, data.daily);
+    // Load tasks if not already loaded
+    if (!this.tasks || (!this.tasks.main?.length && !this.tasks.daily?.length)) {
+      try {
+        const res = await fetch(`${API_BASE}/api/tasks?uid=${this.uid}`);
+        this.tasks = await res.json();
+        this.renderTasks(this.tasks);
+      } catch (err) {
+        console.error("🔥 Failed to load tasks", err);
+      }
+    } else {
+      this.renderTasks(this.tasks);
+    }
   };
 
-  btnTasks.addEventListener("click", async () => {
-    tasksModal.classList.remove("hidden");
-    if (this.tasks && (this.tasks.main?.length || this.tasks.daily?.length)) {
-      renderTasks(this.tasks);
-      return;
-    }
-    try {
-      const res = await fetch(`${API_BASE}/api/tasks?uid=${this.uid}`);
-      const data = await res.json();
-      this.tasks = data;
-      renderTasks(data);
-    } catch (err) {
-      console.error("🔥 Failed to load tasks", err);
+  // Use both click and touchstart for iOS
+  btnTasks.addEventListener('click', openTasks);
+  btnTasks.addEventListener('touchstart', openTasks, { passive: true });
+
+  // Close button
+  closeTasksBtn.addEventListener('click', () => {
+    tasksModal.classList.add('hidden');
+  });
+
+  // Close on backdrop click for iOS
+  tasksModal.addEventListener('click', (e) => {
+    if (e.target === tasksModal) {
+      tasksModal.classList.add('hidden');
     }
   });
 
-  // ✅ Perform flow (always attached)
+  // Perform flow (always attached)
   tasksList.addEventListener("click", async (ev) => {
     const btn = ev.target.closest(".task-perform-btn");
     if (!btn) return;
@@ -2104,7 +2094,6 @@ bindTasksModal() {
 
       const token = d1.token;
 
-// Բացում ենք հղումը, բայց մեր WebApp-ի էջը չի փոխվում
       if (link) {
         openTaskLink(link);
       }
@@ -2126,33 +2115,33 @@ bindTasksModal() {
           btn.classList.add("done");
         } else {
           const tryAgainTxt = {
-  en: "⚠️ Try again",
-  ru: "⚠️ Повторить",
-  hy: "⚠️ Կրկնել",
-  fr: "⚠️ Réessayer",
-  es: "⚠️ Intentar de nuevo",
-  de: "⚠️ Erneut versuchen",
-  it: "⚠️ Riprova",
-  tr: "⚠️ Tekrar dene",
-  fa: "⚠️ دوباره تلاش کنید",
-  ar: "⚠️ حاول مرة أخرى",
-  zh: "⚠️ 再试一次",
-  ja: "⚠️ もう一度試す",
-  ko: "⚠️ 다시 시도하세요",
-  hi: "⚠️ पुनः प्रयास करें",
-  pt: "⚠️ Tentar novamente",
-  el: "⚠️ Δοκιμάστε ξανά",
-  pl: "⚠️ Spróbuj ponownie",
-  nl: "⚠️ Probeer opnieuw",
-  sv: "⚠️ Försök igen",
-  ro: "⚠️ Încearcă din nou",
-  hu: "⚠️ Próbáld újra",
-  cs: "⚠️ Zkusit znovu",
-  uk: "⚠️ Спробуй ще раз",
-  az: "⚠️ Yenidən cəhd et",
-  ka: "⚠️ სცადე თავიდან"
-}[this.lang || getSavedLang()] || "⚠️ Try again";
-btn.textContent = tryAgainTxt;
+            en: "⚠️ Try again",
+            ru: "⚠️ Повторить", 
+            hy: "⚠️ Կրկնել",
+            fr: "⚠️ Réessayer",
+            es: "⚠️ Intentar de nuevo",
+            de: "⚠️ Erneut versuchen",
+            it: "⚠️ Riprova",
+            tr: "⚠️ Tekrar dene",
+            fa: "⚠️ دوباره تلاش کنید",
+            ar: "⚠️ حاول مرة أخرى",
+            zh: "⚠️ 再试一次",
+            ja: "⚠️ もう一度試す",
+            ko: "⚠️ 다시 시도하세요",
+            hi: "⚠️ पुनः प्रयास करें",
+            pt: "⚠️ Tentar novamente",
+            el: "⚠️ Δοκιμάστε ξανά",
+            pl: "⚠️ Spróbuj ponownie",
+            nl: "⚠️ Probeer opnieuw",
+            sv: "⚠️ Försök igen",
+            ro: "⚠️ Încearcă din nou",
+            hu: "⚠️ Próbáld újra",
+            cs: "⚠️ Zkusit znovu",
+            uk: "⚠️ Спробуй ще раз",
+            az: "⚠️ Yenidən cəhd et",
+            ka: "⚠️ სცადე თავიდან"
+          }[this.lang || getSavedLang()] || "⚠️ Try again";
+          btn.textContent = tryAgainTxt;
           btn.disabled = false;
         }
       }, 4000);
@@ -2161,10 +2150,123 @@ btn.textContent = tryAgainTxt;
       btn.disabled = false;
     }
   });
+},
 
-  closeTasksBtn.addEventListener("click", () => {
-    this.els.tasksModal.classList.add("hidden");
-  });
+renderTasks(data) {
+  const { tasksList } = this.els;
+  if (!tasksList) return;
+
+  const lang = this.lang || getSavedLang();
+  const titleMain = langButtonsDict.tasksTitles.main[lang] || langButtonsDict.tasksTitles.main.en;
+  const titleDaily = langButtonsDict.tasksTitles.daily[lang] || langButtonsDict.tasksTitles.daily.en;
+
+  tasksList.innerHTML = "";
+  
+  const addSection = (headerText, list) => {
+    if (!list || !list.length) return;
+
+    const h = document.createElement("h3");
+    h.className = "task-section-title";
+    h.textContent = headerText;
+    tasksList.appendChild(h);
+
+    list.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "task-item";
+      
+      const title = t.link
+        ? `<a href="${t.link}" target="_blank" onclick="event.stopPropagation()">${t.title}</a>`
+        : t.title;
+        
+      const performTxt = (langButtonsDict[lang]?.task_perform) || "Perform";
+      const claimedTxt = (langButtonsDict[lang]?.task_claimed) || "Claimed";
+      const completedTxt = (langButtonsDict[lang]?.task_completed) || "Completed";
+
+      const btn = t.completed
+        ? `<button class="task-btn done" disabled>✅ ${completedTxt}</button>`
+        : `<button class="task-perform-btn" data-task-id="${t.id}" data-link="${t.link || ""}">🚀 ${performTxt}</button>`;
+
+      div.innerHTML = `
+        <div class="task-left">
+          <span>${title}</span>
+          <span class="task-reward">
+            +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} 🜂` : ""}
+          </span>
+        </div>
+        ${btn}
+      `;
+      tasksList.appendChild(div);
+    });
+  };
+
+  addSection(titleMain, data.main);
+  
+  if (data.daily && data.daily.length) {
+    const divider = document.createElement("div");
+    divider.className = "task-divider";
+    divider.innerHTML = "<hr>";
+    tasksList.appendChild(divider);
+    addSection(titleDaily, data.daily);
+  }
+},
+
+// ✅ ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՆՈՐ ՄԵԹՈԴԸ bindTasksModal-ից ԱՅՍՏԵՂ
+renderTasks(data) {
+  const { tasksList } = this.els;
+  if (!tasksList) return;
+
+  const lang = this.lang || getSavedLang();
+  const titleMain = langButtonsDict.tasksTitles.main[lang] || langButtonsDict.tasksTitles.main.en;
+  const titleDaily = langButtonsDict.tasksTitles.daily[lang] || langButtonsDict.tasksTitles.daily.en;
+
+  tasksList.innerHTML = "";
+  
+  const addSection = (headerText, list) => {
+    if (!list || !list.length) return;
+
+    const h = document.createElement("h3");
+    h.className = "task-section-title";
+    h.textContent = headerText;
+    tasksList.appendChild(h);
+
+    list.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "task-item";
+      
+      const title = t.link
+        ? `<a href="${t.link}" target="_blank" onclick="event.stopPropagation()">${t.title}</a>`
+        : t.title;
+        
+      const performTxt = (langButtonsDict[lang]?.task_perform) || "Perform";
+      const claimedTxt = (langButtonsDict[lang]?.task_claimed) || "Claimed";
+      const completedTxt = (langButtonsDict[lang]?.task_completed) || "Completed";
+
+      const btn = t.completed
+        ? `<button class="task-btn done" disabled>✅ ${completedTxt}</button>`
+        : `<button class="task-perform-btn" data-task-id="${t.id}" data-link="${t.link || ""}">🚀 ${performTxt}</button>`;
+
+      div.innerHTML = `
+        <div class="task-left">
+          <span>${title}</span>
+          <span class="task-reward">
+            +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} 🜂` : ""}
+          </span>
+        </div>
+        ${btn}
+      `;
+      tasksList.appendChild(div);
+    });
+  };
+
+  addSection(titleMain, data.main);
+  
+  if (data.daily && data.daily.length) {
+    const divider = document.createElement("div");
+    divider.className = "task-divider";
+    divider.innerHTML = "<hr>";
+    tasksList.appendChild(divider);
+    addSection(titleDaily, data.daily);
+  }
 },
 
 
@@ -3031,6 +3133,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 });
+
 
   
 // === REFERRAL LEVEL LOGIC ===
