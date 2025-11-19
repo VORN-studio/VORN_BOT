@@ -5,7 +5,6 @@ import os
 import time
 import threading
 from typing import Optional
-
 from flask import Flask, jsonify, send_from_directory, request, redirect
 from flask_cors import CORS
 from support_bot import start_support_runtime, enqueue_support_update
@@ -38,6 +37,25 @@ from flask import send_from_directory
 @app_web.route('/googleac678a462577a462.html')
 def google_verification():
     return send_from_directory('.', 'googleac678a462577a462.html')
+
+# ------------------------------------------------------------------
+# ԿԱՐԵՎՈՐ ՖԻՔՍ՝ Telegram Web App-ի տվյալների (initData) պահպանում
+# ------------------------------------------------------------------
+@app_web.route("/app")
+def web_app_entry():
+    # Ստանում ենք Telegram-ի ուղարկած բոլոր պարամետրերը 
+    query_params = request.query_string.decode('utf-8')
+    
+    # Կատարում ենք վերահասցեագրում դեպի /index.html՝ ՊԱՀՊԱՆԵԼՈՎ պարամետրերը
+    return redirect(f"/index.html?{query_params}", code=302)
+
+
+@app_web.route("/index.html")
+def main_index_file():
+    # Սա ապահովում է, որ index.html ֆայլը ցուցադրվի ճիշտ հասցեով
+    return send_from_directory('.', 'index.html')
+
+# ------------------------------------------------------------------
 
 # ------------------------------------------------------------------
 # ԿԱՐԵՎՈՐ ՖԻՔՍ՝ Telegram Web App-ի տվյալների (initData) պահպանում
