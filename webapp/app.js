@@ -2152,6 +2152,65 @@ bindTasksModal() {
   });
 },
 
+// ✅ ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՆՈՐ ՄԵԹՈԴԸ bindTasksModal-ից ԱՅՍՏԵՂ
+renderTasks(data) {
+  const { tasksList } = this.els;
+  if (!tasksList) return;
+
+  const lang = this.lang || getSavedLang();
+  const titleMain = langButtonsDict.tasksTitles.main[lang] || langButtonsDict.tasksTitles.main.en;
+  const titleDaily = langButtonsDict.tasksTitles.daily[lang] || langButtonsDict.tasksTitles.daily.en;
+
+  tasksList.innerHTML = "";
+  
+  const addSection = (headerText, list) => {
+    if (!list || !list.length) return;
+
+    const h = document.createElement("h3");
+    h.className = "task-section-title";
+    h.textContent = headerText;
+    tasksList.appendChild(h);
+
+    list.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "task-item";
+      
+      const title = t.link
+        ? `<a href="${t.link}" target="_blank" onclick="event.stopPropagation()">${t.title}</a>`
+        : t.title;
+        
+      const performTxt = (langButtonsDict[lang]?.task_perform) || "Perform";
+      const claimedTxt = (langButtonsDict[lang]?.task_claimed) || "Claimed";
+      const completedTxt = (langButtonsDict[lang]?.task_completed) || "Completed";
+
+      const btn = t.completed
+        ? `<button class="task-btn done" disabled>✅ ${completedTxt}</button>`
+        : `<button class="task-perform-btn" data-task-id="${t.id}" data-link="${t.link || ""}">🚀 ${performTxt}</button>`;
+
+      div.innerHTML = `
+        <div class="task-left">
+          <span>${title}</span>
+          <span class="task-reward">
+            +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} 🜂` : ""}
+          </span>
+        </div>
+        ${btn}
+      `;
+      tasksList.appendChild(div);
+    });
+  };
+
+  addSection(titleMain, data.main);
+  
+  if (data.daily && data.daily.length) {
+    const divider = document.createElement("div");
+    divider.className = "task-divider";
+    divider.innerHTML = "<hr>";
+    tasksList.appendChild(divider);
+    addSection(titleDaily, data.daily);
+  }
+},
+
 renderTasks(data) {
   const { tasksList } = this.els;
   if (!tasksList) return;
