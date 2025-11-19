@@ -1523,9 +1523,7 @@ async def start_bot_webhook():
     except Exception as e:
         print("⚠️ Failed to set menu button:", e)
 
-        await application.start()
-    print("✅ Bot is running (Webhook Mode enabled)")
-
+    # ✅ Սա ավելացրու այն տեղում, որտեղ նախկինում «Proper start» էր գրված
 
 # ✅ Proper start (FINAL FIX)
 async def run_telegram_bot():

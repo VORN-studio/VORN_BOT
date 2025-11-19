@@ -31,28 +31,7 @@ const API = {
 let exchangeBusy = false; // ⚙️ արգելում է կրկնակի սեղմումը
 
 
-// --- Telegram WebApp + UID detect ---
-const tg = window.Telegram ? window.Telegram.WebApp : null;
-
-function detectUID() {
-  // 1) URL → ?uid=123
-  const params = new URLSearchParams(window.location.search);
-  const fromUrl = parseInt(params.get("uid") || "0", 10);
-  if (fromUrl) return fromUrl;
-
-  // 2) Telegram WebApp → initDataUnsafe.user.id
-  const tUser = tg?.initDataUnsafe?.user;
-  if (tUser?.id) return Number(tUser.id);
-
-  // 3) fallback
-  return 0;
-}
-
-const UID = detectUID();
-console.log("VORN UID =", UID);
-
-
-
+/* ------------ HELPERS ------------ */
 
 // === One-time language lock ===
 const LANG_LOCK_KEY = "vorn_lang_lock";
@@ -917,7 +896,7 @@ const VORN = {
     console.log("🧠 UID from URL:", uidFromURL());
     this.bindEls();
     this.buildLanguageGrid();
-    UID = UID;
+    this.uid = uidFromURL();
 
     this.lang = getSavedLang();
 
@@ -942,7 +921,7 @@ const VORN = {
     // Fallback: hard-wire start if overlays delayed
     this.wireStartButton();
 
-    if (UID) {
+    if (this.uid) {
   // 🧠 Preload user & tasks asynchronously
   this.loadUser(); // no await — runs in background
   this.preloadTasks();
@@ -1021,7 +1000,7 @@ if (this.els.exchangeBtn) {
     console.log("🟢 EXCHANGE button clicked");
 
     try {
-      const uid = UID || VORN.uid;
+      const uid = this.uid || VORN.uid;
       if (!uid) {
         this.showMessage("⚠️ Cannot find user ID", "error");
         return;
@@ -1230,7 +1209,7 @@ if (this.els.btnInfo) {
 
 
   async openReferrals() {
-  if (!UID) return;
+  if (!this.uid) return;
   try {
 
     // Ստուգում ենք՝ արդյոք պետք է լվլի բոնուս տրվի backend-ի կողմից
@@ -1239,7 +1218,7 @@ if (this.els.btnInfo) {
         fetch(`${API_BASE}/api/reflevel/claim`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: UID })
+        body: JSON.stringify({ uid: this.uid })
       })
         .then(r => r.json())
         .then(d => {
@@ -1256,7 +1235,7 @@ if (this.els.btnInfo) {
     }
 
     // 1) Backend-ից բերում ենք ռեֆերալների տվյալները
-    const r = await fetch(`${API_BASE}/api/referrals?uid=${UID}`);
+    const r = await fetch(`${API_BASE}/api/referrals?uid=${this.uid}`);
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || "referrals failed");
 
@@ -1408,7 +1387,7 @@ if (this.els.btnInfo) {
 
  async refPreview() {
   try {
-    const r = await fetch(`${API_BASE}/api/referrals/preview?uid=${UID}`); // ← new
+    const r = await fetch(`${API_BASE}/api/referrals/preview?uid=${this.uid}`); // ← new
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || "preview failed");
 
@@ -1437,7 +1416,7 @@ async refClaim() {
     const r = await fetch(`${API_BASE}/api/referrals/claim`, { // ← was /api/referral_claim
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ uid: UID })                   // ← key is uid
+      body: JSON.stringify({ uid: this.uid })                   // ← key is uid
     });
     const d = await r.json();
     if (!d.ok) { this.showMessage("error","error"); return; }
@@ -1477,8 +1456,8 @@ this.showMessage("success_ref_claim", "success", 2500);
   /* -------- USER / SERVER -------- */
   async loadUser() {
     try {
-      console.log("🌐 Loading user:", API.user(UID));
-      const r = await fetch(API.user(UID));
+      console.log("🌐 Loading user:", API.user(this.uid));
+      const r = await fetch(API.user(this.uid));
       const data = await r.json();
       console.log("✅ User data:", data);
 
@@ -1513,7 +1492,7 @@ if (foodEl) foodEl.textContent = (parseFloat(this.vornBalance || 0)).toFixed(2);
     }
 
     const nameEl = document.getElementById("username");
-if (nameEl) nameEl.textContent = `Player ${UID}`;
+if (nameEl) nameEl.textContent = `Player ${this.uid}`;
 
 // ✅ Դնում ենք նույն լեզուն նաև ինտերֆեյսի վրա
 if (this.lang) document.documentElement.setAttribute("lang", this.lang);
@@ -1529,7 +1508,7 @@ applyI18N(this.lang);
 
   async preloadTasks() {
   try {
-    const res = await fetch(`${API_BASE}/api/tasks?uid=${UID}`);
+    const res = await fetch(`${API_BASE}/api/tasks?uid=${this.uid}`);
     this.tasks = await res.json();
     console.log("⚡ Prefetched tasks:", this.tasks);
   } catch (e) {
@@ -1557,7 +1536,7 @@ async onMineClick() {
     const r = await fetch(API.mine, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: UID })
+      body: JSON.stringify({ user_id: this.uid })
     });
     const data = await r.json();
 
@@ -1678,12 +1657,12 @@ paintMineButton() {
   localStorage.setItem("vorn_lang", this.lang);
 
   // ✅ ուղարկում ենք լեզուն սերվերին, որ միշտ հիշի
-  if (UID) {
+  if (this.uid) {
     try {
       await fetch(`${API_BASE}/api/set_language`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ user_id: UID, language: this.lang })
+        body: JSON.stringify({ user_id: this.uid, language: this.lang })
       });
     } catch (e) { console.warn("set_language failed:", e); }
   }
@@ -1862,7 +1841,7 @@ bindTasksModal() {
   if (this.tasks && (this.tasks.main?.length || this.tasks.daily?.length)) return;
 
   try {
-    const res = await fetch(`${API_BASE}/api/tasks?uid=${UID}`);
+    const res = await fetch(`${API_BASE}/api/tasks?uid=${this.uid}`);
     this.tasks = await res.json();
   } catch (e) {
     console.warn("⚠️ Preload tasks failed", e);
@@ -1931,7 +1910,7 @@ bindTasksModal() {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/api/tasks?uid=${UID}`);
+      const res = await fetch(`${API_BASE}/api/tasks?uid=${this.uid}`);
       const data = await res.json();
       this.tasks = data;
       renderTasks(data);
@@ -1953,7 +1932,7 @@ bindTasksModal() {
       const r1 = await fetch(`${API_BASE}/api/task_attempt_create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: UID, task_id: taskId })
+        body: JSON.stringify({ user_id: this.uid, task_id: taskId })
       });
       const d1 = await r1.json();
       if (!d1.ok) { btn.disabled = false; return alert("⚠️ Failed to start task"); }
@@ -1969,7 +1948,7 @@ bindTasksModal() {
         const r2 = await fetch(`${API_BASE}/api/task_attempt_verify_forced`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: UID, task_id: taskId, token })
+          body: JSON.stringify({ user_id: this.uid, task_id: taskId, token })
         });
         const d2 = await r2.json();
         if (d2.ok) {
@@ -2100,13 +2079,13 @@ this._lastClick = Date.now();
     this.bumpEnergyBarVisibility();
 
     try {
-      if (!UID) return console.warn("⚠️ No UID found in URL");
+      if (!this.uid) return console.warn("⚠️ No UID found in URL");
 
 // 🪶 lightweight crow-click mining — always adds +1 and saves to DB
 const r = await fetch(API.mineClick, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ user_id: UID })
+  body: JSON.stringify({ user_id: this.uid })
 });
 const data = await r.json();
 if (data.ok) {
@@ -2134,7 +2113,7 @@ if (pf) {
     const r = await fetch(API.vornReward, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: UID, amount: 0.02 })
+      body: JSON.stringify({ user_id: this.uid, amount: 0.02 })
     });
     const data = await r.json();
     if (data.ok) {
@@ -2163,7 +2142,7 @@ if (pf) {
   async onExchangeClick() {
   console.log("🟢 Exchange button clicked");
 
-  const uid = UID || UID; // քո user ID-ն
+  const uid = this.uid || UID; // քո user ID-ն
   if (!uid) {
     this.toast("User not loaded yet.");
     return;
