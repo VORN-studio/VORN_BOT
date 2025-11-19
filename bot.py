@@ -2038,7 +2038,15 @@ if __name__ == "__main__":
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
+    # Telegram bot → background thread
+    bot_thread = threading.Thread(target=lambda: asyncio.run(run_bot()), daemon=True)
+    bot_thread.start()
+
+    # Flask MUST run on main thread for Render
     port = int(os.environ.get("PORT", "10000"))
+    print(f"🌍 Flask starting on port {port} ...")
+    app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+
 
     def run_flask():
         try:
