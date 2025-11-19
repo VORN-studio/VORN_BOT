@@ -37,45 +37,22 @@ def catch_all(anypath):
 def google_verification():
     return send_from_directory('.', 'googleac678a462577a462.html')
 
-# ------------------------------------------------------------------
-# ԿԱՐԵՎՈՐ ՖԻՔՍ՝ Telegram Web App-ի տվյալների (initData) պահպանում
-# ------------------------------------------------------------------
-@app_web.route("/app")
-def telegram_web_app_entry_fix():
-    # 1. Ստանում ենք Telegram-ի ուղարկած բոլոր պարամետրերը 
-    query_params = request.query_string.decode('utf-8')
-    
-    # 2. Կատարում ենք վերահասցեագրում դեպի /index.html՝ ՊԱՀՊԱՆԵԼՈՎ պարամետրերը
-    return redirect(f"/index.html?{query_params}", code=302)
 
+# =========================
+# Telegram WebApp FIX — KEEP ONLY THIS VERSION
+# =========================
+
+@app_web.route("/app")
+def app_handler():
+    query = request.query_string.decode("utf-8")
+    if query:
+        return redirect(f"/index.html?{query}", code=302)
+    return send_from_directory(WEBAPP_DIR, "index.html")
 
 @app_web.route("/index.html")
-def telegram_index_file_fix():
-    # 3. Սա ապահովում է, որ index.html ֆայլը ցուցադրվի ճիշտ հասցեով
-    return send_from_directory('.', 'index.html')
+def index_handler():
+    return send_from_directory(WEBAPP_DIR, "index.html")
 
-# ------------------------------------------------------------------
-
-# ------------------------------------------------------------------
-# ԿԱՐԵՎՈՐ ՖԻՔՍ՝ Telegram Web App-ի տվյալների (initData) պահպանում
-# ------------------------------------------------------------------
-@app_web.route("/app")
-def web_app_entry():
-    # Ստանում ենք Telegram-ի ուղարկած բոլոր պարամետրերը 
-    query_params = request.query_string.decode('utf-8')
-    
-    # Կատարում ենք վերահասցեագրում դեպի /index.html՝ ՊԱՀՊԱՆԵԼՈՎ պարամետրերը
-    return redirect(f"/index.html?{query_params}", code=302)
-
-
-
-@app_web.route("/index.html")
-def index_html_file():
-    # 3. Սա ապահովում է, որ index.html ֆայլը ցուցադրվի ճիշտ հասցեով
-    # (նույնիսկ եթե հղման վրա կան query պարամետրեր)
-    return send_from_directory('.', 'index.html')
-
-# ------------------------------------------------------------------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEBAPP_DIR = os.path.join(BASE_DIR, "webapp")  # contains index.html, app.js, style.css, assets/
