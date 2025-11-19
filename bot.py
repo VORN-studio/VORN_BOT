@@ -2027,25 +2027,54 @@ def api_fix_vorn_column():
 
 
 
+async def run_bot():
+    """Runs Telegram bot in webhook mode and keeps the loop alive."""
+    try:
+        # 1) Initialize + set webhook
+        await start_bot_webhook()
+
+        # 2) Start Application (creates tasks, assigns .loop)
+        await application.start()
+        print("✅ Telegram bot started and listening for updates (Webhook mode).")
+
+        # 3) Keep the bot alive forever
+        await asyncio.Event().wait()
+
+    except Exception as e:
+        print("🔥 run_bot error:", e)
 
 
 
 if __name__ == "__main__":
     print("✅ Bot script loaded successfully.")
+
     try:
         init_db()
         print("✅ Database initialized (PostgreSQL ready).")
     except Exception as e:
         print("⚠️ init_db() failed:", e)
 
-    # Telegram bot → background thread
-    bot_thread = threading.Thread(target=lambda: asyncio.run(run_bot()), daemon=True)
+    # --- Run Telegram bot in background thread ---
+    def start_bot_thread():
+        try:
+            asyncio.run(run_bot())
+        except Exception as e:
+            print("🔥 Telegram bot thread crashed:", e)
+
+    bot_thread = threading.Thread(target=start_bot_thread, daemon=True)
     bot_thread.start()
 
-    # Flask MUST run on main thread for Render
+    # --- Run Flask as MAIN PROCESS for Render ---
     port = int(os.environ.get("PORT", "10000"))
     print(f"🌍 Flask starting on port {port} ...")
-    app_web.run(host="0.0.0.0", port=port, threaded=True, use_reloader=False)
+
+    app_web.run(
+        host="0.0.0.0",
+        port=port,
+        threaded=True,
+        use_reloader=False
+    )
+
 
 
     def run_flask():
