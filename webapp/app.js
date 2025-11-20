@@ -1,3 +1,23 @@
+Telegram.WebApp.ready();
+
+// 1) փորձել վերցնել user-ը Telegram-ից
+let tgUser = Telegram.WebApp.initDataUnsafe?.user;
+
+// ՍԵՎԱՇԽԱՏՈՂ ՄԵԽԱՆԻԶՄ — Catizen-ի նման
+if (tgUser && tgUser.id) {
+    window.USER_ID = tgUser.id;
+} else {
+    // 2) fallback՝ URL-ում uid փնտրել
+    const params = new URLSearchParams(window.location.search);
+    window.USER_ID = params.get("uid");
+}
+
+// Եթե դեռ user_id չկա՝ չթողնես, որ app.js-ը բեռնի դատարկ user
+if (!window.USER_ID) {
+    alert("User ID missing. Please open the app from the bot.");
+}
+
+
 /* =========================================================
    VORN WebApp — Unified Core
    ========================================================= */
