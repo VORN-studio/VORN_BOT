@@ -2,7 +2,15 @@
    VORN WebApp — Unified Core
    ========================================================= */
 
-   
+   const url = new URL(window.location.href);
+
+// Նոր ուղարկվող փոփոխականը Telegram-ից
+const uid = url.searchParams.get("uid") || url.searchParams.get("tgWebAppUserId");
+
+if (!uid) {
+    alert("UID missing. Please open app from bot.");
+}
+
 
 console.log("✅ app.js loaded (VORN unified)");
 

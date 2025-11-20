@@ -1880,6 +1880,26 @@ def test_add_feathers():
     return jsonify({"ok": True, "added": amount, "new_balance": new_bal})
 
 
+@app_web.route("/")
+def root_entry():
+    tg_uid = request.args.get("tgWebAppUserId")
+
+    # Եթե Telegram-ը Չի փոխանցել UID → ցույց ենք տալիս հատուկ splash
+    if not tg_uid:
+        return """
+        <html>
+            <body style='background:#0D1117; color:white; font-family:Arial;'>
+                <h3>✔️ VORN Bot is running.</h3>
+                <p>No UID provided. Please open the app from bot using the button.</p>
+            </body>
+        </html>
+        """
+
+    # Եթե փոխանցել ա → ուղարկում ենք WebApp
+    return redirect(f"/webapp/index.html?uid={tg_uid}", code=302)
+
+
+
 @app_web.route("/api/fix_vorn_column")
 def api_fix_vorn_column():
     """Migrate vorn_balance to NUMERIC(20,6) and fix NULLs."""
