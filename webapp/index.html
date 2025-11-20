@@ -158,7 +158,7 @@
 
     <!-- TOP BAR -->
     <div class="ui-top">
-      <div class="ui-left">👤 <span id="username"></span></div>
+      <div class="ui-left">👤 <span id="username">Player059</span></div>
 
       <div class="ui-right">
   <div class="coins-block">
@@ -589,26 +589,6 @@
     margin-top: 8px;
   }
 </style>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
-        const tg = Telegram.WebApp.initDataUnsafe;
-
-        if (tg.user && tg.user.id) {
-            const real_uid = tg.user.id;
-
-            const url = new URL(window.location.href);
-
-            // եթե URL-ում uid չկա → ավելացնում ենք
-            if (!url.searchParams.get("uid")) {
-                url.searchParams.set("uid", real_uid);
-                window.location.replace(url.toString());
-            }
-        }
-    }
-});
-</script>
 
 
 <!-- APP LOGIC -->

@@ -3325,22 +3325,3 @@ const refTexts = {
 
 
 };
-
-
-// Telegram WebApp API
-const tg = window.Telegram?.WebApp;
-
-// Try reading initDataUnsafe (REAL user ID from Telegram)
-let user_id = tg?.initDataUnsafe?.user?.id;
-
-// fallback in case Telegram didn't initialize yet
-if (!user_id) {
-    const url = new URLSearchParams(window.location.search);
-    user_id = url.get("uid");  // from /app?uid=...
-}
-
-if (!user_id) {
-    user_id = 0; // final fallback
-}
-
-console.log("VORN USER ID =", user_id);

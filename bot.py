@@ -1865,18 +1865,6 @@ def test_add_feathers():
     add_referral_bonus(uid, reward_feathers=amount, reward_vorn=0.0)
     return jsonify({"ok": True, "added": amount, "new_balance": new_bal})
 
-@app_web.route("/vorncore")
-def vorncore_handler():
-    """ Official Telegram WebApp entry point """
-    init_data = request.args.get("tgWebAppData")
-
-    # Եթե Telegram-ը չի ուղարկել user data → կբացի դատարկ էջ (այսօր ինչ բացվում է հենց դա է)
-    if not init_data:
-        return "❌ No Telegram WebApp data received."
-
-    # Ուղղում ենք դեպի քո webapp index.html
-    return redirect(f"/webapp/index.html?initData={init_data}", code=302)
-
 
 @app_web.route("/api/fix_vorn_column")
 def api_fix_vorn_column():
