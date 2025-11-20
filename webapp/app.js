@@ -51,17 +51,22 @@ function lockLang(lang) {
 function uidFromURL() {
   const tg = window.Telegram?.WebApp;
 
-  // 1) Try real Telegram user id
+  // 1) Direct Telegram user id
   if (tg?.initDataUnsafe?.user?.id) {
     return Number(tg.initDataUnsafe.user.id);
   }
 
-  // 2) Try start_param (Telegram menu button passes this!)
+  // 2) start_param (normal way)
   if (tg?.initDataUnsafe?.start_param) {
     return Number(tg.initDataUnsafe.start_param);
   }
 
-  // 3) Try GET params (?uid= or ?startapp=)
+  // 3) tgWebAppStartParam (Telegram menu button uses THIS!)
+  if (tg?.initDataUnsafe?.tgWebAppStartParam) {
+    return Number(tg.initDataUnsafe.tgWebAppStartParam);
+  }
+
+  // 4) URL fallback parameters
   const url = new URL(window.location.href);
   const p =
     url.searchParams.get("uid") ||
@@ -70,6 +75,7 @@ function uidFromURL() {
 
   return p ? Number(p) : null;
 }
+
 
 function nowSec() { return Math.floor(Date.now() / 1000); }
 
