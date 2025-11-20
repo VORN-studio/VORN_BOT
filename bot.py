@@ -5,7 +5,8 @@ import os
 import time
 import threading
 from typing import Optional
-from flask import Flask, jsonify, send_from_directory, request, redirect
+
+from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 from support_bot import start_support_runtime, enqueue_support_update
 
@@ -32,33 +33,21 @@ def catch_all(anypath):
     return "✅ VORN Bot is running. Unknown path: /" + anypath, 200
 # ----------------------------------------------------
 
-@app_web.route("/app")
-def app_handler():
-    uid = request.args.get("uid", None)
-
-    # Եթե uid չկա — բացի onboarding էկրան / կամ redirect դեպի start
-    if not uid:
-        return "❌ Missing UID. Please open the app from the bot using /start.", 400
-
-    # UID կա → բացում ենք WebApp-ը
-    return redirect(f"/webapp/index.html?uid={uid}", code=302)
-
-
+from flask import send_from_directory
 
 @app_web.route('/googleac678a462577a462.html')
 def google_verification():
     return send_from_directory('.', 'googleac678a462577a462.html')
 
 
-# =========================
-# Telegram WebApp FIX — KEEP ONLY THIS VERSION
-# =========================
-
-
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEBAPP_DIR = os.path.join(BASE_DIR, "webapp")  # contains index.html, app.js, style.css, assets/
 
+
+@app_web.route("/app")
+def app_page():
+    # serve the SPA entry
+    return send_from_directory(WEBAPP_DIR, "index.html")
 
 # Serve static files under /webapp/*
 @app_web.route("/webapp/<path:filename>")
@@ -80,7 +69,6 @@ def serve_webapp(filename):
 @app_web.route("/favicon.ico")
 def favicon():
     return send_from_directory(os.path.join(WEBAPP_DIR, "assets"), "favicon.ico")
-
 
 # =========================
 # Telegram Bot
@@ -1525,11 +1513,9 @@ async def start_bot_webhook():
 
     try:
         await application.bot.set_chat_menu_button(
-            menu_button = MenuButtonWebApp(
-                text="🌀 VORN App",
-                web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app?uid={{user_id}}")
+            menu_button=MenuButtonWebApp(
+                text="🌀 VORN App", web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app")
             )
-
         )
         print("✅ Global menu button → WebApp")
     except Exception as e:
@@ -1878,26 +1864,6 @@ def test_add_feathers():
     new_bal = update_balance(uid, amount)
     add_referral_bonus(uid, reward_feathers=amount, reward_vorn=0.0)
     return jsonify({"ok": True, "added": amount, "new_balance": new_bal})
-
-
-@app_web.route("/")
-def root_entry():
-    tg_uid = request.args.get("tgWebAppUserId")
-
-    # Եթե Telegram-ը Չի փոխանցել UID → ցույց ենք տալիս հատուկ splash
-    if not tg_uid:
-        return """
-        <html>
-            <body style='background:#0D1117; color:white; font-family:Arial;'>
-                <h3>✔️ VORN Bot is running.</h3>
-                <p>No UID provided. Please open the app from bot using the button.</p>
-            </body>
-        </html>
-        """
-
-    # Եթե փոխանցել ա → ուղարկում ենք WebApp
-    return redirect(f"/webapp/index.html?uid={tg_uid}", code=302)
-
 
 
 @app_web.route("/api/fix_vorn_column")

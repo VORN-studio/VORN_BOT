@@ -1,36 +1,8 @@
-// ==========================
-// Telegram Mini App Init
-// ==========================
-const tg = window.Telegram.WebApp;
-tg.expand(); // անպայման
-const init = tg.initDataUnsafe;
-
-// ստուգում ենք որ user կա
-let UID = init?.user?.id;
-
-if (!UID) {
-    // fallback, եթե mini app-ը բացվել է առանց tg context (բացվել է menu-ից)
-    const urlParams = new URLSearchParams(window.location.search);
-    UID = urlParams.get("uid");
-}
-
-// UID տեսանելի դարձնենք console-ում
-console.log("🔥 Loaded UID:", UID);
-
-
 /* =========================================================
    VORN WebApp — Unified Core
    ========================================================= */
 
-   const url = new URL(window.location.href);
-
-// Նոր ուղարկվող փոփոխականը Telegram-ից
-const uid = url.searchParams.get("uid") || url.searchParams.get("tgWebAppUserId");
-
-if (!uid) {
-    alert("UID missing. Please open app from bot.");
-}
-
+   
 
 console.log("✅ app.js loaded (VORN unified)");
 
@@ -46,7 +18,7 @@ const API_BASE = window.location.origin.includes("web.app")
   ? "https://vorn-bot-nggr.onrender.com"
   : window.location.origin;
 const API = {
-  user: (uid) => `${API_BASE}/api/user?uid=${uid}`,
+  user: (uid) => `${API_BASE}/api/user/${uid}`,
   mine: `${API_BASE}/api/mine`,
   mineClick: `${API_BASE}/api/mine_click`,
   vornReward: `${API_BASE}/api/vorn_reward`,
@@ -1984,11 +1956,7 @@ paintMineButton() {
 
     this.initMiningDOM();
     
-    document.getElementById("startBtn").addEventListener("click", () => {
-    if (!UID) return alert("User not identified");
-    startGame(UID);
-});
-
+    
 
   },
 
@@ -3099,7 +3067,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let link = "";
   
   try {
-    const r = await fetch(`${API_BASE}/api/ref_link?uid=${uid}`);
+    const r = await fetch(`${API_BASE}/api/ref_link/${uid}`);
     const d = await r.json();
     if (d.ok && d.link) link = d.link;
   } catch (e) { console.warn("ref link fetch failed:", e); }
@@ -3211,7 +3179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const uid = uidFromURL();
   let link = "";
   try {
-    const r = await fetch(`${API_BASE}/api/ref_link?uid=${uid}`);
+    const r = await fetch(`${API_BASE}/api/ref_link/${uid}`);
     const d = await r.json();
     if (d.ok && d.link) link = d.link;   // ← always "https://t.me/<bot>?start=ref_<uid>"
   } catch (e) { console.warn("ref link fetch failed:", e); }
