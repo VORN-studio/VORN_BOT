@@ -1511,15 +1511,7 @@ async def start_bot_webhook():
     await application.bot.set_webhook(url=webhook_url)
     print(f"✅ Webhook set to {webhook_url}")
 
-    try:
-        await application.bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(
-                text="🌀 VORN App", web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app")
-            )
-        )
-        print("✅ Global menu button → WebApp")
-    except Exception as e:
-        print("⚠️ Failed to set menu button:", e)
+
 
     # ✅ Սա ավելացրու այն տեղում, որտեղ նախկինում «Proper start» էր գրված
 
