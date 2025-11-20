@@ -49,47 +49,12 @@ function lockLang(lang) {
 
 
 function uidFromURL() {
-  // 1) Փորձում ենք վերցնել user.id-ն Telegram mini-app միջավայրից
   try {
-    if (
-      window.Telegram &&
-      Telegram.WebApp &&
-      Telegram.WebApp.initDataUnsafe &&
-      Telegram.WebApp.initDataUnsafe.user &&
-      Telegram.WebApp.initDataUnsafe.user.id
-    ) {
-      const id = Number(Telegram.WebApp.initDataUnsafe.user.id);
-      if (id) {
-        console.log("👤 UID from Telegram WebApp:", id);
-        return id;
-      }
-    }
-  } catch (e) {
-    console.warn("Telegram initDataUnsafe error:", e);
-  }
-
-  // 2) Եթե վերևը չաշխատեց՝ փորձում ենք կարդալ URL-ից (?uid=…)
-  const params = new URLSearchParams(window.location.search || "");
-  const fromUid = Number(params.get("uid") || "0");
-  if (fromUid) {
-    console.log("👤 UID from URL param ?uid=:", fromUid);
-    return fromUid;
-  }
-
-  // 3) Եթե հետո որոշես startParam-ով uid ուղարկել
-  const startParam = params.get("tgWebAppStartParam");
-  if (startParam && startParam.startsWith("uid_")) {
-    const parsed = Number(startParam.replace("uid_", ""));
-    if (parsed) {
-      console.log("👤 UID from tgWebAppStartParam:", parsed);
-      return parsed;
-    }
-  }
-
-  console.warn("⚠️ uidFromURL() → 0 (no user id found)");
-  return 0;
+    const s = new URLSearchParams(window.location.search);
+    return parseInt(s.get("uid") || "0", 10) || 0;
+  } catch { return 0; }
 }
-
+function nowSec() { return Math.floor(Date.now() / 1000); }
 
 
 
