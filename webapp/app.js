@@ -1,4 +1,3 @@
-
 /* =========================================================
    VORN WebApp — Unified Core
    ========================================================= */
@@ -50,35 +49,10 @@ function lockLang(lang) {
 
 
 function uidFromURL() {
-  // 1) փորձում ենք վերցնել user.id-ը Telegram WebApp-ից
-  try {
-    if (
-      window.Telegram &&
-      Telegram.WebApp &&
-      Telegram.WebApp.initDataUnsafe &&
-      Telegram.WebApp.initDataUnsafe.user &&
-      Telegram.WebApp.initDataUnsafe.user.id
-    ) {
-      const id = parseInt(String(Telegram.WebApp.initDataUnsafe.user.id), 10);
-      if (!Number.isNaN(id) && id > 0) {
-        console.log("🧠 UID from Telegram:", id);
-        return id;
-      }
-    }
-  } catch (e) {
-    console.log("⚠️ Telegram UID read failed:", e);
-  }
-
-  // 2) եթե Telegram-ից չստացվեց → fallback URL ?uid=...
   try {
     const s = new URLSearchParams(window.location.search);
-    const fromUrl = parseInt(s.get("uid") || "0", 10) || 0;
-    console.log("🧠 UID from URL:", fromUrl);
-    return fromUrl;
-  } catch (e) {
-    console.log("⚠️ URL UID parse failed:", e);
-    return 0;
-  }
+    return parseInt(s.get("uid") || "0", 10) || 0;
+  } catch { return 0; }
 }
 function nowSec() { return Math.floor(Date.now() / 1000); }
 

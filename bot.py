@@ -988,13 +988,6 @@ async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer("OK")
 
-def vorn_app_button(user_id: int):
-    base = PUBLIC_BASE_URL.rstrip("/")
-    wa_url = f"{base}/app?uid={user_id}"
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🌀 VORN APP", web_app=WebAppInfo(url=wa_url))]
-    ])
-
 
 # =========================
 # Telegram Handlers
@@ -1518,10 +1511,15 @@ async def start_bot_webhook():
     await application.bot.set_webhook(url=webhook_url)
     print(f"✅ Webhook set to {webhook_url}")
 
-    await application.bot.set_chat_menu_button(
-    MenuButtonWebApp(text="🌀 VORN App", web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app"))
-)
-
+    try:
+        await application.bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text="🌀 VORN App", web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app")
+            )
+        )
+        print("✅ Global menu button → WebApp")
+    except Exception as e:
+        print("⚠️ Failed to set menu button:", e)
 
     # ✅ Սա ավելացրու այն տեղում, որտեղ նախկինում «Proper start» էր գրված
 
