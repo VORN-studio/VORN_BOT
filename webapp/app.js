@@ -49,11 +49,28 @@ function lockLang(lang) {
 
 
 function uidFromURL() {
-  try {
-    const s = new URLSearchParams(window.location.search);
-    return parseInt(s.get("uid") || "0", 10) || 0;
-  } catch { return 0; }
+  const tg = window.Telegram?.WebApp;
+
+  // 1) Try real Telegram user id
+  if (tg?.initDataUnsafe?.user?.id) {
+    return Number(tg.initDataUnsafe.user.id);
+  }
+
+  // 2) Try start_param (Telegram menu button passes this!)
+  if (tg?.initDataUnsafe?.start_param) {
+    return Number(tg.initDataUnsafe.start_param);
+  }
+
+  // 3) Try GET params (?uid= or ?startapp=)
+  const url = new URL(window.location.href);
+  const p =
+    url.searchParams.get("uid") ||
+    url.searchParams.get("startapp") ||
+    url.searchParams.get("tgWebAppStartParam");
+
+  return p ? Number(p) : null;
 }
+
 function nowSec() { return Math.floor(Date.now() / 1000); }
 
 
