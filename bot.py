@@ -34,13 +34,15 @@ def catch_all(anypath):
 
 @app_web.route("/app")
 def app_handler():
-    # ⛔ STOP catch_all from hijacking /app
-    query = request.query_string.decode("utf-8")
-    if query:
-        # redirect → /webapp/index.html?uid=XXXX
-        return redirect(f"/webapp/index.html?{query}", code=302)
+    uid = request.args.get("uid", None)
 
-    return redirect("/webapp/index.html", code=302)
+    # Եթե uid չկա — բացի onboarding էկրան / կամ redirect դեպի start
+    if not uid:
+        return "❌ Missing UID. Please open the app from the bot using /start.", 400
+
+    # UID կա → բացում ենք WebApp-ը
+    return redirect(f"/webapp/index.html?uid={uid}", code=302)
+
 
 
 @app_web.route('/googleac678a462577a462.html')
@@ -1523,9 +1525,11 @@ async def start_bot_webhook():
 
     try:
         await application.bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(
-                text="🌀 VORN App", web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app")
+            menu_button = MenuButtonWebApp(
+                text="🌀 VORN App",
+                web_app=WebAppInfo(url=f"{PUBLIC_BASE_URL}/app?uid={{user_id}}")
             )
+
         )
         print("✅ Global menu button → WebApp")
     except Exception as e:
