@@ -1086,3 +1086,14 @@ button, .menu-btn, .mine-btn {
     background-position: center;
     vertical-align: middle;
 }
+
+.vorncoin {
+  display: inline-block;
+  width: 16px;        /* փոխիր ըստ քո ուզած չափի */
+  height: 16px;
+  background-image: url("/webapp/assets/vorncoin.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  vertical-align: middle;
+  margin-left: 4px;
+}

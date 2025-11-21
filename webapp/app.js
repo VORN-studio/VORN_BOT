@@ -1529,7 +1529,7 @@ if (this.els.btnInfo) {
           const lang = this.lang || getSavedLang();
           const rw = refTexts.rewardWord[lang] || refTexts.rewardWord.en;
           this.els.refLevelReward.textContent =
-         `🎁 ${nextRewardFeathers.toLocaleString()} 🪶 + ${nextRewardVorn.toFixed(2)} <span class='vorncoin'></span> ${rw}`;
+         `🎁 ${nextRewardFeathers.toLocaleString()} 🪶 + ${nextRewardVorn.toFixed(2)} <span class="vorncoin"></span> ${rw}`;
 
         }
       }
