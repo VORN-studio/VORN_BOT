@@ -1078,8 +1078,8 @@ button, .menu-btn, .mine-btn {
 
 .vorncoin {
     display: inline-block;
-    width: 39px;
-    height: 39px;
+    width: 37px;
+    height: 37px;
     background-image: url('/webapp/assets/vorncoin.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -1089,4 +1089,36 @@ button, .menu-btn, .mine-btn {
     filter: drop-shadow(0 0 4px rgba(255, 166, 0, 0.5));
 }
 
+.coins-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* կենտրոնացված */
+    gap: 3px; /* տողերի միջև spacing */
+}
+
+.feather-line {
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.vorn-line {
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    margin-top: -4px; /* թեթև բարձրացրած տեսք */
+}
+
+/* VORN Coin icon */
+.vorncoin {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url('/webapp/assets/vorncoin.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin-right: 4px;
+    position: relative;
+    top: 2px;
+}
 
