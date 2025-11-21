@@ -1078,8 +1078,8 @@ button, .menu-btn, .mine-btn {
 
 .vorncoin {
     display: inline-block;
-    width: 35px;
-    height: 35px;
+    width: 39px;
+    height: 39px;
     background-image: url('/webapp/assets/vorncoin.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -1088,3 +1088,19 @@ button, .menu-btn, .mine-btn {
     margin-right: 4px;
     filter: drop-shadow(0 0 4px rgba(255, 166, 0, 0.5));
 }
+
+.coins-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; 
+    gap: 4px;
+}
+
+.feather-line, .vorn-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 1.1rem;
+    color: #ffd86b;
+}
+
