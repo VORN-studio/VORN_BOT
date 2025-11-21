@@ -1089,18 +1089,4 @@ button, .menu-btn, .mine-btn {
     filter: drop-shadow(0 0 4px rgba(255, 166, 0, 0.5));
 }
 
-.coins-block {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end; 
-    gap: 4px;
-}
-
-.feather-line, .vorn-line {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 1.1rem;
-    color: #ffd86b;
-}
 
