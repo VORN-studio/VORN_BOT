@@ -1075,3 +1075,14 @@ button, .menu-btn, .mine-btn {
   box-shadow: 0 0 18px rgba(255, 204, 51, 0.3);
   transform: scale(1.05);   /* փոքր շարժում */
 }
+
+.vorncoin {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-image: url('/webapp/assets/vorncoin.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+}

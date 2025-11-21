@@ -404,7 +404,7 @@ def check_ref_level_progress(inviter_id: int):
             )
 
             conn.commit()
-            print(f"🎉 Referral Level Up → User {inviter_id} reached level {new_level} and earned {feathers}🪶 + {vorn}⟁")
+            print(f"🎉 Referral Level Up → User {inviter_id} reached level {new_level} and earned {feathers}🪶 + {vorn}<span class='vorncoin'></span>")
         release_db(conn)
     except Exception as e:
         print("🔥 check_ref_level_progress error:", e)
@@ -734,7 +734,7 @@ def api_mine_click():
 def api_vorn_reward():
     """
     Called when progress bar reaches 100%.
-    Adds +0.02 VORN (⟁) to user and saves it in DB.
+    Adds +0.02 VORN (<span class='vorncoin'></span>") to user and saves it in DB.
     """
     data = request.get_json(force=True, silent=True) or {}
     user_id = int(data.get("user_id", 0))
@@ -766,7 +766,7 @@ def api_vorn_reward():
 
                 
         close_conn(conn, c, commit=True)
-        print(f"⟁ Added {amount} VORN to {user_id}, new total = {vbal}")
+        print(f"<span class='vorncoin'></span> Added {amount} VORN to {user_id}, new total = {vbal}")
         add_referral_bonus(user_id, reward_feathers=0, reward_vorn=amount)
         return jsonify({"ok": True, "vorn_added": amount, "vorn_balance": vbal})
 
@@ -1054,7 +1054,7 @@ async def addmain_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     link = parts[3] if len(parts) > 3 else None
     add_task_advanced("main", title, reward_feather, reward_vorn, link)
     await update.message.reply_text(
-        f"✅ Added MAIN task:\n• {title}\n🪶 {reward_feather} | ⟁ {reward_vorn}"
+        f"✅ Added MAIN task:\n• {title}\n🪶 {reward_feather} | <span class='vorncoin'></span> {reward_vorn}"
     )
 
 
@@ -1075,7 +1075,7 @@ async def adddaily_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     link = parts[3] if len(parts) > 3 else None
     add_task_advanced("daily", title, reward_feather, reward_vorn, link)
     await update.message.reply_text(
-        f"✅ Added DAILY task:\n• {title}\n🪶 {reward_feather} | ⟁ {reward_vorn}"
+        f"✅ Added DAILY task:\n• {title}\n🪶 {reward_feather} | <span class='vorncoin'></span> {reward_vorn}"
     )
 
 
@@ -1099,7 +1099,7 @@ async def listtasks_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rows = c.fetchall(); release_db(conn)
     if not rows:
         return await update.message.reply_text("📭 No tasks.")
-    msg = "\n".join([f"{tid}. [{t.upper()}] {title} 🪶{rf} ⟁{rv}" for tid, t, title, rf, rv in rows])
+    msg = "\n".join([f"{tid}. [{t.upper()}] {title} 🪶{rf} <span class='vorncoin'></span>{rv}" for tid, t, title, rf, rv in rows])
     await update.message.reply_text(f"📋 Active Tasks:\n{msg}")
 
 
