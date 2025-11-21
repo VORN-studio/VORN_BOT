@@ -1051,3 +1051,27 @@ button, .menu-btn, .mine-btn {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+.exchange-btn {
+  font-size: 22px;          /* ⇄ մեծություն */
+  font-weight: 600;         /* հստակություն */
+  color: #ffcc33;           /* ոսկեգույն */
+  
+  background: rgba(255, 255, 255, 0.05);  /* թեթև մուգ ֆոն */
+  border: 1px solid rgba(255, 204, 51, 0.25);  /* ոսկեգույն-outline */
+  
+  padding: 6px 14px;
+  border-radius: 12px;      /* կլորացված */
+  
+  box-shadow: 0 0 12px rgba(255, 200, 0, 0.15);
+  
+  backdrop-filter: blur(6px);  /* քո խաղի շքեղ էֆեկտը */
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.exchange-btn:hover {
+  background: rgba(255, 204, 51, 0.15);
+  box-shadow: 0 0 18px rgba(255, 204, 51, 0.3);
+  transform: scale(1.05);   /* փոքր շարժում */
+}
