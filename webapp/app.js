@@ -1528,7 +1528,7 @@ if (this.els.btnInfo) {
         } else {
           const lang = this.lang || getSavedLang();
           const rw = refTexts.rewardWord[lang] || refTexts.rewardWord.en;
-          this.els.refLevelReward.textContent =
+          this.els.refLevelReward.innerHTML =
          `🎁 ${nextRewardFeathers.toLocaleString()} 🪶 + ${nextRewardVorn.toFixed(2)} <span class="vorncoin"></span> ${rw}`;
 
         }

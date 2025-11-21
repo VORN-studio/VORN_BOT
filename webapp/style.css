@@ -1078,22 +1078,13 @@ button, .menu-btn, .mine-btn {
 
 .vorncoin {
     display: inline-block;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     background-image: url('/webapp/assets/vorncoin.png');
     background-size: contain;
     background-repeat: no-repeat;
-    background-position: center;
     vertical-align: middle;
-}
-
-.vorncoin {
-  display: inline-block;
-  width: 16px;        /* փոխիր ըստ քո ուզած չափի */
-  height: 16px;
-  background-image: url("/webapp/assets/vorncoin.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  vertical-align: middle;
-  margin-left: 4px;
+    margin-left: 4px;
+    margin-right: 4px;
+    filter: drop-shadow(0 0 4px rgba(255, 166, 0, 0.5));
 }
