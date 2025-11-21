@@ -1078,8 +1078,8 @@ button, .menu-btn, .mine-btn {
 
 .vorncoin {
     display: inline-block;
-    width: 20px;
-    height: 20px;
+    width: 35px;
+    height: 35px;
     background-image: url('/webapp/assets/vorncoin.png');
     background-size: contain;
     background-repeat: no-repeat;
