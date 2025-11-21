@@ -1097,13 +1097,13 @@ button, .menu-btn, .mine-btn {
 }
 
 .feather-line {
-    font-size: 30px;
+    font-size: 19px;
     display: flex;
     align-items: center;
 }
 
 .vorn-line {
-    font-size: 21px;
+    font-size: 17px;
     display: flex;
     align-items: center;
     margin-top: -4px; /* թեթև բարձրացրած տեսք */
@@ -1112,7 +1112,7 @@ button, .menu-btn, .mine-btn {
 /* VORN Coin icon */
 .vorncoin {
     display: inline-block;
-    width: 37px;
+    width: 31px;
     height: 37px;
     background-image: url('/webapp/assets/vorncoin.png');
     background-size: contain;
