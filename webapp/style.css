@@ -1097,13 +1097,13 @@ button, .menu-btn, .mine-btn {
 }
 
 .feather-line {
-    font-size: 15px;
+    font-size: 35px;
     display: flex;
     align-items: center;
 }
 
 .vorn-line {
-    font-size: 15px;
+    font-size: 35px;
     display: flex;
     align-items: center;
     margin-top: -4px; /* թեթև բարձրացրած տեսք */
