@@ -1254,12 +1254,12 @@ if (this.els.exchangeBtn) {
 }
 
 
-      this.els.exchangeBtn.textContent = "🔁";
+      this.els.exchangeBtn.textContent = "⇄";
       this.els.exchangeBtn.disabled = false;
     } catch (err) {
       console.error("Exchange error:", err);
       this.showMessage("🔥 Server error", "error");
-      this.els.exchangeBtn.textContent = "🔁";
+      this.els.exchangeBtn.textContent = "⇄";
       this.els.exchangeBtn.disabled = false;
     }
   
@@ -2544,13 +2544,13 @@ if (pf) {
             }
         }
 
-        this.els.exchangeBtn.textContent = "🔁";
+        this.els.exchangeBtn.textContent = "⇄";
         this.els.exchangeBtn.disabled = false;
         
     } catch (err) {
         console.error("Exchange error:", err);
         this.showMessage("🔥 Server error", "error");
-        this.els.exchangeBtn.textContent = "🔁";
+        this.els.exchangeBtn.textContent = "⇄";
         this.els.exchangeBtn.disabled = false;
     } finally {
         // ← ԱՎԵԼԱՑՐՈՒ ԱՅՍ 2 ՏՈՂԸ ՎԵՐՋԸ
