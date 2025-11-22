@@ -1168,3 +1168,27 @@ button, .menu-btn, .mine-btn {
   opacity: 0.75;
   margin-left: 35px; /* որ տողերը հիանալի align լինեն */
 }
+
+.user-icon {
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+}
+
+.user-text-block {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.player-label {
+    font-size: 14px;
+    color: #ffd86b;
+    font-weight: 600;
+}
+
+#username {
+    font-size: 12px;
+    color: #ffe8a6;
+    opacity: 0.9;
+}
