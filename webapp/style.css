@@ -1099,8 +1099,8 @@ button, .menu-btn, .mine-btn {
 /* VORN Coin icon */
 .vorn1coin {
     display: inline-block;
-    width: 46px;          /* ⬅️ մեծացնում ենք */
-    height: 46px;         /* ⬅️ մեծացնում ենք */
+    width: 50px;          /* ⬅️ մեծացնում ենք */
+    height: 50px;         /* ⬅️ մեծացնում ենք */
     background-image: url('/webapp/assets/vorn1coin.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -1197,7 +1197,7 @@ button, .menu-btn, .mine-btn {
 
 
 #exchangeContainer {
-  margin-top: 14px;   /* 👈 կոճակը մի քիչ ներքև */
+  margin-top: 17px;   /* 👈 կոճակը մի քիչ ներքև */
 }
 
 #btnExchange {
