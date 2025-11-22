@@ -1209,21 +1209,21 @@ button, .menu-btn, .mine-btn {
 
 .vorn1coin-big {
     display: inline-block;
-    width: 42px;           /* մեծ չափս */
-    height: 42px;
+    width: 48px;           /* մեծ չափս */
+    height: 48px;
     background-image: url('/webapp/assets/vorn1coin.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin-left: 4px;
-    margin-right: 4px;
+    margin-left: 2px;
+    margin-right: 2px;
     vertical-align: middle;
 }
 
 .vorn1coin {
     display: inline-block;
-    width: 22px;
-    height: 22px;
+    width: 30px;
+    height: 30px;
     background-image: url('/webapp/assets/vorn1coin.png');
     background-size: contain;
     background-repeat: no-repeat;
