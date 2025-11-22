@@ -779,7 +779,7 @@ def api_vorn_reward():
         user_lang = row[0] if row else "en"
 
         # Instead of sending full text, we send the LANGUAGE KEY → frontend knows translation
-        MESSAGE_KEY = "notify_mining_ready"
+        MESSAGE_KEY = "mining_ready_msg"
 
         # Format the message to pass the key
         payload = f"__MSG__:{MESSAGE_KEY}:{user_lang}"
@@ -1025,7 +1025,7 @@ async def notify_all_users_new_task(bot: Bot):
         rows = c.fetchall()
         release_db(conn)
 
-        MESSAGE_KEY = "notify_new_task"
+        MESSAGE_KEY = "new_task_msg"
 
         for uid, lang in rows:
             lang = lang or "en"

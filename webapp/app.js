@@ -1048,6 +1048,29 @@ const infoData = {
 // 🔁 Օգնական՝ RTL լեզուներ
 const RTL_LANGS = new Set(["ar","fa"]);
 
+Telegram.WebApp.onEvent("message", (event) => {
+    try {
+        const text = event?.data;
+        if (!text || typeof text !== "string") return;
+
+        // Ստուգում ենք՝ արդյոք սա մեր համակարգային բանալին է
+        if (text.startsWith("__MSG__:")) {
+            const [, key, userLang] = text.split(":");
+
+            // Բեռնենք մեր թարգմանությունները
+            const dict = langButtonsDict?.notifications || {};
+            const translated = dict[key]?.[userLang] || dict[key]?.en;
+
+            if (translated) {
+                alert(translated);  // կամ showPopup(translated)
+            }
+        }
+    } catch (e) {
+        console.error("Message handler error:", e);
+    }
+});
+
+
 
 function openTaskLink(link) {
   if (!link) return;
