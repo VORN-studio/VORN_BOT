@@ -1222,8 +1222,8 @@ button, .menu-btn, .mine-btn {
 
 .vorn1coin {
     display: inline-block;
-    width: 30px;
-    height: 30px;
+    width: 37px;
+    height: 37px;
     background-image: url('/webapp/assets/vorn1coin.png');
     background-size: contain;
     background-repeat: no-repeat;
