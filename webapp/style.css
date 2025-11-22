@@ -1134,3 +1134,37 @@ button, .menu-btn, .mine-btn {
   color: #ffd447;
   opacity: 0.9;
 }
+
+.user-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    background-image: url('/webapp/assets/crow_user.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+
+.user-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 6px;
+  filter: drop-shadow(0 0 4px rgba(255,255,150,0.6));
+}
+
+.username-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffd868;
+}
+
+.user-id {
+  font-size: 0.82rem;
+  opacity: 0.75;
+  margin-left: 35px; /* որ տողերը հիանալի align լինեն */
+}
