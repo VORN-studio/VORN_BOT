@@ -1058,7 +1058,7 @@ Telegram.WebApp.onEvent("message", (event) => {
             const [, key, userLang] = text.split(":");
 
             // Բեռնենք մեր թարգմանությունները
-            const dict = langButtonsDict?.notifications || {};
+            const dict = langButtonsDict || {};
             const translated = dict[key]?.[userLang] || dict[key]?.en;
 
             if (translated) {
