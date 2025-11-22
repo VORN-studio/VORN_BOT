@@ -1216,3 +1216,17 @@ button, .menu-btn, .mine-btn {
 #btnExchange {
   transform: translateY(6px);  /* 👈 ուղիղ իջեցնում է */
 }
+
+
+/* === USER ID STYLE FIX === */
+.user-id-line #username {
+    font-size: 18px;       /* ← մեծացված չափ */
+    color: #ffd54a;        /* ← ոսկեգույն */
+    font-weight: 600;      /* ← ավելի հստակ */
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+}
+
+.user-id-line {
+    display: flex;
+    justify-content: center;
+}
