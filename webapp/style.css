@@ -1112,7 +1112,7 @@ button, .menu-btn, .mine-btn {
 /* VORN Coin icon */
 .vorn1coin {
     display: inline-block;
-    width: 31px;
+    width: 37px;
     height: 37px;
     background-image: url('/webapp/assets/vorn1coin.png');
     background-size: contain;
@@ -1198,4 +1198,21 @@ button, .menu-btn, .mine-btn {
   color: #fefefe;
   opacity: 0.85;
   margin-left: 2px;
+}
+
+
+#userIdValue {
+  font-size: 1.25rem;      /* 👈 մի փոքր մեծ */
+  color: #ffd36b;          /* 👈 ոսկեգույն՝ խաղին համապատասխան */
+  font-weight: 600;        /* 👈 մի քիչ հաստ */
+  letter-spacing: 0.5px;   /* 👈 շատ փոքր տարածություն տառերին */
+}
+
+
+#exchangeContainer {
+  margin-top: 14px;   /* 👈 կոճակը մի քիչ ներքև */
+}
+
+#btnExchange {
+  transform: translateY(6px);  /* 👈 ուղիղ իջեցնում է */
 }
