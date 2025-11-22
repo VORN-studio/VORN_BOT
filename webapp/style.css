@@ -1076,19 +1076,6 @@ button, .menu-btn, .mine-btn {
   transform: scale(1.05);   /* փոքր շարժում */
 }
 
-.vorn1coin {
-    display: inline-block;
-    width: 37px;
-    height: 37px;
-    background-image: url('/webapp/assets/vorn1coin.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    vertical-align: middle;
-    margin-left: 4px;
-    margin-right: 4px;
-    filter: drop-shadow(0 0 4px rgba(255, 166, 0, 0.5));
-}
-
 .coins-block {
     display: flex;
     flex-direction: column;
@@ -1112,14 +1099,14 @@ button, .menu-btn, .mine-btn {
 /* VORN Coin icon */
 .vorn1coin {
     display: inline-block;
-    width: 37px;
-    height: 37px;
+    width: 46px;          /* ⬅️ մեծացնում ենք */
+    height: 46px;         /* ⬅️ մեծացնում ենք */
     background-image: url('/webapp/assets/vorn1coin.png');
     background-size: contain;
     background-repeat: no-repeat;
     margin-right: 4px;
     position: relative;
-    top: 2px;
+    top: 0px;             /* որ շատ չիջնի ներքև */
 }
 
 .ui-left {
@@ -1231,14 +1218,3 @@ button, .menu-btn, .mine-btn {
     justify-content: center;
 }
 
-
-.vorncoin {
-    width: 37px;
-    height: 37px;
-    background-image: url('/webapp/assets/vorn1coin.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    display: inline-block;
-    margin-right: 8px;
-    vertical-align: middle;
-}
