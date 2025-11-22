@@ -1099,14 +1099,14 @@ button, .menu-btn, .mine-btn {
 /* VORN Coin icon */
 .vorn1coin {
     display: inline-block;
-    width: 50px;          /* ⬅️ մեծացնում ենք */
-    height: 50px;         /* ⬅️ մեծացնում ենք */
+    width: 38px;          /* ⬅️ մեծացնում ենք */
+    height: 38px;         /* ⬅️ մեծացնում ենք */
     background-image: url('/webapp/assets/vorn1coin.png');
     background-size: contain;
     background-repeat: no-repeat;
     margin-right: 4px;
     position: relative;
-    top: 0px;             /* որ շատ չիջնի ներքև */
+    top: 4px;             /* որ շատ չիջնի ներքև */
 }
 
 .ui-left {
