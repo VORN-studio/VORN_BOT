@@ -1122,3 +1122,15 @@ button, .menu-btn, .mine-btn {
     top: 2px;
 }
 
+.ui-left {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.user-id {
+  margin-left: 28px;     /* 👤 emoji-ի տակ հավասարեցնելու համար */
+  font-size: 14px;
+  color: #ffd447;
+  opacity: 0.9;
+}
