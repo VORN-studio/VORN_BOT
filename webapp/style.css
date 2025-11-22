@@ -1099,8 +1099,8 @@ button, .menu-btn, .mine-btn {
 /* VORN Coin icon */
 .vorn1coin {
     display: inline-block;
-    width: 28px;      /* icon size */
-    height: 28px;
+    width: 38px;      /* icon size */
+    height: 38px;
     background-image: url('/webapp/assets/vorn1coin.png');
     background-size: contain;
     background-repeat: no-repeat;
