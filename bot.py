@@ -1013,6 +1013,34 @@ async def btn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer("OK")
 
 
+async def notify_all_users_new_task(bot: Bot):
+    """
+    Sends a notification to ALL users that a new task has been added.
+    Uses user's selected language and the key-based translation system.
+    """
+    try:
+        conn = db()
+        c = conn.cursor()
+        c.execute("SELECT user_id, language FROM users")
+        rows = c.fetchall()
+        release_db(conn)
+
+        MESSAGE_KEY = "notify_new_task"
+
+        for uid, lang in rows:
+            lang = lang or "en"
+            payload = f"__MSG__:{MESSAGE_KEY}:{lang}"
+            try:
+                await bot.send_message(chat_id=uid, text=payload)
+            except:
+                pass
+
+        print(f"📨 Sent NEW TASK notification to {len(rows)} users")
+
+    except Exception as e:
+        print("🔥 notify_all_users_new_task error:", e)
+
+
 # =========================
 # Telegram Handlers
 # =========================
@@ -1080,6 +1108,7 @@ async def addmain_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"✅ Added MAIN task:\n• {title}\n🪶 {reward_feather} | <span class='vorn1coin'></span> {reward_vorn}"
     )
+    await notify_all_users_new_task(context.bot)
 
 
 async def adddaily_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1101,6 +1130,7 @@ async def adddaily_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"✅ Added DAILY task:\n• {title}\n🪶 {reward_feather} | <span class='vorn1coin'></span> {reward_vorn}"
     )
+    await notify_all_users_new_task(context.bot)
 
 
 async def deltask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
