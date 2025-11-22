@@ -1097,17 +1097,19 @@ button, .menu-btn, .mine-btn {
 }
 
 /* VORN Coin icon */
-.vorn1coin {
+.vorncoin {
     display: inline-block;
-    width: 38px;          /* ⬅️ մեծացնում ենք */
-    height: 38px;         /* ⬅️ մեծացնում ենք */
+    width: 24px;      /* icon size */
+    height: 24px;
     background-image: url('/webapp/assets/vorn1coin.png');
     background-size: contain;
     background-repeat: no-repeat;
-    margin-right: 4px;
-    position: relative;
-    top: 4px;             /* որ շատ չիջնի ներքև */
+    background-position: center;
+    margin-left: 4px;   /* space before number */
+    margin-right: 4px;  /* space after icon */
+    vertical-align: middle;  /* FIX alignment */
 }
+
 
 .ui-left {
   display: flex;
