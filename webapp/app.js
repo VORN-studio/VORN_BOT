@@ -1437,7 +1437,7 @@ if (this.els.btnInfo) {
         .then(r => r.json())
         .then(d => {
     if (d.ok) {
-        console.log(`🎉 Level-up reward given: +${d.reward_feathers} 🪶 +${d.reward_vorn} <span class='vorncoin'></span>`);
+        console.log(`🎉 Level-up reward given: +${d.reward_feathers} 🪶 +${d.reward_vorn} <span class='vorn1coin'></span>`);
     } else {
       console.warn("⚠️ Level-up claim failed:", d.error);
     }
@@ -1477,7 +1477,7 @@ if (this.els.btnInfo) {
         <div class="ref-trophy" style="border-color:${color(x.rank)}">
           <div class="ref-trophy-medal">${trophy(x.rank)}</div>
           <div class="ref-trophy-name">${x.username}</div>
-          <div class="ref-trophy-stats">🪶 ${Number(x.feathers||0).toLocaleString()} &nbsp; <span class='vorncoin'></span> ${(Number(x.vorn||0)).toFixed(2)}</div>
+          <div class="ref-trophy-stats">🪶 ${Number(x.feathers||0).toLocaleString()} &nbsp; <span class='vorn1coin'></span> ${(Number(x.vorn||0)).toFixed(2)}</div>
         </div>
       `).join("");
     }
@@ -1529,7 +1529,7 @@ if (this.els.btnInfo) {
           const lang = this.lang || getSavedLang();
           const rw = refTexts.rewardWord[lang] || refTexts.rewardWord.en;
           this.els.refLevelReward.innerHTML =
-         `🎁 ${nextRewardFeathers.toLocaleString()} 🪶 + ${nextRewardVorn.toFixed(2)} <span class="vorncoin"></span> ${rw}`;
+         `🎁 ${nextRewardFeathers.toLocaleString()} 🪶 + ${nextRewardVorn.toFixed(2)} <span class="vorn1coin"></span> ${rw}`;
 
         }
       }
@@ -1563,7 +1563,7 @@ if (this.els.btnInfo) {
         <div class="ref-row">
           <div class="ref-rank">${x.rank}</div>
           <div class="ref-user">${x.username}</div>
-          <div class="ref-stats">🪶 ${Number(x.feathers||0).toLocaleString()} &nbsp; <span class='vorncoin'></span> ${(Number(x.vorn||0)).toFixed(2)}</div>
+          <div class="ref-stats">🪶 ${Number(x.feathers||0).toLocaleString()} &nbsp; <span class='vorn1coin'></span> ${(Number(x.vorn||0)).toFixed(2)}</div>
         </div>
       `).join("") || `<div class="muted">No invited users yet.</div>`;
     }
@@ -1608,9 +1608,9 @@ if (this.els.btnInfo) {
     const cf = d.cashback_feathers || 0;
     const cv = d.cashback_vorn || 0;
     this.els.refResult.textContent =
-      (this.lang === "ru") ? `💡 По расчёту: ${cf} 🪶 и ${cv.toFixed(4)} <span class='vorncoin'></span>`
-      : (this.lang === "hy") ? `💡 Ըստ հաշվարկի՝ ${cf} 🪶 և ${cv.toFixed(4)} <span class='vorncoin'></span>`
-      : `💡 You can claim ${cf} 🪶 and ${cv.toFixed(4)} <span class='vorncoin'></span>`;
+      (this.lang === "ru") ? `💡 По расчёту: ${cf} 🪶 и ${cv.toFixed(4)} <span class='vorn1coin'></span>`
+      : (this.lang === "hy") ? `💡 Ըստ հաշվարկի՝ ${cf} 🪶 և ${cv.toFixed(4)} <span class='vorn1coin'></span>`
+      : `💡 You can claim ${cf} 🪶 and ${cv.toFixed(4)} <span class='vorn1coin'></span>`;
     if (cf > 0 || cv > 0) this.els.refClaimBtn.classList.remove("hidden");
     else this.els.refClaimBtn.classList.add("hidden");
   } catch (e) {
@@ -1646,7 +1646,7 @@ if (food) food.textContent = (parseFloat(this.vornBalance || 0)).toFixed(2);
 // ✅ Լեզվաբաց detail՝ միշտ ճիշտ է
 if (this.els.refResult) {
   this.els.refResult.textContent =
-    `+${(d.cashback_feathers||0).toLocaleString()} 🪶  +${Number(d.cashback_vorn||0).toFixed(4)} <span class='vorncoin'></span>`;
+    `+${(d.cashback_feathers||0).toLocaleString()} 🪶  +${Number(d.cashback_vorn||0).toFixed(4)} <span class='vorn1coin'></span>`;
 }
 
 // ✅ Իսկ toast-ը թող լինի քո թարգմանված բանալուց
@@ -1706,7 +1706,7 @@ if (foodEl) foodEl.textContent = (parseFloat(this.vornBalance || 0)).toFixed(2);
     }
 
     const nameEl = document.getElementById("username");
-if (nameEl) nameEl.textContent = `Player ${this.uid}`;
+if (nameEl) nameEl.textContent = `${this.uid}`;
 
 // ✅ Դնում ենք նույն լեզուն նաև ինտերֆեյսի վրա
 if (this.lang) document.documentElement.setAttribute("lang", this.lang);
@@ -2223,7 +2223,7 @@ renderTasks(data) {
         <div class="task-left">
           <span>${title}</span>
           <span class="task-reward">
-            +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} <span class='vorncoin'></span>` : ""}
+            +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} <span class='vorn1coin'></span>` : ""}
           </span>
         </div>
         ${btn}
@@ -2281,7 +2281,7 @@ renderTasks(data) {
         <div class="task-left">
           <span>${title}</span>
           <span class="task-reward">
-            +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} <span class='vorncoin'></span>` : ""}
+            +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} <span class='vorn1coin'></span>` : ""}
           </span>
         </div>
         ${btn}
@@ -2340,7 +2340,7 @@ renderTasks(data) {
         <div class="task-left">
           <span>${title}</span>
           <span class="task-reward">
-            +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} <span class='vorncoin'></span>` : ""}
+            +${t.reward_feather} 🪶 ${t.reward_vorn > 0 ? `+${t.reward_vorn} <span class='vorn1coin'></span>` : ""}
           </span>
         </div>
         ${btn}
@@ -2467,7 +2467,7 @@ if (pf) {
   if (cur >= 100) {
   pf.style.width = '0%';
   try {
-    console.log("<span class='vorncoin'></span> Sending /api/vorn_reward …");
+    console.log("<span class='vorn1coin'></span> Sending /api/vorn_reward …");
     const r = await fetch(API.vornReward, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2683,31 +2683,31 @@ showMessage(key, type = "info", duration = 2600) {
 
 
     success_exchange: {
-      en: "✅ Exchanged 50000 🪶 → +1 <span class='vorncoin'></span>",
-      ru: "✅ Обменено 50000 🪶 → +1 <span class='vorncoin'></span>",
-      hy: "✅ Փոխանակվեց 50000 🪶 → +1 <span class='vorncoin'></span>",
-      fr: "✅ Échangées 50000 🪶 → +1 <span class='vorncoin'></span>",
-      es: "✅ Intercambiadas 50000 🪶 → +1 <span class='vorncoin'></span>",
-      de: "✅ Getauscht 50000 🪶 → +1 <span class='vorncoin'></span>",
-      it: "✅ Scambiate 50000 🪶 → +1 <span class='vorncoin'></span>",
-      tr: "✅ 50000 🪶 takas edildi → +1 <span class='vorncoin'></span>",
-      fa: "✅ 50000 🪶 مبادله شد → +1 <span class='vorncoin'></span>",
-      ar: "<span class='vorncoin'></span>✅ تم تبادل 50000 🪶 → +1 <span class='vorncoin'></span>",
-      zh: "✅ 兑换 50000 🪶 → +1 <span class='vorncoin'></span>",
-      ja: "✅ 交換 50000 🪶 → +1 <span class='vorncoin'></span>",
-      ko: "✅ 교환됨 50000 🪶 → +1 <span class='vorncoin'></span>",
-      hi: "✅ एक्सचेंज 50000 🪶 → +1 <span class='vorncoin'></span>",
-      pt: "✅ Trocadas 50000 🪶 → +1 <span class='vorncoin'></span>",
-      el: "✅ Ανταλλάχθηκαν 50000 🪶 → +1 <span class='vorncoin'></span>",
-      pl: "✅ Wymieniono 50000 🪶 → +1 <span class='vorncoin'></span>",
-      nl: "✅ Gewisseld 50000 🪶 → +1 <span class='vorncoin'></span>",
-      sv: "✅ Bytte 50000 🪶 → +1 <span class='vorncoin'></span>",
-      ro: "✅ Schimbate 50000 🪶 → +1 <span class='vorncoin'></span>",
-      hu: "✅ Kicserélve 50000 🪶 → +1 <span class='vorncoin'></span>",
-      cs: "✅ Vyměněno 50000 🪶 → +1 <span class='vorncoin'></span>",
-      uk: "✅ Обміняно 50000 🪶 → +1 <span class='vorncoin'></span>",
-      az: "✅ 50000 🪶 dəyişdirildi → +1 <span class='vorncoin'></span>",
-      ka: "✅ გადაცვლილია 50000 🪶 → +1 <span class='vorncoin'></span>"
+      en: "✅ Exchanged 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      ru: "✅ Обменено 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      hy: "✅ Փոխանակվեց 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      fr: "✅ Échangées 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      es: "✅ Intercambiadas 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      de: "✅ Getauscht 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      it: "✅ Scambiate 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      tr: "✅ 50000 🪶 takas edildi → +1 <span class='vorn1coin'></span>",
+      fa: "✅ 50000 🪶 مبادله شد → +1 <span class='vorn1coin'></span>",
+      ar: "<span class='vorn1coin'></span>✅ تم تبادل 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      zh: "✅ 兑换 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      ja: "✅ 交換 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      ko: "✅ 교환됨 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      hi: "✅ एक्सचेंज 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      pt: "✅ Trocadas 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      el: "✅ Ανταλλάχθηκαν 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      pl: "✅ Wymieniono 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      nl: "✅ Gewisseld 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      sv: "✅ Bytte 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      ro: "✅ Schimbate 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      hu: "✅ Kicserélve 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      cs: "✅ Vyměněno 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      uk: "✅ Обміняно 50000 🪶 → +1 <span class='vorn1coin'></span>",
+      az: "✅ 50000 🪶 dəyişdirildi → +1 <span class='vorn1coin'></span>",
+      ka: "✅ გადაცვლილია 50000 🪶 → +1 <span class='vorn1coin'></span>"
     },
 
     mine_success: {
