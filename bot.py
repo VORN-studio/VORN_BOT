@@ -768,6 +768,30 @@ def api_vorn_reward():
         close_conn(conn, c, commit=True)
         print(f"<span class='vorn1coin'></span> Added {amount} VORN to {user_id}, new total = {vbal}")
         add_referral_bonus(user_id, reward_feathers=0, reward_vorn=amount)
+
+        # --- SEND MINING READY NOTIFICATION USING USER'S LANGUAGE KEY ---
+        from telegram import Bot
+        bot = Bot(token=BOT_TOKEN)
+
+        # Load user language from DB
+        c.execute("SELECT language FROM users WHERE user_id=%s", (user_id,))
+        row = c.fetchone()
+        user_lang = row[0] if row else "en"
+
+        # Instead of sending full text, we send the LANGUAGE KEY → frontend knows translation
+        MESSAGE_KEY = "notify_mining_ready"
+
+        # Format the message to pass the key
+        payload = f"__MSG__:{MESSAGE_KEY}:{user_lang}"
+
+        try:
+            bot.send_message(chat_id=user_id, text=payload)
+            print(f"📨 Mining notification sent to {user_id} with key {MESSAGE_KEY}")
+        except Exception as e:
+            print("Telegram notification send error:", e)
+        # --- END NOTIFICATION BLOCK ---
+
+
         return jsonify({"ok": True, "vorn_added": amount, "vorn_balance": vbal})
 
 

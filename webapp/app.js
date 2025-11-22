@@ -114,6 +114,65 @@ const texts = {
   ka: { confirmText: "შენ აირჩიე ქართული.\nშემდგომ ვერ შეცვლი.", confirmBtn: "დადასტურება", changeBtn: "შეცვლა", eggTip: "🥚 დააჭირე კვერცხს!" }
 };
 const langButtonsDict = {
+
+  new_task_msg: {
+  en: "🆕 A new task is available! Complete it now and earn rewards. Stay active and grow faster.",
+  ru: "🆕 Доступно новое задание! Выполни его сейчас и получи награду. Оставайся активным и расти быстрее.",
+  hy: "🆕 Նոր տասկ է հասանելի։ Կատարիր այն հիմա ու ստացիր պարգևը։ Մնա ակտիվ ու զարգացիր արագ։",
+  fr: "🆕 Une nouvelle mission est disponible ! Accomplis-la maintenant et gagne des récompenses.",
+  es: "🆕 ¡Nueva tarea disponible! Complétala ahora y gana recompensas. Mantente activo y avanza más rápido.",
+  de: "🆕 Neue Aufgabe verfügbar! Erledige sie jetzt und sichere dir Belohnungen. Bleib aktiv.",
+  it: "🆕 Nuova missione disponibile! Completa ora e ottieni ricompense. Rimani attivo.",
+  tr: "🆕 Yeni bir görev mevcut! Hemen tamamla ve ödül kazan. Aktif kal, daha hızlı ilerle.",
+  fa: "🆕 یک تسک جدید در دسترس است! همین حالا انجامش بده و پاداش بگیر. فعال بمان و سریع‌تر رشد کن.",
+  ar: "🆕 مهمة جديدة متاحة! أكملها الآن واحصل على المكافآت. حافظ على نشاطك.",
+  zh: "🆕 新任务已上线！立即完成即可获得奖励。保持活跃，提升更快。",
+  ja: "🆕 新しいタスクが利用可能です！今すぐ完了して報酬を受け取りましょう。",
+  ko: "🆕 새로운 작업이 추가되었습니다! 지금 완료하고 보상을 받으세요. 계속 활발히 활동하세요.",
+  hi: "🆕 नया टास्क उपलब्ध है! इसे अभी पूरा करें और रिवॉर्ड पाएं। सक्रिय रहें, तेजी से बढ़ें।",
+  pt: "🆕 Nova tarefa disponível! Complete agora e ganhe recompensas. Mantenha-se ativo.",
+  el: "🆕 Νέα αποστολή διαθέσιμη! Ολοκλήρωσέ την τώρα και κέρδισε ανταμοιβές.",
+  pl: "🆕 Nowe zadanie dostępne! Wykonaj je teraz i zdobądź nagrody. Bądź aktywny.",
+  nl: "🆕 Nieuwe taak beschikbaar! Voltooi het nu en verdien beloningen. Blijf actief.",
+  sv: "🆕 Ny uppgift tillgänglig! Slutför den nu och få belöningar. Håll dig aktiv.",
+  ro: "🆕 O nouă sarcină este disponibilă! Finalizeaz-o acum și primește recompense.",
+  hu: "🆕 Új feladat érhető el! Teljesítsd most és szerezz jutalmat. Maradj aktív!",
+  cs: "🆕 Nový úkol je k dispozici! Splň ho nyní a získej odměny. Zůstaň aktivní.",
+  uk: "🆕 Доступне нове завдання! Виконай його зараз і отримай нагороду.",
+  az: "🆕 Yeni tapşırıq mövcuddur! İndi yerinə yetir və mükafat qazan.",
+  ka: "🆕 ახალი დავალება ხელმისაწვდომია! ახლა შეასრულეთ და მიიღეთ ჯილდო."
+},
+
+
+  mining_ready_msg: {
+  en: "✨ Thank you for your activity. Your energy is full — claim your 500 🪶. Keep going strong.",
+  ru: "✨ Спасибо за твою активность. Энергия заполнена — забери свои 500 🪶. Продолжай в том же духе.",
+  hy: "✨ Շնորհակալություն քո ակտիվության համար։ Էներգիան լիքն է՝ վերցրու 500 🪶։ Շարունակիր նույն ուժով։",
+  fr: "✨ Merci pour ton activité. Ton énergie est pleine — récupère tes 500 🪶. Continue ainsi.",
+  es: "✨ Gracias por tu actividad. Tu energía está completa — reclama tus 500 🪶. Sigue con esa fuerza.",
+  de: "✨ Danke für deine Aktivität. Deine Energie ist voll — hole dir deine 500 🪶. Mach weiter so.",
+  it: "✨ Grazie per la tua attività. La tua energia è piena — ritira i tuoi 500 🪶. Continua così!",
+  tr: "✨ Aktifliğin için teşekkürler. Enerjin dolu — 500 🪶 ödülünü al. Aynı güçle devam et.",
+  fa: "✨ برای فعالیتت ممنونیم. انرژی تو کامل است — ۵۰۰ 🪶 را دریافت کن. همین‌طور قوی ادامه بده.",
+  ar: "✨ شكرًا لنشاطك. طاقتك ممتلئة — احصل على 500 🪶. استمر بقوة.",
+  zh: "✨ 感谢你的活跃。能量已满 — 领取你的 500 🪶。继续保持强劲状态。",
+  ja: "✨ 活動ありがとう。エネルギーが満タンです — 500 🪶 を受け取ってください。引き続き頑張って。",
+  ko: "✨ 활동해줘서 고마워요. 에너지가 가득 찼어요 — 500 🪶을 받아가세요. 계속 힘내요.",
+  hi: "✨ आपकी सक्रियता के लिए धन्यवाद। आपकी ऊर्जा पूरी हो चुकी है — अपने 500 🪶 प्राप्त करें। ऐसे ही आगे बढ़ते रहें।",
+  pt: "✨ Obrigado pela sua atividade. Sua energia está cheia — receba suas 500 🪶. Continue firme.",
+  el: "✨ Ευχαριστούμε για τη δραστηριότητά σου. Η ενέργειά σου είναι γεμάτη — πάρε τα 500 🪶 σου. Συνέχισε δυνατά.",
+  pl: "✨ Dziękujemy za twoją aktywność. Twoja energia jest pełna — odbierz swoje 500 🪶. Kontynuuj w tym tempie.",
+  nl: "✨ Bedankt voor je activiteit. Je energie is vol — ontvang je 500 🪶. Ga zo door.",
+  sv: "✨ Tack för din aktivitet. Din energi är full — hämta dina 500 🪶. Fortsätt i samma takt.",
+  ro: "✨ Mulțumim pentru activitatea ta. Energia ta este plină — ia-ți cele 500 🪶. Continuă la fel.",
+  hu: "✨ Köszönjük az aktivitásodat. Az energiád tele van — vedd át az 500 🪶-t. Csak így tovább!",
+  cs: "✨ Děkujeme za tvoji aktivitu. Tvá energie je plná — vyzvedni si svých 500 🪶. Pokračuj dál.",
+  uk: "✨ Дякуємо за вашу активність. Ваша енергія повна — заберіть свої 500 🪶. Продовжуйте в тому ж дусі.",
+  az: "✨ Aktiv olduğun üçün təşəkkürlər. Enerjin tamdır — 500 🪶 mükafatını götür. Eyni güclə davam et.",
+  ka: "✨ მადლობა თქვენი აქტიურობისთვის. თქვენი ენერგია სავსეა — მიიღეთ 500 🪶. გააგრძელეთ იგივე ძალით."
+},
+
+
   continue: { en: "Continue", ru: "Продолжить", hy: "Շարունակել", tr: "Devam et", fa: "ادامه", es: "Continuar", fr: "Continuer", de: "Weiter", it: "Continua", zh: "继续", ja: "続行", ko: "계속", ar: "متابعة" },
   start:    { en: "Start",    ru: "Начать",      hy: "Սկսել",      tr: "Başlat",  fa: "شروع", es: "Empezar",  fr: "Commencer", de: "Starten", it: "Avvia", zh: "开始", ja: "開始", ko: "시작", ar: "ابدأ" },
   tasksTitles: {
