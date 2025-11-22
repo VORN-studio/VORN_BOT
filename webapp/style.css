@@ -1230,3 +1230,15 @@ button, .menu-btn, .mine-btn {
     display: flex;
     justify-content: center;
 }
+
+
+.vorn1coin {
+    width: 37px;
+    height: 37px;
+    background-image: url('/webapp/assets/vorn1coin.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    display: inline-block;
+    margin-right: 8px;
+    vertical-align: middle;
+}
