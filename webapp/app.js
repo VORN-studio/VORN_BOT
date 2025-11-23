@@ -3061,7 +3061,9 @@ shareBtn.addEventListener("click", async () => {
   try {
     const lang = VORN.lang || getSavedLang() || "en";
     const shareText = getInviteText(lang); // ✅ ճիշտ ֆունկցիա
-    const fullShareText = `${shareText}\n\n${link}`;
+    const rawText = getInviteText(lang);
+    const shareTextClean = rawText.replace(/https?:\/\/\S+/g, "").trim();
+    const fullShareText = `${shareTextClean}\n\n${link}`;
     
     // Telegram Share Functionality
     if (window.Telegram && Telegram.WebApp) {
