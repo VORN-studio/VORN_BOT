@@ -480,25 +480,6 @@ function updateReferralUI(lang) {
     if (copyBtn) copyBtn.textContent = getCopyButtonText(lang);
 }
 
-// For sharing functionality:
-function shareReferralLink(lang) {
-    const inviteText = getInviteText(lang);
-    const referralLink = "https://t.me/VORNCoinbot?start=ref_" + VORN.uid;
-    const fullText = `${inviteText}\n\n${referralLink}`;
-    
-    // Your sharing logic here
-    if (navigator.share) {
-        navigator.share({
-            title: 'VORN App',
-            text: inviteText,
-            url: referralLink
-        });
-    } else {
-        // Fallback to copy
-        navigator.clipboard.writeText(fullText);
-        alert(getSuccessMessage(lang));
-    }
-}
 
 // 🌐 25 լեզվով Info բովանդակություն (լրիվ տարբերակներ)
 const infoData = {
