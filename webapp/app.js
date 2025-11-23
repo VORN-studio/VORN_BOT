@@ -3077,7 +3077,7 @@ shareBtn.addEventListener("click", async () => {
       if (navigator.share) {
         await navigator.share({
           title: 'VORN App',
-          text: shareText,
+          text: fullShareText,
           url: link
         });
       } else {
