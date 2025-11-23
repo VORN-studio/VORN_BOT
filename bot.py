@@ -819,32 +819,30 @@ def api_vorn_reward():
         else:
             c.execute("""
             UPDATE users
-           SET vorn_balance = COALESCE(vorn_balance, 0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
-         WHERE user_id = %s
+               SET vorn_balance = COALESCE(vorn_balance, 0)::NUMERIC(20,6) + %s::NUMERIC(20,6)
+             WHERE user_id = %s
          RETURNING vorn_balance
-        """, (amount, user_id))
-        vbal = c.fetchone()[0]
+            """, (amount, user_id))
+            vbal = c.fetchone()[0]
 
-
-
-                
-        close_conn(conn, c, commit=True)
-        print(f"<span class='vorn1coin'></span> Added {amount} VORN to {user_id}, new total = {vbal}")
-        add_referral_bonus(user_id, reward_feathers=0, reward_vorn=amount)
-
-        # --- SEND MINING READY NOTIFICATION USING USER'S LANGUAGE KEY ---
-        from telegram import Bot
-        bot = Bot(token=BOT_TOKEN)
-
-        # Load user language from DB
+        # --- FIX START ---
+        # Load language BEFORE closing DB
         c.execute("SELECT language FROM users WHERE user_id=%s", (user_id,))
         row = c.fetchone()
         user_lang = row[0] if row else "en"
+        # --- FIX END ---
 
-        # Instead of sending full text, we send the LANGUAGE KEY → frontend knows translation
+        # close connection AFTER loading language
+        close_conn(conn, c, commit=True)
+
+        print(f"<span class='vorn1coin'></span> Added {amount} VORN to {user_id}, new total = {vbal}")
+        add_referral_bonus(user_id, reward_feathers=0, reward_vorn=amount)
+
+        # --- SEND MINING READY NOTIFICATION ---
+        from telegram import Bot
+        bot = Bot(token=BOT_TOKEN)
+
         MESSAGE_KEY = "mining_ready_msg"
-
-        # load translated text
         text = LANG_TRANSLATIONS[MESSAGE_KEY].get(user_lang, LANG_TRANSLATIONS[MESSAGE_KEY]["en"])
 
         try:
@@ -852,16 +850,14 @@ def api_vorn_reward():
             print(f"📨 Mining notification sent to {user_id} in {user_lang}")
         except Exception as e:
             print("Telegram notification send error:", e)
-
         # --- END NOTIFICATION BLOCK ---
 
-
         return jsonify({"ok": True, "vorn_added": amount, "vorn_balance": vbal})
-
 
     except Exception as e:
         print("🔥 /api/vorn_reward failed:", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
 
 
 
