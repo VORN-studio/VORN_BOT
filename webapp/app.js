@@ -3023,7 +3023,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const copyBtn = document.getElementById("copyRefLinkBtn");
   const shareBtn = document.getElementById("shareRefLinkBtn"); // ← ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՏՈՂԸ
   
-  if (!refLinkText || !copyBtn || !shareBtn) return;
+  if (!copyBtn || !shareBtn) return;
+
 
   const uid = uidFromURL();
   let link = "";
