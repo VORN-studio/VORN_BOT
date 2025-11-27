@@ -1947,17 +1947,17 @@ def api_reflevel_check():
 import threading, requests, time
 
 def keep_alive():
-    url = "https://vorn-bot-nggr.onrender.com"  # ⚠️ փոխիր քո իրական Render domain-ով
+    import requests, time
+    url = "https://vorn-bot-nggr.onrender.com"
     while True:
         try:
-            res = requests.get(url, timeout=10)
-            if res.status_code == 200:
-                print("🟢 Keep-alive ping successful.")
-            else:
-                print(f"⚠️ Keep-alive status: {res.status_code}")
+            requests.get(url, timeout=5)
+            requests.get(url + "/api/user/5274439601", timeout=5)
+            print("🟢 Strong keep-alive ping sent.")
         except Exception as e:
-            print("⚠️ Keep-alive failed:", e)
-        time.sleep(600)  # ամեն 10 րոպեն մեկ (600 վրկ)
+            print("⚠️ Keep-alive error:", e)
+        time.sleep(60)   # PING EVERY 60 SECONDS
+
 
 # Ֆոնային թելը՝ սկսվում է անմիջապես
 threading.Thread(target=keep_alive, daemon=True).start()
