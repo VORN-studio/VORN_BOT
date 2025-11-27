@@ -396,7 +396,7 @@ def ensure_user(user_id: int, username: Optional[str], inviter_id: Optional[int]
         # First time we ever see this user → allow inviter_id (if provided)
         c.execute("""
             INSERT INTO users (user_id, username, balance, last_mine, language, intro_seen, last_reminder_sent, inviter_id)
-            VALUES (%s, %s, 0, 0, 'en', 0, 0, %s)
+            VALUES (%s, %s, 0, 0, 'en', FALSE, 0, %s)
         """, (user_id, username, inviter_id))
     else:
         # Already known user → NEVER change inviter_id (one-time rule)
