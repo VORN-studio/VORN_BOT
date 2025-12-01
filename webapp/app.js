@@ -2144,90 +2144,132 @@ bindTasksModal() {
   });
 
   // Perform flow (always attached)
-  tasksList.addEventListener("click", async (ev) => {
+  /* ================================
+   TASK CLICK HANDLER — UNIVERSAL
+   ================================ */
+tasksList.addEventListener("click", async (ev) => {
     const btn = ev.target.closest(".task-perform-btn");
     if (!btn) return;
 
+    const lang = this.lang || getSavedLang() || "en";
     const taskId = +btn.dataset.taskId;
     const link   = btn.dataset.link || "";
+
     btn.disabled = true;
 
-    // ✅ 1. iPhone FIX: Հղումը բացում ենք ԱՆՄԻՋԱՊԵՍ (առանց սպասելու)
+    // 1) iPhone FIX — բացում ենք հղումը անմիջապես
     if (link) {
-      openTaskLink(link);
+        openTaskLink(link);
     }
 
     try {
-      // 2. Հետո նոր ուղարկում ենք հարցումը սերվերին
-      const r1 = await fetch(`${API_BASE}/api/task_attempt_create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: this.uid, task_id: taskId })
-      });
-      const d1 = await r1.json();
-      
-      // Եթե սխալ եղավ, կոճակը հետ ենք բերում
-      if (!d1.ok) { 
-          btn.disabled = false; 
-          return; // alert պետք չի, որ չխանգարի
-      }
-
-      const token = d1.token;
-
-      // (Հին տեղից openTaskLink-ը հանված է)
-
-      setTimeout(async () => {
-        const r2 = await fetch(`${API_BASE}/api/task_attempt_verify_forced`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: this.uid, task_id: taskId, token })
+        // 2) գրանցում ենք attempt-ը
+        const r1 = await fetch(`${API_BASE}/api/task_attempt_create`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: this.uid, task_id: taskId })
         });
-        const d2 = await r2.json();
-        if (d2.ok) {
-          this.balance = d2.new_balance;
-          this.vornBalance = d2.new_vorn;
-          document.getElementById("featherCount").textContent = d2.new_balance;
-          document.getElementById("foodCount").textContent = d2.new_vorn.toFixed(2);
-          const lang = this.lang || getSavedLang();
-          btn.textContent = `✅ ${texts[lang]?.task_claimed || texts.en.task_claimed}`;
-          btn.classList.add("done");
-        } else {
-          const tryAgainTxt = {
-            en: "⚠️ Try again",
-            ru: "⚠️ Повторить", 
-            hy: "⚠️ Կրկնել",
-            fr: "⚠️ Réessayer",
-            es: "⚠️ Intentar de nuevo",
-            de: "⚠️ Erneut versuchen",
-            it: "⚠️ Riprova",
-            tr: "⚠️ Tekrar dene",
-            fa: "⚠️ دوباره تلاش کنید",
-            ar: "⚠️ حاول مرة أخرى",
-            zh: "⚠️ 再试一次",
-            ja: "⚠️ もう一度試す",
-            ko: "⚠️ 다시 시도하세요",
-            hi: "⚠️ पुनः प्रयास करें",
-            pt: "⚠️ Tentar novamente",
-            el: "⚠️ Δοκιμάστε ξανά",
-            pl: "⚠️ Spróbuj ponownie",
-            nl: "⚠️ Probeer opnieuw",
-            sv: "⚠️ Försök igen",
-            ro: "⚠️ Încearcă din nou",
-            hu: "⚠️ Próbáld újra",
-            cs: "⚠️ Zkusit znovu",
-            uk: "⚠️ Спробуй ще раз",
-            az: "⚠️ Yenidən cəhd et",
-            ka: "⚠️ სცადე თავიდან"
-          }[this.lang || getSavedLang()] || "⚠️ Try again";
-          btn.textContent = tryAgainTxt;
-          btn.disabled = false;
+
+        const d1 = await r1.json();
+        if (!d1.ok) {
+            btn.disabled = false;
+            return;
         }
-      }, 4000);
+
+        const token = d1.token;
+
+        // 3) սպասում ենք 4 վրկ — որպես verification window
+        setTimeout(async () => {
+            const r2 = await fetch(`${API_BASE}/api/task_attempt_verify_forced`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: this.uid,
+                    task_id: taskId,
+                    token
+                })
+            });
+
+            const d2 = await r2.json();
+
+            if (d2.ok) {
+                // update local
+                this.balance = d2.new_balance;
+                this.vornBalance = d2.new_vorn;
+
+                document.getElementById("featherCount").textContent = d2.new_balance;
+                document.getElementById("foodCount").textContent = d2.new_vorn.toFixed(2);
+
+                // Multi–language claimed text
+                const claimedTxt = {
+                    en: "✅ Claimed",
+                    ru: "✅ Получено",
+                    hy: "✅ Վերցված է",
+                    es: "✅ Reclamado",
+                    de: "✅ Erhalten",
+                    fr: "✅ Réclamé",
+                    it: "✅ Ottenuto",
+                    tr: "✅ Alındı",
+                    ar: "✅ تم استلامه",
+                    fa: "✅ دریافت شد",
+                    zh: "✅ 已领取",
+                    ja: "✅ 受け取り済み",
+                    ko: "✅ 받음",
+                    hi: "✅ प्राप्त",
+                    pt: "✅ Recebido",
+                    el: "✅ Ελήφθη",
+                    pl: "✅ Odebrano",
+                    nl: "✅ Ontvangen",
+                    sv: "✅ Mottaget",
+                    ro: "✅ Revendicat",
+                    hu: "✅ Megkapva",
+                    cs: "✅ Přijato",
+                    uk: "✅ Отримано",
+                    az: "✅ Alındı",
+                    ka: "✅ მიღებულია"
+                }[lang] || "✅ Claimed";
+
+                btn.textContent = claimedTxt;
+                btn.classList.add("done");
+                btn.disabled = true;
+            } else {
+                const tryAgainTxt = {
+                    en: "⚠️ Try again",
+                    ru: "⚠️ Повторить",
+                    hy: "⚠️ Կրկնել",
+                    es: "⚠️ Intentar de nuevo",
+                    de: "⚠️ Erneut versuchen",
+                    fr: "⚠️ Réessayer",
+                    it: "⚠️ Riprova",
+                    tr: "⚠️ Tekrar dene",
+                    ar: "⚠️ حاول مرة أخرى",
+                    fa: "⚠️ دوباره تلاش کنید",
+                    zh: "⚠️ 再试一次",
+                    ja: "⚠️ もう一度試す",
+                    ko: "⚠️ 다시 시도하세요",
+                    hi: "⚠️ पुनः प्रयास करें",
+                    pt: "⚠️ Tentar novamente",
+                    el: "⚠️ Δοκιμάστε ξανά",
+                    pl: "⚠️ Spróbuj ponownie",
+                    nl: "⚠️ Probeer opnieuw",
+                    sv: "⚠️ Försök igen",
+                    ro: "⚠️ Încearcă din nou",
+                    hu: "⚠️ Próbáld újra",
+                    cs: "⚠️ Zkusit znovu",
+                    uk: "⚠️ Спробуй ще раз",
+                    az: "⚠️ Yenidən cəhd et",
+                    ka: "⚠️ სცადე თავიდან"
+                }[lang] || "⚠️ Try again";
+
+                btn.textContent = tryAgainTxt;
+                btn.disabled = false;
+            }
+        }, 4000);
     } catch (e) {
-      console.error("🔥 perform flow failed:", e);
-      btn.disabled = false;
+        console.error("🔥 perform flow error:", e);
+        btn.disabled = false;
     }
-  });
+});
 },
 
 // ✅ ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՆՈՐ ՄԵԹՈԴԸ bindTasksModal-ից ԱՅՍՏԵՂ
