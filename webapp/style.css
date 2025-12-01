@@ -1224,3 +1224,36 @@ button, .menu-btn, .mine-btn {
     margin-right: 3px;
     vertical-align: middle;
 }
+
+
+.task-tabs {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.task-tab {
+  flex: 1;
+  margin: 0 4px;
+  padding: 10px 0;
+  border-radius: 12px;
+  text-align: center;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+}
+
+.task-tab.active {
+  background: linear-gradient(135deg, #ffae00, #ffcc33);
+  color: #26004d;
+  box-shadow: 0 0 12px rgba(255,200,0,0.5);
+}
+
+.task-category {
+  display: block;
+}
+
+.task-category.hidden {
+  display: none;
+}

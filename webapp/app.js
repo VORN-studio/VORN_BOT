@@ -2270,7 +2270,28 @@ tasksList.addEventListener("click", async (ev) => {
         btn.disabled = false;
     }
 });
+
+document.querySelectorAll(".task-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+
+    document.querySelectorAll(".task-tab")
+      .forEach(b => b.classList.remove("active"));
+
+    btn.classList.add("active");
+
+    const tab = btn.dataset.tab;
+
+    document.querySelectorAll(".task-category")
+      .forEach(cat => cat.classList.add("hidden"));
+
+    document.getElementById(`cat-${tab}`).classList.remove("hidden");
+  });
+});
+
+
 },
+
+
 
 // ✅ ԱՎԵԼԱՑՐԵՔ ԱՅՍ ՆՈՐ ՄԵԹՈԴԸ bindTasksModal-ից ԱՅՍՏԵՂ
 renderTasks(data) {
