@@ -313,23 +313,29 @@
 
 
 
-    <!-- 🧩 TASKS MODAL -->
-<!-- 🟪 CATEGORY TABS -->
-<div class="task-tabs">
-  <button class="task-tab active" data-tab="subs">📡 Подписки</button>
-  <button class="task-tab" data-tab="video">🎥 Видео</button>
-  <button class="task-tab" data-tab="games">🎮 Игры</button>
-  <button class="task-tab" data-tab="other">⭐ Другое</button>
-</div>
+   <!-- 🧩 TASKS MODAL -->
+<div id="tasksModal" class="modal hidden">
+  <div class="modal-content tasks-box">
+    <h2>📜 Tasks</h2>
+    <p class="muted">Complete missions to earn 🪶 Feathers!</p>
 
-<!-- 🟪 CATEGORY CONTENT -->
-<div id="tasksWrapper">
+    <!-- 🟪 ՆՈՐ ՏԱԲԵՐԸ ԱՅՍՏԵՂ -->
+    <div class="task-tabs">
+      <button class="task-tab active" data-tab="subs">📡 Подписки</button>
+      <button class="task-tab" data-tab="video">🎥 Видео</button>
+      <button class="task-tab" data-tab="games">🎮 Игры</button>
+      <button class="task-tab" data-tab="other">⭐ Другое</button>
+    </div>
 
-  <div class="task-category" id="cat-subs"></div>
-  <div class="task-category hidden" id="cat-video"></div>
-  <div class="task-category hidden" id="cat-games"></div>
-  <div class="task-category hidden" id="cat-other"></div>
+    <div id="tasksWrapper">
+      <div class="task-category" id="cat-subs"></div>
+      <div class="task-category hidden" id="cat-video"></div>
+      <div class="task-category hidden" id="cat-games"></div>
+      <div class="task-category hidden" id="cat-other"></div>
+    </div>
 
+    <button id="closeTasksBtn" class="close-btn">✖ Close</button>
+  </div>
 </div>
 
 <!-- 🧩 INFO MODAL -->
