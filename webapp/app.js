@@ -2261,6 +2261,33 @@ renderTasks(data) {
       const claimedTxt = (langButtonsDict[lang]?.task_claimed) || "Claimed";
       const completedTxt = (langButtonsDict[lang]?.task_completed) || "Completed";
 
+      // ↙️ ԱՅՍ ԲԱԺԻՆԸ ԱՎԵԼԱՑՆԵԼ renderTasks() ֆունկցիայի ՍԿԶԲՈՒՄ
+const extraButtons = [
+  { id: "watch", icon: "📺", label: { en:"Watch", ru:"Смотреть", hy:"Դիտել" } },
+  { id: "like", icon: "❤️", label: { en:"Like", ru:"Лайк", hy:"Լայք" } },
+  { id: "comment", icon: "💬", label: { en:"Comment", ru:"Коммент", hy:"Մեկնաբանել" } },
+  { id: "subscribe", icon: "👥", label: { en:"Subscribe", ru:"Подписка", hy:"Բաժանորդագրվել" } }
+];
+
+// փողոցում չփոխես ոչինչ, սա AUTOMATIC չէ, ինքը լեզուն վերցնում է քո VORN.lang-ից
+const lang = VORN.lang || getSavedLang();
+
+// → Ավելացնում ենք 4 կոճակները Tasks-ի վերևում
+const btnWrap = document.createElement("div");
+btnWrap.className = "extra-task-btns";
+
+extraButtons.forEach(b => {
+  const btn = document.createElement("button");
+  btn.className = "extra-task-btn";
+  btn.innerHTML = `${b.icon} ${b.label[lang] || b.label.en}`;
+  btn.onclick = () => openTaskLink("https://t.me/VORNcoinop"); // ← փոխիր եթե պետք է
+  btnWrap.appendChild(btn);
+});
+
+// վերջում: tasksList.insertBefore(btnWrap, tasksList.firstChild);
+tasksList.insertBefore(btnWrap, tasksList.firstChild);
+
+
       const btn = t.completed
         ? `<button class="task-btn done" disabled>✅ ${completedTxt}</button>`
         : `<button class="task-perform-btn" data-task-id="${t.id}" data-link="${t.link || ""}">🚀 ${performTxt}</button>`;
