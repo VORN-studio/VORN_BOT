@@ -19,7 +19,7 @@ if not SUPPORT_BOT_TOKEN:
 if not SUPPORT_ADMIN_ID:
     raise RuntimeError("SUPPORT_ADMIN_ID env var is missing or zero")
 
-BOT_NAME = "VORN Support"
+BOT_NAME = "DOMINO Support"
 
 # === LOGGING ===
 logging.basicConfig(
@@ -31,9 +31,9 @@ logging.basicConfig(
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     msg = (
-        f"👋 Hello {user.first_name or 'friend'}!\n\n"
-        f"This is the {BOT_NAME} assistant.\n"
-        f"Please describe your issue or question below, and our team will reply soon. 🕊"
+        f"👋 Привет, {user.first_name or 'друг'}!\n\n"
+        f"Это ассистент {BOT_NAME} .\n"
+        f"Пожалуйста, опишите вашу проблему или вопрос ниже, и наша команда скоро ответит. 🕊"
     )
     await update.message.reply_text(msg)
 
@@ -43,7 +43,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_link = f"https://t.me/{user.username}" if user.username else f"tg://user?id={user.id}"
 
     admin_text = (
-        f"📩 Message from user:\n"
+        f"📩 Сообщение от пользователя:\n"
         f"👤 <b>{user.full_name}</b>\n"
         f"🆔 <code>{user.id}</code>\n"
         f"🔗 {user_link}\n\n"
@@ -52,25 +52,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await context.bot.send_message(chat_id=SUPPORT_ADMIN_ID, text=admin_text, parse_mode="HTML")
         await asyncio.sleep(0.2)
-        await update.message.reply_text("✅ Your message has been received.\nWe'll reply soon!")
+        await update.message.reply_text("✅ Ваше обращение принято.\nМы ответим вам в ближайшее время!")
     except Exception as e:
-        logging.error(f"❌ Support send error: {e}")
+        logging.error(f"❌ Ошибка при отправке в поддержку: {e}")
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != SUPPORT_ADMIN_ID:
-        await update.message.reply_text("⛔ You are not authorized to use this command.")
+        await update.message.reply_text("⛔ У вас нет прав для использования этой команды.")
         return
     if len(context.args) < 2:
-        await update.message.reply_text("Usage՝\n/reply <user_id> <message>")
+        await update.message.reply_text("Использование՝\n/reply <user_id> <message>")
         return
     try:
         uid = int(context.args[0])
         msg = " ".join(context.args[1:])
         await context.bot.send_message(chat_id=uid, text=msg, parse_mode="HTML")
         await asyncio.sleep(0.1)
-        await update.message.reply_text("✅ Sent successfully.")
+        await update.message.reply_text("✅ Сообщение успешно отправлено.")
     except Exception as e:
-        await update.message.reply_text(f"❌ Failed to send՝ {e}")
+        await update.message.reply_text(f"❌ Не удалось отправить сообщение՝ {e}")
 
 # === Runtime (թել + իր loop) ===
 
