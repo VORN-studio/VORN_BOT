@@ -88,7 +88,7 @@ PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").strip()
 if not PUBLIC_BASE_URL:
     PUBLIC_BASE_URL = "https://vorn-bot-nggr.onrender.com"
 
-ADMIN_IDS = {5274439601}
+ADMIN_IDS = {8022643557}
 DB_PATH = os.path.join(BASE_DIR, "vorn.db")
 
 # Mining
