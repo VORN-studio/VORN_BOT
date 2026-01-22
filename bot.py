@@ -618,16 +618,16 @@ class FreelanceBot:
     async def show_category_selection(self, query):
         """Показать выбор категории для заказа"""
         keyboard = [
-            [InlineKeyboardButton("💻 Программирование и IT", callback_data="cat_programming")],
+            [InlineKeyboardButton("💻 Программирование и IT поддержка", callback_data="cat_programming")],
             [InlineKeyboardButton("🎨 Дизайн и графика", callback_data="cat_design")],
-            [InlineKeyboardButton("📸 Фотосъемка и видео", callback_data="cat_media")],
-            [InlineKeyboardButton("✍️ Тексты и переводы", callback_data="cat_writing")],
-            [InlineKeyboardButton("📊 Маркетинг и реклама", callback_data="cat_marketing")],
-            [InlineKeyboardButton("🔧 Ремонт и строительство", callback_data="cat_construction")],
-            [InlineKeyboardButton("🎵 Музыка и аудио", callback_data="cat_music")],
-            [InlineKeyboardButton("📚 Образование и консультации", callback_data="cat_education")],
-            [InlineKeyboardButton("🚗 Транспорт и логистика", callback_data="cat_transport")],
-            [InlineKeyboardButton("🏠 Быт и услуги", callback_data="cat_services")]
+            [InlineKeyboardButton("📸 Монтаж музыка и видео", callback_data="cat_media")],
+        #   [InlineKeyboardButton("✍️ Тексты и переводы", callback_data="cat_writing")],
+        #   [InlineKeyboardButton("📊 Маркетинг и реклама", callback_data="cat_marketing")],
+        #   [InlineKeyboardButton("🔧 Ремонт и строительство", callback_data="cat_construction")],
+        #   [InlineKeyboardButton("🎵 Музыка и аудио", callback_data="cat_music")],
+        #   [InlineKeyboardButton("📚 Образование и консультации", callback_data="cat_education")],
+        #   [InlineKeyboardButton("🚗 Транспорт и логистика", callback_data="cat_transport")],
+        #   [InlineKeyboardButton("🏠 Быт и услуги", callback_data="cat_services")]
         ]
         
         await query.message.reply_text(
@@ -683,16 +683,16 @@ class FreelanceBot:
     async def show_specialization_selection(self, query):
         """Показать выбор специализации для фрилансера"""
         keyboard = [
-            [InlineKeyboardButton("💻 Программирование", callback_data="spec_programming")],
-            [InlineKeyboardButton("📸 Фотосъемка", callback_data="spec_photography")],
-            [InlineKeyboardButton("🎬 Монтаж видео", callback_data="spec_video_editing")],
-            [InlineKeyboardButton("🎨 Дизайн", callback_data="spec_design")],
-            [InlineKeyboardButton("✍️ Копирайтинг", callback_data="spec_copywriting")],
-            [InlineKeyboardButton("📊 Маркетинг", callback_data="spec_marketing")],
-            [InlineKeyboardButton("🔧 IT поддержка", callback_data="spec_it_support")],
-            [InlineKeyboardButton("🎵 Музыка и звук", callback_data="spec_music")],
-            [InlineKeyboardButton("📝 Переводы", callback_data="spec_translation")],
-            [InlineKeyboardButton("🏗️ Строительство и ремонт", callback_data="spec_construction")]
+            [InlineKeyboardButton("💻 Программирование и IT поддержка", callback_data="spec_programming")],
+            [InlineKeyboardButton("📸 Дизайн и графика", callback_data="spec_photography")],
+            [InlineKeyboardButton("🎬 Монтаж музыка и видео", callback_data="spec_video_editing")],
+        #    [InlineKeyboardButton("🎨 Дизайн", callback_data="spec_design")],
+        #    [InlineKeyboardButton("✍️ Копирайтинг", callback_data="spec_copywriting")],
+        #    [InlineKeyboardButton("📊 Маркетинг", callback_data="spec_marketing")],
+        #    [InlineKeyboardButton("🔧 IT поддержка", callback_data="spec_it_support")],
+        #    [InlineKeyboardButton("🎵 Музыка и звук", callback_data="spec_music")],
+        #    [InlineKeyboardButton("📝 Переводы", callback_data="spec_translation")],
+        #    [InlineKeyboardButton("🏗️ Строительство и ремонт", callback_data="spec_construction")]
         ]
         
         await query.message.reply_text(
