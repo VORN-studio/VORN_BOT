@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import threading
 from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
@@ -27,13 +28,14 @@ order_id_counter = 1
 # Создаем Flask приложение
 app = Flask(__name__)
 bot_instance = None
+loop = None
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     """Webhook endpoint для Telegram"""
-    if bot_instance:
+    if bot_instance and loop:
         update = Update.de_json(request.get_json(), bot_instance.application.bot)
-        asyncio.run(bot_instance.application.process_update(update))
+        asyncio.run_coroutine_threadsafe(bot_instance.application.process_update(update), loop)
     return 'OK'
 
 @app.route('/')
@@ -432,14 +434,13 @@ class FreelanceBot:
             logger.info("Бот запущен в режиме webhook!")
         else:
             # Локальный запуск с polling
-            await self.application.initialize()
-            await self.application.start()
             await self.application.updater.start_polling()
             logger.info("Бот запущен в режиме polling!")
 
 # Основная функция
-async def main():
-    global bot_instance
+async def run_bot():
+    """Запуск бота в asyncio loop"""
+    global bot_instance, loop
     bot_instance = FreelanceBot()
     
     # Получаем URL из переменных окружения (для Render)
@@ -452,9 +453,9 @@ async def main():
         await bot_instance.application.start()
         logger.info("Бот запущен в режиме webhook!")
         
-        # Запускаем Flask сервер
-        port = int(os.environ.get('PORT', 5000))
-        app.run(host='0.0.0.0', port=port)
+        # Держим loop активным
+        while True:
+            await asyncio.sleep(1)
     else:
         # Локальный запуск с polling
         await bot_instance.application.initialize()
@@ -462,9 +463,32 @@ async def main():
         await bot_instance.application.updater.start_polling()
         logger.info("Бот запущен в режиме polling!")
 
+
+def start_flask():
+    """Запуск Flask сервера"""
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
+
 if __name__ == '__main__':
     try:
-        asyncio.run(main())
+        webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
+        if webhook_url:
+            # Запускаем asyncio loop в отдельном потоке
+            def run_loop():
+                global loop
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(run_bot())
+            
+            bot_thread = threading.Thread(target=run_loop, daemon=True)
+            bot_thread.start()
+            
+            # Запускаем Flask в основном потоке
+            start_flask()
+        else:
+            # Локальный запуск
+            asyncio.run(run_bot())
     except KeyboardInterrupt:
         print("Бот остановлен")
     except Exception as e:
