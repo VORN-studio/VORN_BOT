@@ -104,7 +104,7 @@ class FreelanceBot:
 • Выбирайте исполнителей из предложений
 • Оплачивайте выполненную работу
 
- *Советы:*
+ 💡 *Советы:*
 • Чем подробнее описание заказа, тем больше откликов
 • Указывайте реалистичные сроки и бюджет
 • Своевременно отвечайте на сообщения
@@ -248,7 +248,7 @@ class FreelanceBot:
 • Выбирайте исполнителей из предложений
 • Оплачивайте выполненную работу
 
- *Советы:*
+ 💡 *Советы:*
 • Чем подробнее описание заказа, тем больше откликов
 • Указывайте реалистичные сроки и бюджет
 • Своевременно отвечайте на сообщения
@@ -333,7 +333,7 @@ class FreelanceBot:
         context.user_data['waiting_for_task_description'] = True
         context.user_data['selected_category'] = cat_type
     
-async def handle_order_action(self, query, data):
+    async def handle_order_action(self, query, data):
         """Обработка действий с заказами"""
         user_id = query.from_user.id
         
