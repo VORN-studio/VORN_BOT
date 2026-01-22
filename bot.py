@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from datetime import datetime
@@ -21,6 +23,23 @@ users = {}
 orders = {}
 freelancers = {}
 order_id_counter = 1
+
+# Создаем Flask приложение
+app = Flask(__name__)
+bot_instance = None
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    """Webhook endpoint для Telegram"""
+    if bot_instance:
+        update = Update.de_json(request.get_json(), bot_instance.application.bot)
+        asyncio.run(bot_instance.application.process_update(update))
+    return 'OK'
+
+@app.route('/')
+def index():
+    """Health check endpoint"""
+    return 'Freelance Bot is running!'
 
 class FreelanceBot:
     def __init__(self):
@@ -401,15 +420,47 @@ class FreelanceBot:
     async def run(self):
         """Запуск бота"""
         logger.info("Запуск фриланс-бота...")
-        await self.application.initialize()
-        await self.application.start()
-        await self.application.updater.start_polling()
-        logger.info("Бот успешно запущен!")
+        
+        # Получаем URL из переменных окружения (для Render)
+        webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
+        if webhook_url:
+            webhook_url = f"{webhook_url}/webhook"
+            logger.info(f"Установка webhook: {webhook_url}")
+            await self.application.bot.set_webhook(url=webhook_url)
+            await self.application.initialize()
+            await self.application.start()
+            logger.info("Бот запущен в режиме webhook!")
+        else:
+            # Локальный запуск с polling
+            await self.application.initialize()
+            await self.application.start()
+            await self.application.updater.start_polling()
+            logger.info("Бот запущен в режиме polling!")
 
 # Основная функция
 async def main():
-    bot = FreelanceBot()
-    await bot.run()
+    global bot_instance
+    bot_instance = FreelanceBot()
+    
+    # Получаем URL из переменных окружения (для Render)
+    webhook_url = os.environ.get('RENDER_EXTERNAL_URL')
+    if webhook_url:
+        webhook_url = f"{webhook_url}/webhook"
+        logger.info(f"Установка webhook: {webhook_url}")
+        await bot_instance.application.bot.set_webhook(url=webhook_url)
+        await bot_instance.application.initialize()
+        await bot_instance.application.start()
+        logger.info("Бот запущен в режиме webhook!")
+        
+        # Запускаем Flask сервер
+        port = int(os.environ.get('PORT', 5000))
+        app.run(host='0.0.0.0', port=port)
+    else:
+        # Локальный запуск с polling
+        await bot_instance.application.initialize()
+        await bot_instance.application.start()
+        await bot_instance.application.updater.start_polling()
+        logger.info("Бот запущен в режиме polling!")
 
 if __name__ == '__main__':
     try:
