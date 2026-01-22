@@ -612,6 +612,7 @@ def main():
             PROJECT_DEADLINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_deadline)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
+        per_message=True
     )
     
     bid_conv = ConversationHandler(
@@ -622,6 +623,7 @@ def main():
             BID_DELIVERY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_bid_delivery)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
+        per_message=True
     )
     
     # Add handlers
