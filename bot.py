@@ -98,7 +98,6 @@ class FreelanceBot:
 /myorders - Мои заказы
 /profile - Мой профиль
 /admin - Админ-панель (для админа)
-
 🛒 *Для заказчиков:*
 • Создавайте заказы с подробным описанием
 • Указывайте бюджет и сроки
@@ -349,6 +348,7 @@ async def handle_order_action(self, query, data):
                     "Ожидайте ответа от заказчика."
                 )
                 # Здесь можно добавить уведомление заказчику
+                return
     
     async def handle_admin_action(self, query, data):
         """Обработка админских действий"""
