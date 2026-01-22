@@ -75,7 +75,7 @@ class FreelanceBot:
             }
         
         keyboard = [
-            [InlineKeyboardButton("🛒 Я заказчик", callback_data="role_customer")],
+            [InlineKeyboardButton("🛒 Заказать", callback_data="role_customer")],
             [InlineKeyboardButton("ℹ️ Помощь", callback_data="help")]
         ]
         
@@ -97,7 +97,6 @@ class FreelanceBot:
 /neworder - Создать новый заказ
 /myorders - Мои заказы
 /profile - Мой профиль
-/admin - Админ-панель (для админа)
 🛒 *Для заказчиков:*
 • Создавайте заказы с подробным описанием
 • Указывайте бюджет и сроки
@@ -109,7 +108,7 @@ class FreelanceBot:
 • Указывайте реалистичные сроки и бюджет
 • Своевременно отвечайте на сообщения
 
-❓ *Нужна помощь?* Свяжитесь с администратором: @admin
+❓ *Нужна помощь?* Свяжитесь с администратором: @amilgos
         """
         await update.message.reply_text(help_text, parse_mode='Markdown')
     
@@ -240,7 +239,6 @@ class FreelanceBot:
 /neworder - Создать новый заказ
 /myorders - Мои заказы
 /profile - Мой профиль
-/admin - Админ-панель (для админа)
 
 🛒 *Для заказчиков:*
 • Создавайте заказы с подробным описанием
@@ -253,7 +251,7 @@ class FreelanceBot:
 • Указывайте реалистичные сроки и бюджет
 • Своевременно отвечайте на сообщения
 
-❓ *Нужна помощь?* Свяжитесь с администратором: @admin""",
+❓ *Нужна помощь?* Свяжитесь с администратором: @amilgos""",
                 parse_mode='Markdown'
             )
         
