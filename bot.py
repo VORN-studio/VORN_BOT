@@ -238,6 +238,8 @@ class FreelanceBot:
                 "• Управлять профилем (/profile)",
                 parse_mode='Markdown'
             )
+            # Показать выбор категории для заказа
+            await self.show_category_selection(query)
         
         elif data == "role_freelancer":
             users[user_id]['role'] = 'freelancer'
@@ -255,6 +257,9 @@ class FreelanceBot:
         elif data == "help":
             await self.help_command(update, context)
         
+        elif data.startswith("cat_"):
+            await self.handle_category_selection(query, data)
+        
         elif data.startswith("spec_"):
             await self.handle_specialization_selection(query, data)
         
@@ -263,6 +268,71 @@ class FreelanceBot:
         
         elif data.startswith("admin_"):
             await self.handle_admin_action(query, data)
+    
+    async def show_category_selection(self, query):
+        """Показать выбор категории для заказа"""
+        keyboard = [
+            [InlineKeyboardButton("💻 Программирование и IT", callback_data="cat_programming")],
+            [InlineKeyboardButton("🎨 Дизайн и графика", callback_data="cat_design")],
+            [InlineKeyboardButton("📸 Фотосъемка и видео", callback_data="cat_media")],
+            [InlineKeyboardButton("✍️ Тексты и переводы", callback_data="cat_writing")],
+            [InlineKeyboardButton("📊 Маркетинг и реклама", callback_data="cat_marketing")],
+            [InlineKeyboardButton("🔧 Ремонт и строительство", callback_data="cat_construction")],
+            [InlineKeyboardButton("🎵 Музыка и аудио", callback_data="cat_music")],
+            [InlineKeyboardButton("📚 Образование и консультации", callback_data="cat_education")],
+            [InlineKeyboardButton("🚗 Транспорт и логистика", callback_data="cat_transport")],
+            [InlineKeyboardButton("🏠 Быт и услуги", callback_data="cat_services")]
+        ]
+        
+        await query.message.reply_text(
+            "🎯 *Выберите категорию вашего заказа:*\n\n"
+            "Это поможет найти подходящих исполнителей для вашей задачи.",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
+    
+    async def handle_category_selection(self, query, data):
+        """Обработка выбора категории заказа"""
+        user_id = query.from_user.id
+        cat_type = data.split("_")[1]
+        
+        # Словарь категорий
+        categories = {
+            "programming": "💻 Программирование и IT",
+            "design": "🎨 Дизайн и графика",
+            "media": "📸 Фотосъемка и видео",
+            "writing": "✍️ Тексты и переводы",
+            "marketing": "📊 Маркетинг и реклама",
+            "construction": "🔧 Ремонт и строительство",
+            "music": "🎵 Музыка и аудио",
+            "education": "📚 Образование и консультации",
+            "transport": "🚗 Транспорт и логистика",
+            "services": "🏠 Быт и услуги"
+        }
+        
+        cat_name = categories.get(cat_type, "❓ Неизвестная категория")
+        
+        # Сохраняем категорию пользователя
+        if user_id in users:
+            users[user_id]['category'] = cat_name
+            users[user_id]['cat_type'] = cat_type
+        
+        await query.edit_message_text(
+            f"✅ Вы выбрали категорию: {cat_name}\n\n"
+            f"🎯 Теперь опишите подробно вашу задачу.\n\n"
+            f"📝 *Пожалуйста, укажите:*\n\n"
+            f"📋 *Что именно нужно сделать*\n"
+            f"💰 *Ваш бюджет (в рублях)*\n"
+            f"⏰ *Когда нужно выполнить*\n"
+            f"📍 *Местоположение (если важно)*\n"
+            f"📄 *Дополнительные требования*\n\n"
+            f"⏰ Наш менеджер подберет для вас лучших исполнителей!",
+            parse_mode='Markdown'
+        )
+        
+        # Устанавливаем состояние ожидания описания задачи
+        context.user_data['waiting_for_task_description'] = True
+        context.user_data['selected_category'] = cat_type
     
     async def show_specialization_selection(self, query):
         """Показать выбор специализации для фрилансера"""
@@ -411,12 +481,65 @@ class FreelanceBot:
             await self.process_contact_info(update, context, text)
             return
         
+        # Проверяем, ожидаем ли мы описание задачи от заказчика
+        if context.user_data.get('waiting_for_task_description'):
+            await self.process_task_description(update, context, text)
+            return
+        
         # Другие обработки сообщений...
         await update.message.reply_text(
             "🤔 Я не понял вашу команду.\n"
             "Используйте /help для просмотра доступных команд."
         )
     
+    async def process_task_description(self, update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
+        """Обработка описания задачи от заказчика"""
+        user_id = update.effective_user.id
+        
+        # Сохраняем описание задачи
+        if user_id in users:
+            users[user_id]['task_description'] = text
+            users[user_id]['task_date'] = datetime.now().isoformat()
+        
+        # Сброс состояния
+        context.user_data['waiting_for_task_description'] = False
+        
+        # Отправляем подтверждение
+        await update.message.reply_text(
+            "✅ *Ваша задача принята в обработку!*\n\n"
+            "📝 Описание вашей задачи сохранено.\n"
+            "⏰ Наш менеджер изучит информацию и свяжется с вами в ближайшее время.\n\n"
+            "🎯 Мы подберем для вас лучших исполнителей!\n\n"
+            "💡 *Совет:* Чем подробнее описание, тем точнее будет подбор исполнителей.",
+            parse_mode='Markdown'
+        )
+        
+        # Отправляем уведомление администратору
+        try:
+            user = users[user_id]
+            cat_name = user.get('category', 'Не указана')
+            
+            admin_message = f"""
+🔔 *Новый заказ от клиента!*
+
+👤 Имя: {user['username']}
+🆔 ID: {user_id}
+🎯 Категория: {cat_name}
+� Описание задачи:
+{text}
+📅 Дата: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+
+📝 Свяжитесь с клиентом для уточнения деталей.
+            """
+            
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=admin_message,
+                parse_mode='Markdown'
+            )
+        except:
+            pass  # Игнорируем ошибки доставки
+        
     async def process_contact_info(self, update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
         """Обработка контактной информации от фрилансера"""
         user_id = update.effective_user.id
@@ -470,8 +593,7 @@ class FreelanceBot:
         global order_id_counter
         
         lines = text.strip().split('\n')
-        
-        if len(lines) < 4:
+        if len(lines) != 4:
             await update.message.reply_text(
                 "❌ Неверный формат! Пожалуйста, введите:\n"
                 "📋 Название заказа\n"
