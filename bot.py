@@ -258,10 +258,10 @@ class FreelanceBot:
             await self.help_command(update, context)
         
         elif data.startswith("cat_"):
-            await self.handle_category_selection(query, data)
+            await self.handle_category_selection(query, data, context)
         
         elif data.startswith("spec_"):
-            await self.handle_specialization_selection(query, data)
+            await self.handle_specialization_selection(query, data, context)
         
         elif data.startswith("order_"):
             await self.handle_order_action(query, data)
@@ -291,7 +291,7 @@ class FreelanceBot:
             parse_mode='Markdown'
         )
     
-    async def handle_category_selection(self, query, data):
+    async def handle_category_selection(self, query, data, context=None):
         """Обработка выбора категории заказа"""
         user_id = query.from_user.id
         cat_type = data.split("_")[1]
@@ -356,7 +356,7 @@ class FreelanceBot:
             parse_mode='Markdown'
         )
     
-    async def handle_specialization_selection(self, query, data):
+    async def handle_specialization_selection(self, query, data, context=None):
         """Обработка выбора специализации фрилансера"""
         user_id = query.from_user.id
         spec_type = data.split("_")[1]
