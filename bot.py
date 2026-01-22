@@ -57,6 +57,8 @@ class FreelanceBot:
         self.application.add_handler(CommandHandler("profile", self.profile_command))
         self.application.add_handler(CommandHandler("admin", self.admin_command))
         self.application.add_handler(CommandHandler("freelancers", self.freelancer_applications_command))
+        self.application.add_handler(CommandHandler("yes", self.approve_freelancer_command))
+        self.application.add_handler(CommandHandler("no", self.reject_freelancer_command))
         self.application.add_handler(CallbackQueryHandler(self.button_callback))
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
     
@@ -200,6 +202,288 @@ class FreelanceBot:
         
         await update.message.reply_text(profile_text, parse_mode='Markdown')
     
+    async def approve_freelancer_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Команда /yes - одобрение фрилансера"""
+        user_id = update.effective_user.id
+        
+        if user_id != ADMIN_ID:
+            await update.message.reply_text("❌ Доступ запрещен!")
+            return
+        
+        # Проверяем, есть ли username в сообщении
+        message_text = update.message.text.strip()
+        parts = message_text.split()
+        
+        if len(parts) < 2:
+            await update.message.reply_text(
+                "❌ Укажите username фрилансера!\n"
+                "Пример: /yes @username"
+            )
+            return
+        
+        username = parts[1].lstrip('@')
+        
+        # Ищем фрилансера по username
+        freelancer_found = False
+        for uid, user in users.items():
+            if user.get('username', '').lower() == username.lower() and user.get('role') == 'freelancer':
+                if not user.get('verified', False):
+                    # Одобряем фрилансера
+                    users[uid]['verified'] = True
+                    users[uid]['verified_date'] = datetime.now().isoformat()
+                    freelancer_found = True
+                    
+                    # Отправляем уведомление фрилансеру
+                    try:
+                        await context.bot.send_message(
+                            chat_id=uid,
+                            text="✅ *Поздравляем! Ваша заявка одобрена!\n\n"
+                                  "Теперь вы можете просматривать доступные заказы \n"
+                                  "и откликаться на проекты.\n\n"
+                                  "Используйте кнопку '💼 Я фрилансер' для просмотра заказов.",
+                            parse_mode='Markdown'
+                        )
+                    except:
+                        pass
+                    
+                    await update.message.reply_text(
+                        f"✅ Фрилансер @{username} успешно одобрен!"
+                    )
+                else:
+                    await update.message.reply_text(
+                        f"ℹ️ Фрилансер @{username} уже был одобрен ранее."
+                    )
+                break
+        
+        if not freelancer_found:
+            await update.message.reply_text(
+                f"❌ Фрилансер @{username} не найден или не подал заявку."
+            )
+    
+    async def reject_freelancer_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Команда /no - отклонение фрилансера"""
+        user_id = update.effective_user.id
+        
+        if user_id != ADMIN_ID:
+            await update.message.reply_text("❌ Доступ запрещен!")
+            return
+        
+        # Проверяем, есть ли username в сообщении
+        message_text = update.message.text.strip()
+        parts = message_text.split()
+        
+        if len(parts) < 2:
+            await update.message.reply_text(
+                "❌ Укажите username фрилансера!\n"
+                "Пример: /no @username"
+            )
+            return
+        
+        username = parts[1].lstrip('@')
+        
+        # Ищем фрилансера по username
+        freelancer_found = False
+        for uid, user in users.items():
+            if user.get('username', '').lower() == username.lower() and user.get('role') == 'freelancer':
+                if not user.get('verified', False):
+                    # Отклоняем фрилансера
+                    users[uid]['verified'] = False
+                    users[uid]['rejected_date'] = datetime.now().isoformat()
+                    freelancer_found = True
+                    
+                    # Отправляем уведомление фрилансеру
+                    try:
+                        await context.bot.send_message(
+                            chat_id=uid,
+                            text="❌ *К сожалению, ваша заявка отклонена.\n\n"
+                                  "Вы можете подать новую заявку позже или \n"
+                                  "связаться с администратором для уточнения деталей.",
+                            parse_mode='Markdown'
+                        )
+                    except:
+                        pass
+                    
+                    await update.message.reply_text(
+                        f"❌ Фрилансер @{username} отклонен."
+                    )
+                else:
+                    await update.message.reply_text(
+                        f"ℹ️ Фрилансер @{username} уже был одобрен ранее."
+                    )
+                break
+        
+        if not freelancer_found:
+            await update.message.reply_text(
+                f"❌ Фрилансер @{username} не найден или не подал заявку."
+            )
+    
+    async def handle_freelancer_role_selection(self, query):
+        """Обработка выбора роли фрилансера с проверкой верификации"""
+        user_id = query.from_user.id
+        username = query.from_user.username or query.from_user.first_name
+        
+        # Проверяем, зарегистрирован ли пользователь
+        if user_id not in users:
+            # Пользователь не зарегистрирован, показываем кнопку регистрации
+            keyboard = [
+                [InlineKeyboardButton("📝 Зарегистрироваться сейчас", callback_data="register_freelancer")]
+            ]
+            
+            await query.edit_message_text(
+                "💼 *Стать фрилансером*\n\n"
+                "Вы еще не зарегистрированы в нашей системе.\n\n"
+                "Нажмите кнопку ниже, чтобы подать заявку на регистрацию фрилансера:\n\n"
+                "📋 После регистрации мы проверим вашу заявку и свяжемся с вами.",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Проверяем, верифицирован ли фрилансер
+        user = users[user_id]
+        if user.get('role') != 'freelancer':
+            # Устанавливаем роль фрилансера
+            users[user_id]['role'] = 'freelancer'
+            users[user_id]['freelancer_applied_date'] = datetime.now().isoformat()
+            
+            # Отправляем заявку администратору
+            await self.send_freelancer_application_to_admin(user_id, user)
+            
+            keyboard = [
+                [InlineKeyboardButton("⏳ Ожидать подтверждения", callback_data="wait_approval")]
+            ]
+            
+            await query.edit_message_text(
+                "✅ *Ваша заявка подана!\n\n"
+                "Мы получили вашу заявку на регистрацию фрилансера.\n\n"
+                "📋 Наш администратор рассмотрит вашу заявку в ближайшее время.\n"
+                "⏰ Ожидайте ответа в течение 24 часов.\n\n"
+                "💡 После одобрения вы сможете просматривать доступные заказы.",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            
+        elif not user.get('verified', False):
+            # Фрилансер не верифицирован
+            await query.edit_message_text(
+                "⏳ *Ваша заявка на рассмотрении*\n\n"
+                "Ваша заявка на регистрацию фрилансера находится на проверке.\n\n"
+                "📋 Администратор рассмотрит вашу заявку в ближайшее время.\n"
+                "⏰ Обычно это занимает до 24 часов.\n\n"
+                "💡 После одобрения вы сможете просматривать доступные заказы.",
+                parse_mode='Markdown'
+            )
+        else:
+            # Фрилансер верифицирован, показываем доступные заказы
+            await self.show_freelancer_orders(query)
+    
+    async def handle_freelancer_registration(self, query):
+        """Обработка регистрации фрилансера"""
+        user_id = query.from_user.id
+        username = query.from_user.username or query.from_user.first_name
+        
+        # Регистрируем пользователя
+        if user_id not in users:
+            users[user_id] = {
+                'username': username,
+                'user_id': user_id,
+                'role': 'freelancer',
+                'balance': 0,
+                'orders_count': 0,
+                'registered_at': datetime.now().isoformat(),
+                'verified': False,
+                'freelancer_applied_date': datetime.now().isoformat()
+            }
+        else:
+            users[user_id]['role'] = 'freelancer'
+            users[user_id]['freelancer_applied_date'] = datetime.now().isoformat()
+            users[user_id]['verified'] = False
+        
+        # Отправляем заявку администратору
+        await self.send_freelancer_application_to_admin(user_id, users[user_id])
+        
+        keyboard = [
+            [InlineKeyboardButton("⏳ Ожидать подтверждения", callback_data="wait_approval")]
+        ]
+        
+        await query.edit_message_text(
+            "✅ *Ваша заявка подана!\n\n"
+            "Мы получили вашу заявку на регистрацию фрилансера.\n\n"
+            "📋 Наш администратор рассмотрит вашу заявку в ближайшее время.\n"
+            "⏰ Ожидайте ответа в течение 24 часов.\n\n"
+            "💡 После одобрения вы сможете просматривать доступные заказы.",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
+    
+    async def send_freelancer_application_to_admin(self, user_id: int, user: dict):
+        """Отправка заявки фрилансера администратору"""
+        try:
+            admin_message = f"""
+🔔 *Новая заявка от фрилансера!*
+
+👤 Имя: {user['username']}
+🆔 ID: {user_id}
+📞 Telegram: @{user['username']}
+📅 Дата заявки: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+
+📋 *Для одобрения используйте:*
+/yes @{user['username']}
+
+📋 *Для отклонения используйте:*
+/no @{user['username']}
+
+{"─" * 30}
+            """
+            
+            await bot_instance.application.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=admin_message,
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            logger.error(f"Ошибка отправки заявки админу: {e}")
+    
+    async def show_freelancer_orders(self, query):
+        """Показать заказы для верифицированного фрилансера"""
+        user_id = query.from_user.id
+        user = users[user_id]
+        
+        # Получаем специализацию фрилансера
+        freelancer_spec = user.get('spec_type', '')
+        
+        # Показываем доступные заказы
+        available_orders = [order for order in orders.values() if order['status'] == 'open']
+        
+        if not available_orders:
+            await query.edit_message_text(
+                "📭 *Нет доступных заказов*\n\n"
+                "Сейчас нет заказов по вашей специализации.\n"
+                "⏰ Мы уведомим вас о новых заказах.",
+                parse_mode='Markdown'
+            )
+            return
+        
+        text = f"🔍 *Доступные заказы ({len(available_orders)}):*\n\n"
+        keyboard = []
+        
+        for order in available_orders[:5]:  # Показываем первые 5 заказов
+            text += f"🔹 *Заказ #{order['id']}*\n"
+            text += f"📝 {order['title']}\n"
+            text += f"💰 {order['budget']}₽ | ⏰ {order['deadline']}\n"
+            text += f"📄 {order['description'][:100]}...\n\n"
+            
+            keyboard.append([InlineKeyboardButton(f"💼 Откликнуться #{order['id']}", callback_data=f"respond_order_{order['id']}")])
+        
+        # Добавляем кнопку обновления
+        keyboard.append([InlineKeyboardButton("🔄 Обновить список", callback_data="refresh_orders")])
+        
+        await query.edit_message_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
+    
     async def freelancer_applications_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Команда /freelancers - просмотр заявок фрилансеров"""
         user_id = update.effective_user.id
@@ -276,17 +560,7 @@ class FreelanceBot:
             await self.show_category_selection(query)
         
         elif data == "role_freelancer":
-            users[user_id]['role'] = 'freelancer'
-            await query.edit_message_text(
-                "✅ Вы зарегистрированы как *фрилансер*!\n\n"
-                "Теперь вы можете:\n"
-                "• Просматривать доступные заказы\n"
-                "• Откликаться на проекты\n"
-                "• Управлять профилем (/profile)",
-                parse_mode='Markdown'
-            )
-            # Показать выбор специализации
-            await self.show_specialization_selection(query)
+            await self.handle_freelancer_role_selection(query)
         
         elif data == "help":
             await query.message.reply_text(
@@ -331,6 +605,15 @@ class FreelanceBot:
         
         elif data.startswith("admin_"):
             await self.handle_admin_action(query, data)
+        
+        elif data == "register_freelancer":
+            await self.handle_freelancer_registration(query)
+        
+        elif data == "refresh_orders":
+            await self.show_freelancer_orders(query)
+        
+        elif data == "wait_approval":
+            await query.answer("⏳ Ваша заявка на рассмотрении")
     
     async def show_category_selection(self, query):
         """Показать выбор категории для заказа"""
