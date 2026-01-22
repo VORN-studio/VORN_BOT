@@ -479,7 +479,6 @@ class FreelanceBot:
         keyboard.append([InlineKeyboardButton("🔄 Обновить список", callback_data="refresh_orders")])
         
         await query.edit_message_text(
-            f"🔍 <b>Доступные заказы ({len(available_orders)}):</b>\n\n"
             text,
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='HTML'
