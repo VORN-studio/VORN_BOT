@@ -237,11 +237,11 @@ class FreelanceBot:
                     try:
                         await context.bot.send_message(
                             chat_id=uid,
-                            text="✅ *Поздравляем! Ваша заявка одобрена!\n\n"
+                            text="✅ <b>Поздравляем! Ваша заявка одобрена!</b>\n\n"
                                   "Теперь вы можете просматривать доступные заказы \n"
                                   "и откликаться на проекты.\n\n"
                                   "Используйте кнопку '💼 Я фрилансер' для просмотра заказов.",
-                            parse_mode='Markdown'
+                            parse_mode='HTML'
                         )
                     except:
                         pass
@@ -295,10 +295,10 @@ class FreelanceBot:
                     try:
                         await context.bot.send_message(
                             chat_id=uid,
-                            text="❌ *К сожалению, ваша заявка отклонена.\n\n"
+                            text="❌ <b>К сожалению, ваша заявка отклонена.</b>\n\n"
                                   "Вы можете подать новую заявку позже или \n"
                                   "связаться с администратором для уточнения деталей.",
-                            parse_mode='Markdown'
+                            parse_mode='HTML'
                         )
                     except:
                         pass
@@ -330,12 +330,12 @@ class FreelanceBot:
             ]
             
             await query.edit_message_text(
-                "💼 *Стать фрилансером*\n\n"
+                "💼 <b>Стать фрилансером</b>\n\n"
                 "Вы еще не зарегистрированы в нашей системе.\n\n"
                 "Нажмите кнопку ниже, чтобы подать заявку на регистрацию фрилансера:\n\n"
                 "📋 После регистрации мы проверим вашу заявку и свяжемся с вами.",
                 reply_markup=InlineKeyboardMarkup(keyboard),
-                parse_mode='Markdown'
+                parse_mode='HTML'
             )
             return
         
@@ -354,24 +354,24 @@ class FreelanceBot:
             ]
             
             await query.edit_message_text(
-                "✅ *Ваша заявка подана!\n\n"
+                "✅ <b>Ваша заявка подана!</b>\n\n"
                 "Мы получили вашу заявку на регистрацию фрилансера.\n\n"
                 "📋 Наш администратор рассмотрит вашу заявку в ближайшее время.\n"
                 "⏰ Ожидайте ответа в течение 24 часов.\n\n"
                 "💡 После одобрения вы сможете просматривать доступные заказы.",
                 reply_markup=InlineKeyboardMarkup(keyboard),
-                parse_mode='Markdown'
+                parse_mode='HTML'
             )
             
         elif not user.get('verified', False):
             # Фрилансер не верифицирован
             await query.edit_message_text(
-                "⏳ *Ваша заявка на рассмотрении*\n\n"
+                "⏳ <b>Ваша заявка на рассмотрении</b>\n\n"
                 "Ваша заявка на регистрацию фрилансера находится на проверке.\n\n"
                 "📋 Администратор рассмотрит вашу заявку в ближайшее время.\n"
                 "⏰ Обычно это занимает до 24 часов.\n\n"
                 "💡 После одобрения вы сможете просматривать доступные заказы.",
-                parse_mode='Markdown'
+                parse_mode='HTML'
             )
         else:
             # Фрилансер верифицирован, показываем доступные заказы
@@ -407,30 +407,30 @@ class FreelanceBot:
         ]
         
         await query.edit_message_text(
-            "✅ *Ваша заявка подана!\n\n"
+            "✅ <b>Ваша заявка подана!</b>\n\n"
             "Мы получили вашу заявку на регистрацию фрилансера.\n\n"
             "📋 Наш администратор рассмотрит вашу заявку в ближайшее время.\n"
             "⏰ Ожидайте ответа в течение 24 часов.\n\n"
             "💡 После одобрения вы сможете просматривать доступные заказы.",
             reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode='Markdown'
+            parse_mode='HTML'
         )
     
     async def send_freelancer_application_to_admin(self, user_id: int, user: dict):
         """Отправка заявки фрилансера администратору"""
         try:
             admin_message = f"""
-🔔 *Новая заявка от фрилансера!*
+🔔 <b>Новая заявка от фрилансера!</b>
 
 👤 Имя: {user['username']}
 🆔 ID: {user_id}
 📞 Telegram: @{user['username']}
 📅 Дата заявки: {datetime.now().strftime('%Y-%m-%d %H:%M')}
 
-📋 *Для одобрения используйте:*
+📋 <b>Для одобрения используйте:</b>
 /yes @{user['username']}
 
-📋 *Для отклонения используйте:*
+📋 <b>Для отклонения используйте:</b>
 /no @{user['username']}
 
 {"─" * 30}
@@ -439,7 +439,7 @@ class FreelanceBot:
             await bot_instance.application.bot.send_message(
                 chat_id=ADMIN_ID,
                 text=admin_message,
-                parse_mode='Markdown'
+                parse_mode='HTML'
             )
         except Exception as e:
             logger.error(f"Ошибка отправки заявки админу: {e}")
@@ -457,18 +457,18 @@ class FreelanceBot:
         
         if not available_orders:
             await query.edit_message_text(
-                "📭 *Нет доступных заказов*\n\n"
+                "📭 <b>Нет доступных заказов</b>\n\n"
                 "Сейчас нет заказов по вашей специализации.\n"
                 "⏰ Мы уведомим вас о новых заказах.",
-                parse_mode='Markdown'
+                parse_mode='HTML'
             )
             return
         
-        text = f"🔍 *Доступные заказы ({len(available_orders)}):*\n\n"
+        text = f"🔍 <b>Доступные заказы ({len(available_orders)}):</b>\n\n"
         keyboard = []
         
         for order in available_orders[:5]:  # Показываем первые 5 заказов
-            text += f"🔹 *Заказ #{order['id']}*\n"
+            text += f"🔹 <b>Заказ #{order['id']}</b>\n"
             text += f"📝 {order['title']}\n"
             text += f"💰 {order['budget']}₽ | ⏰ {order['deadline']}\n"
             text += f"📄 {order['description'][:100]}...\n\n"
@@ -479,9 +479,10 @@ class FreelanceBot:
         keyboard.append([InlineKeyboardButton("🔄 Обновить список", callback_data="refresh_orders")])
         
         await query.edit_message_text(
+            f"🔍 <b>Доступные заказы ({len(available_orders)}):</b>\n\n"
             text,
             reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode='Markdown'
+            parse_mode='HTML'
         )
     
     async def freelancer_applications_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
