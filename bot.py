@@ -585,14 +585,30 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle errors"""
     logger.error(f"Exception while handling an update: {context.error}")
     
-    if "Conflict" in str(context.error):
+    error_str = str(context.error)
+    
+    if "Conflict" in error_str:
         logger.warning("Bot instance conflict detected. Please stop other instances.")
         return
     
+    if "Inline keyboard expected" in error_str:
+        logger.warning("Inline keyboard error - this is usually harmless")
+        return
+    
+    if "Bad Request" in error_str and "message is not modified" in error_str:
+        logger.warning("Message not modified error - this is usually harmless")
+        return
+    
     try:
-        await update.message.reply_text(
-            "❌ An error occurred. Please try again later."
-        )
+        if update.message:
+            await update.message.reply_text(
+                "❌ An error occurred. Please try again later."
+            )
+        elif update.callback_query:
+            await update.callback_query.answer(
+                "❌ An error occurred. Please try again later.",
+                show_alert=True
+            )
     except:
         pass
 
@@ -644,6 +660,10 @@ def main():
     application.add_handler(CallbackQueryHandler(handle_role_selection, pattern="^role_"))
     application.add_handler(CallbackQueryHandler(handle_project_view, pattern="^project_"))
     application.add_handler(CallbackQueryHandler(edit_profile_start, pattern="^edit_profile$"))
+    application.add_handler(CallbackQueryHandler(start_bid, pattern="^bid_"))
+    application.add_handler(CallbackQueryHandler(handle_project_category, pattern="^cat_"))
+    application.add_handler(CallbackQueryHandler(lambda u, c: u.answer(), pattern="^back_"))
+    application.add_handler(CallbackQueryHandler(lambda u, c: u.answer(), pattern="^contact_"))
     application.add_handler(post_project_conv)
     application.add_handler(bid_conv)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message_handlers))
