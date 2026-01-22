@@ -581,6 +581,21 @@ async def handle_message_handlers(update: Update, context: ContextTypes.DEFAULT_
             "❓ I didn't understand that. Please use the menu buttons or type /help"
         )
 
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle errors"""
+    logger.error(f"Exception while handling an update: {context.error}")
+    
+    if "Conflict" in str(context.error):
+        logger.warning("Bot instance conflict detected. Please stop other instances.")
+        return
+    
+    try:
+        await update.message.reply_text(
+            "❌ An error occurred. Please try again later."
+        )
+    except:
+        pass
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Cancel conversation"""
     await update.message.reply_text(
@@ -611,8 +626,7 @@ def main():
             PROJECT_CATEGORY: [CallbackQueryHandler(handle_project_category)],
             PROJECT_DEADLINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_deadline)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
-        per_message=True
+        fallbacks=[CommandHandler('cancel', cancel)]
     )
     
     bid_conv = ConversationHandler(
@@ -622,8 +636,7 @@ def main():
             BID_PROPOSAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_bid_proposal)],
             BID_DELIVERY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_bid_delivery)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
-        per_message=True
+        fallbacks=[CommandHandler('cancel', cancel)]
     )
     
     # Add handlers
@@ -634,6 +647,9 @@ def main():
     application.add_handler(post_project_conv)
     application.add_handler(bid_conv)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message_handlers))
+    
+    # Add error handler
+    application.add_error_handler(error_handler)
     
     # Start bot
     print("🚀 Freelancing Bot started!")
