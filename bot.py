@@ -249,17 +249,85 @@ class FreelanceBot:
                 "• Управлять профилем (/profile)",
                 parse_mode='Markdown'
             )
-            # Показать доступные заказы
-            await self.show_available_orders(query)
+            # Показать выбор специализации
+            await self.show_specialization_selection(query)
         
         elif data == "help":
             await self.help_command(update, context)
+        
+        elif data.startswith("spec_"):
+            await self.handle_specialization_selection(query, data)
         
         elif data.startswith("order_"):
             await self.handle_order_action(query, data)
         
         elif data.startswith("admin_"):
             await self.handle_admin_action(query, data)
+    
+    async def show_specialization_selection(self, query):
+        """Показать выбор специализации для фрилансера"""
+        keyboard = [
+            [InlineKeyboardButton("💻 Программирование", callback_data="spec_programming")],
+            [InlineKeyboardButton("📸 Фотосъемка", callback_data="spec_photography")],
+            [InlineKeyboardButton("🎬 Монтаж видео", callback_data="spec_video_editing")],
+            [InlineKeyboardButton("🎨 Дизайн", callback_data="spec_design")],
+            [InlineKeyboardButton("✍️ Копирайтинг", callback_data="spec_copywriting")],
+            [InlineKeyboardButton("📊 Маркетинг", callback_data="spec_marketing")],
+            [InlineKeyboardButton("🔧 IT поддержка", callback_data="spec_it_support")],
+            [InlineKeyboardButton("🎵 Музыка и звук", callback_data="spec_music")],
+            [InlineKeyboardButton("📝 Переводы", callback_data="spec_translation")],
+            [InlineKeyboardButton("🏗️ Строительство и ремонт", callback_data="spec_construction")]
+        ]
+        
+        await query.message.reply_text(
+            "🎯 *Выберите вашу специализацию:*\n\n"
+            "Это поможет нам находить для вас наиболее релевантные заказы.",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
+    
+    async def handle_specialization_selection(self, query, data):
+        """Обработка выбора специализации фрилансера"""
+        user_id = query.from_user.id
+        spec_type = data.split("_")[1]
+        
+        # Словарь специализаций
+        specializations = {
+            "programming": "💻 Программирование",
+            "photography": "📸 Фотосъемка", 
+            "video_editing": "🎬 Монтаж видео",
+            "design": "🎨 Дизайн",
+            "copywriting": "✍️ Копирайтинг",
+            "marketing": "📊 Маркетинг",
+            "it_support": "🔧 IT поддержка",
+            "music": "🎵 Музыка и звук",
+            "translation": "📝 Переводы",
+            "construction": "🏗️ Строительство и ремонт"
+        }
+        
+        spec_name = specializations.get(spec_type, "❓ Неизвестная специализация")
+        
+        # Сохраняем специализацию пользователя
+        if user_id in users:
+            users[user_id]['specialization'] = spec_name
+            users[user_id]['spec_type'] = spec_type
+        
+        await query.edit_message_text(
+            f"✅ Вы выбрали специализацию: {spec_name}\n\n"
+            f"🎯 Теперь мы будем находить для вас заказы по этой специализации.\n\n"
+            f"📝 *Для получения заказов, пожалуйста, предоставьте следующую информацию:*\n\n"
+            f"👤 Ваше имя и фамилия\n"
+            f"📞 Ваш Telegram username для связи\n"
+            f"📧 Краткое описание вашего опыта\n"
+            f"💰 Примерная цена за час работы\n\n"
+            f"📸 *Прикрепите примеры ваших работ (если есть)*\n\n"
+            f"⏰ Наш менеджер свяжется с вами в ближайшее время!",
+            parse_mode='Markdown'
+        )
+        
+        # Устанавливаем состояние ожидания контактной информации
+        context.user_data['waiting_for_contact_info'] = True
+        context.user_data['selected_spec'] = spec_type
     
     async def show_available_orders(self, query):
         """Показать доступные заказы для фрилансеров"""
@@ -287,7 +355,7 @@ class FreelanceBot:
     
     async def handle_order_action(self, query, data):
         """Обработка действий с заказами"""
-        user_id = update.effective_user.id
+        user_id = query.from_user.id
         
         if data.startswith("respond_order_"):
             order_id = int(data.split("_")[2])
@@ -338,11 +406,64 @@ class FreelanceBot:
             await self.process_order_creation(update, context, text)
             return
         
+        # Проверяем, ожидаем ли мы контактную информацию от фрилансера
+        if context.user_data.get('waiting_for_contact_info'):
+            await self.process_contact_info(update, context, text)
+            return
+        
         # Другие обработки сообщений...
         await update.message.reply_text(
             "🤔 Я не понял вашу команду.\n"
             "Используйте /help для просмотра доступных команд."
         )
+    
+    async def process_contact_info(self, update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
+        """Обработка контактной информации от фрилансера"""
+        user_id = update.effective_user.id
+        
+        # Сохраняем контактную информацию
+        if user_id in users:
+            users[user_id]['contact_info'] = text
+            users[user_id]['contact_info_date'] = datetime.now().isoformat()
+        
+        # Сброс состояния
+        context.user_data['waiting_for_contact_info'] = False
+        
+        # Отправляем подтверждение
+        await update.message.reply_text(
+            "✅ *Спасибо за информацию!*\n\n"
+            "📝 Ваши данные сохранены.\n"
+            "⏰ Наш менеджер свяжется с вами в ближайшее время.\n\n"
+            "🎯 Мы будем уведомлять вас о релевантных заказах.\n\n"
+            "💡 *Совет:* Чем подробнее ваша информация, тем больше шансов получить заказы!",
+            parse_mode='Markdown'
+        )
+        
+        # Отправляем уведомление администратору
+        try:
+            user = users[user_id]
+            spec_name = user.get('specialization', 'Не указана')
+            
+            admin_message = f"""
+🔔 *Новый фрилансер зарегистрирован!*
+
+👤 Имя: {user['username']}
+🆔 ID: {user_id}
+🎯 Специализация: {spec_name}
+📧 Контактная информация:
+{text}
+📅 Дата: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+
+📝 Свяжитесь с фрилансером для верификации.
+            """
+            
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=admin_message,
+                parse_mode='Markdown'
+            )
+        except:
+            pass  # Игнорируем ошибки доставки
     
     async def process_order_creation(self, update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
         """Обработка создания нового заказа"""
