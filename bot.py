@@ -56,6 +56,7 @@ class FreelanceBot:
         self.application.add_handler(CommandHandler("myorders", self.my_orders_command))
         self.application.add_handler(CommandHandler("profile", self.profile_command))
         self.application.add_handler(CommandHandler("admin", self.admin_command))
+        self.application.add_handler(CommandHandler("freelancers", self.freelancer_applications_command))
         self.application.add_handler(CallbackQueryHandler(self.button_callback))
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
     
@@ -101,6 +102,7 @@ class FreelanceBot:
 /myorders - Мои заказы
 /profile - Мой профиль
 /admin - Админ-панель (для админа)
+/freelancers - Заявки фрилансеров (для админа)
 
 🛒 *Для заказчиков:*
 • Создавайте заказы с подробным описанием
@@ -198,6 +200,37 @@ class FreelanceBot:
         
         await update.message.reply_text(profile_text, parse_mode='Markdown')
     
+    async def freelancer_applications_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Команда /freelancers - просмотр заявок фрилансеров"""
+        user_id = update.effective_user.id
+        
+        if user_id != ADMIN_ID:
+            await update.message.reply_text("❌ Доступ запрещен!")
+            return
+        
+        # Получаем всех фрилансеров с контактной информацией
+        freelancer_applications = []
+        for user_id, user in users.items():
+            if user.get('role') == 'freelancer' and user.get('contact_info'):
+                freelancer_applications.append(user)
+        
+        if not freelancer_applications:
+            await update.message.reply_text("📭 Пока нет заявок от фрилансеров")
+            return
+        
+        text = f"👥 *Заявки фрилансеров ({len(freelancer_applications)}):*\n\n"
+        
+        for freelancer in freelancer_applications:
+            text += f"👤 *Имя:* {freelancer['username']}\n"
+            text += f"🆔 *ID:* {freelancer['user_id']}\n"
+            text += f"🎯 *Специализация:* {freelancer.get('specialization', 'Не указана')}\n"
+            text += f"📞 *Telegram:* @{freelancer['username']}\n"
+            text += f"📝 *Опыт и информация:*\n{freelancer['contact_info']}\n"
+            text += f"📅 *Дата заявки:* {freelancer.get('contact_info_date', 'Неизвестно')[:10]}\n"
+            text += "─" * 30 + "\n\n"
+        
+        await update.message.reply_text(text, parse_mode='Markdown')
+    
     async def admin_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Команда /admin"""
         user_id = update.effective_user.id
@@ -210,6 +243,7 @@ class FreelanceBot:
             [InlineKeyboardButton("📊 Статистика", callback_data="admin_stats")],
             [InlineKeyboardButton("👥 Пользователи", callback_data="admin_users")],
             [InlineKeyboardButton("📋 Заказы", callback_data="admin_orders")],
+            [InlineKeyboardButton("💼 Фрилансеры", callback_data="admin_freelancers")],
             [InlineKeyboardButton("📢 Рассылка", callback_data="admin_broadcast")]
         ]
         
@@ -490,9 +524,33 @@ class FreelanceBot:
         
         elif data == "admin_orders":
             text = "📋 *Заказы:*\n\n"
-            for order in list(orders.values())[:10]:  # Показываем первые 10
+            for order in list(orders.values())[:10]:  # Показываем первых 10
                 status = {"open": "🔍", "in_progress": "⚡", "completed": "✅"}.get(order['status'], "❓")
                 text += f"{status} Заказ #{order['id']}: {order['title']}\n"
+            await query.message.reply_text(text, parse_mode='Markdown')
+        
+        elif data == "admin_freelancers":
+            # Получаем всех фрилансеров с контактной информацией
+            freelancer_applications = []
+            for user_id, user in users.items():
+                if user.get('role') == 'freelancer' and user.get('contact_info'):
+                    freelancer_applications.append(user)
+            
+            if not freelancer_applications:
+                await query.message.reply_text("📭 Пока нет заявок от фрилансеров")
+                return
+            
+            text = f"👥 *Заявки фрилансеров ({len(freelancer_applications)}):*\n\n"
+            
+            for freelancer in freelancer_applications:
+                text += f"👤 *Имя:* {freelancer['username']}\n"
+                text += f"🆔 *ID:* {freelancer['user_id']}\n"
+                text += f"🎯 *Специализация:* {freelancer.get('specialization', 'Не указана')}\n"
+                text += f"📞 *Telegram:* @{freelancer['username']}\n"
+                text += f"📝 *Опыт и информация:*\n{freelancer['contact_info']}\n"
+                text += f"📅 *Дата заявки:* {freelancer.get('contact_info_date', 'Неизвестно')[:10]}\n"
+                text += "─" * 30 + "\n\n"
+            
             await query.message.reply_text(text, parse_mode='Markdown')
     
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -554,7 +612,7 @@ class FreelanceBot:
 👤 Имя: {user['username']}
 🆔 ID: {user_id}
 🎯 Категория: {cat_name}
-� Описание задачи:
+📄 Описание задачи:
 {text}
 📅 Дата: {datetime.now().strftime('%Y-%m-%d %H:%M')}
 
@@ -729,7 +787,7 @@ async def run_bot():
         while True:
             await asyncio.sleep(1)
     else:
-        # Локальный запуск с polling
+        # Локальный запуск
         await bot_instance.application.initialize()
         await bot_instance.application.start()
         await bot_instance.application.updater.start_polling()
